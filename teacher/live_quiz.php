@@ -54,6 +54,11 @@ if (!$quiz) {
         <h2 class="question-text" id="qTextDisplay">Loading Question...</h2>
         <div id="qMediaContainer" style="display: none;" class="question-media-wrapper">
           <img id="qMediaImg" src="" alt="Question Image" class="question-media-img">
+          <span id="qMediaError" class="question-media-error">This image could not be loaded.</span>
+        </div>
+        <div id="qAudioContainer" style="display: none;" class="question-audio-wrapper">
+          <audio id="qAudioPlayer" class="question-audio-player" controls preload="metadata"></audio>
+          <span id="qAudioError" class="question-media-error">This audio could not be loaded.</span>
         </div>
       </div>
 
@@ -138,12 +143,26 @@ if (!$quiz) {
           // Question Image Display
           const mediaContainer = document.getElementById('qMediaContainer');
           const mediaImg = document.getElementById('qMediaImg');
+          const mediaError = document.getElementById('qMediaError');
+          const audioContainer = document.getElementById('qAudioContainer');
+          const audioPlayer = document.getElementById('qAudioPlayer');
+          const audioError = document.getElementById('qAudioError');
+          mediaContainer.style.display = 'none';
+          audioContainer.style.display = 'none';
+          mediaError.style.display = 'none';
+          audioError.style.display = 'none';
+          mediaImg.src = '';
+          audioPlayer.removeAttribute('src');
+          audioPlayer.load();
+
           if (q.image_url) {
             mediaImg.src = q.image_url;
             mediaContainer.style.display = 'flex';
-          } else {
-            mediaContainer.style.display = 'none';
-            mediaImg.src = '';
+            mediaImg.onerror = () => { mediaError.style.display = 'block'; };
+          } else if (q.question_type === 'music' && q.audio_url) {
+            audioPlayer.src = q.audio_url;
+            audioContainer.style.display = 'block';
+            audioPlayer.onerror = () => { audioError.style.display = 'block'; };
           }
 
           // Question Type Handling for Stats Bars

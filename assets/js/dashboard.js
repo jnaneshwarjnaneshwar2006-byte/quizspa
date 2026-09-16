@@ -26,8 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function addQuestionBlock(data = null) {
     questionCounter++;
     const qNum = questionCounter;
-    const qType = (data && data.question_type === 'true_false') ? 'true_false' : 'multiple_choice';
+    const supportedTypes = ['multiple_choice', 'true_false', 'image', 'music'];
+    const qType = data && supportedTypes.includes(data.question_type) ? data.question_type : 'multiple_choice';
     const initialImg = (data && data.image_url) ? data.image_url : '';
+    const initialAudio = (data && data.audio_url) ? data.audio_url : '';
 
     const qCard = document.createElement('div');
     qCard.className = 'question-item-card animate-pop';
@@ -49,13 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       <!-- Question Type Switcher -->
-      <div class="q-type-toggle">
-        <button type="button" class="q-type-btn ${qType === 'multiple_choice' ? 'active' : ''}" data-type="multiple_choice">
-          🔷 Multiple Choice (4 Options)
-        </button>
-        <button type="button" class="q-type-btn ${qType === 'true_false' ? 'active' : ''}" data-type="true_false">
-          ⚖️ True or False (Kahoot 2-Choice)
-        </button>
+      <div class="q-type-toggle" role="group" aria-label="Question type">
+        <button type="button" class="q-type-btn ${qType === 'multiple_choice' ? 'active' : ''}" data-type="multiple_choice">🔷 Multiple Choice</button>
+        <button type="button" class="q-type-btn ${qType === 'true_false' ? 'active' : ''}" data-type="true_false">⚖️ True / False</button>
+        <button type="button" class="q-type-btn ${qType === 'image' ? 'active' : ''}" data-type="image">🖼️ Image</button>
+        <button type="button" class="q-type-btn ${qType === 'music' ? 'active' : ''}" data-type="music">🎵 Music</button>
       </div>
       <input type="hidden" class="question-type-input" value="${qType}">
 
@@ -65,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <input type="text" class="form-control question-text-input" placeholder="e.g., What is the capital of France?" value="${data ? escapeHtml(data.question_text) : ''}" required>
       </div>
 
-      <!-- Question Image / Media Box -->
-      <div class="form-group">
+      <!-- Existing image upload remains available for multiple-choice questions. -->
+      <div class="form-group question-upload-group" style="${qType === 'multiple_choice' ? '' : 'display: none;'}">
         <label class="form-label">Question Image (Optional)</label>
         <div class="question-media-box">
           <input type="hidden" class="question-image-input" value="${initialImg}">
@@ -76,6 +76,18 @@ document.addEventListener('DOMContentLoaded', () => {
             ${renderMediaPreviewHtml(initialImg)}
           </div>
         </div>
+      </div>
+
+      <div class="form-group question-url-group" style="${qType === 'image' ? '' : 'display: none;'}">
+        <label class="form-label">Image URL *</label>
+        <input type="url" class="form-control question-image-url-input" placeholder="https://example.com/question-image.jpg" value="${qType === 'image' ? escapeHtml(initialImg) : ''}" ${qType === 'image' ? 'required' : ''}>
+        <div class="url-preview-area image-url-preview" aria-live="polite"></div>
+      </div>
+
+      <div class="form-group question-audio-group" style="${qType === 'music' ? '' : 'display: none;'}">
+        <label class="form-label">Audio / Music URL *</label>
+        <input type="url" class="form-control question-audio-url-input" placeholder="https://example.com/question-audio.mp3" value="${qType === 'music' ? escapeHtml(initialAudio) : ''}" ${qType === 'music' ? 'required' : ''}>
+        <div class="url-preview-area audio-url-preview" aria-live="polite"></div>
       </div>
 
       <!-- Options Grid -->
@@ -194,6 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const typeInput = card.querySelector('.question-type-input');
     const optColC = card.querySelector('.opt-col-c');
     const optColD = card.querySelector('.opt-col-d');
+    const uploadGroup = card.querySelector('.question-upload-group');
+    const imageUrlGroup = card.querySelector('.question-url-group');
+    const audioGroup = card.querySelector('.question-audio-group');
+    const imageUrlInput = card.querySelector('.question-image-url-input');
+    const audioUrlInput = card.querySelector('.question-audio-url-input');
+    const imageUrlPreview = card.querySelector('.image-url-preview');
+    const audioUrlPreview = card.querySelector('.audio-url-preview');
     const optAInput = card.querySelector('.option-a-input');
     const optBInput = card.querySelector('.option-b-input');
     const optCInput = card.querySelector('.option-c-input');
@@ -206,6 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
         typeButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         typeInput.value = selectedType;
+
+        uploadGroup.style.display = selectedType === 'multiple_choice' ? '' : 'none';
+        imageUrlGroup.style.display = selectedType === 'image' ? '' : 'none';
+        audioGroup.style.display = selectedType === 'music' ? '' : 'none';
+        imageUrlInput.required = selectedType === 'image';
+        audioUrlInput.required = selectedType === 'music';
 
         if (selectedType === 'true_false') {
           // Hide Options C & D
@@ -246,8 +271,37 @@ document.addEventListener('DOMContentLoaded', () => {
           const currentCorrect = ['A', 'B', 'C', 'D'].includes(correctSelect.value) ? correctSelect.value : 'A';
           correctSelect.innerHTML = renderCorrectOptionsHtml('multiple_choice', currentCorrect);
         }
+
+        renderUrlPreview('image', imageUrlInput.value.trim(), imageUrlPreview);
+        renderUrlPreview('audio', audioUrlInput.value.trim(), audioUrlPreview);
       });
     });
+
+    imageUrlInput.addEventListener('input', () => renderUrlPreview('image', imageUrlInput.value.trim(), imageUrlPreview));
+    audioUrlInput.addEventListener('input', () => renderUrlPreview('audio', audioUrlInput.value.trim(), audioUrlPreview));
+    renderUrlPreview('image', imageUrlInput.value.trim(), imageUrlPreview);
+    renderUrlPreview('audio', audioUrlInput.value.trim(), audioUrlPreview);
+
+    function renderUrlPreview(kind, url, target) {
+      if (!url) {
+        target.innerHTML = '';
+        return;
+      }
+
+      if (kind === 'image') {
+        target.innerHTML = `<img src="${escapeHtml(url)}" class="url-image-preview" alt="Image URL preview"><span class="media-url-error">Unable to load this image URL.</span>`;
+        const image = target.querySelector('img');
+        const error = target.querySelector('.media-url-error');
+        image.addEventListener('load', () => { error.style.display = 'none'; });
+        image.addEventListener('error', () => { error.style.display = 'block'; });
+      } else {
+        target.innerHTML = `<audio src="${escapeHtml(url)}" controls preload="metadata"></audio><span class="media-url-error">Unable to load this audio URL.</span>`;
+        const audio = target.querySelector('audio');
+        const error = target.querySelector('.media-url-error');
+        audio.addEventListener('canplay', () => { error.style.display = 'none'; });
+        audio.addEventListener('error', () => { error.style.display = 'block'; });
+      }
+    }
 
     // Media Uploader Events
     const mediaBox = card.querySelector('.question-media-box');
@@ -349,7 +403,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const questions = questionCards.map((card, index) => {
         const qType = card.querySelector('.question-type-input').value;
         const qText = card.querySelector('.question-text-input').value.trim();
-        const imageUrl = card.querySelector('.question-image-input').value.trim();
+        const imageUrl = qType === 'image'
+          ? card.querySelector('.question-image-url-input').value.trim()
+          : card.querySelector('.question-image-input').value.trim();
+        const audioUrl = qType === 'music'
+          ? card.querySelector('.question-audio-url-input').value.trim()
+          : '';
         const optA = card.querySelector('.option-a-input').value.trim();
         const optB = card.querySelector('.option-b-input').value.trim();
         const optC = qType === 'true_false' ? null : card.querySelector('.option-c-input').value.trim();
@@ -362,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
           question_type: qType,
           question_text: qText,
           image_url: imageUrl || null,
+          audio_url: audioUrl || null,
           option_a: optA,
           option_b: optB,
           option_c: optC,

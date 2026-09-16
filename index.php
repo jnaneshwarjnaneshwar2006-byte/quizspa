@@ -10,17 +10,30 @@ require_once __DIR__ . '/config/security.php';
   <title>QuizSpark - Real-Time Live Quiz Platform</title>
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
+    .home-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      padding: 20px 0;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
     .hero-section {
-      min-height: 85vh;
+      min-height: 82vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 40px 20px;
+      padding: 56px 20px 72px;
     }
     .hero-title {
-      font-size: 4rem;
+      max-width: 900px;
+      font-size: clamp(2.8rem, 7vw, 5.4rem);
       font-weight: 900;
       line-height: 1.1;
       margin-bottom: 20px;
@@ -29,7 +42,7 @@ require_once __DIR__ . '/config/security.php';
       -webkit-text-fill-color: transparent;
     }
     .hero-subtitle {
-      font-size: 1.3rem;
+      font-size: clamp(1rem, 2vw, 1.25rem);
       color: var(--text-muted);
       max-width: 680px;
       margin: 0 auto 36px auto;
@@ -39,6 +52,11 @@ require_once __DIR__ . '/config/security.php';
       gap: 20px;
       justify-content: center;
       flex-wrap: wrap;
+    }
+    .hero-note {
+      margin-top: 18px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
     }
     .features-grid {
       display: grid;
@@ -66,15 +84,39 @@ require_once __DIR__ . '/config/security.php';
       margin-bottom: 16px;
       display: inline-block;
     }
+    @media (max-width: 640px) {
+      .home-nav {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .nav-actions {
+        width: 100%;
+      }
+      .nav-actions .btn {
+        flex: 1;
+        padding-inline: 12px;
+      }
+      .hero-section {
+        padding: 36px 0 52px;
+      }
+      .hero-buttons {
+        width: 100%;
+        gap: 12px;
+      }
+      .hero-buttons .btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="app-container">
-    <nav style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0;">
+    <nav class="home-nav" aria-label="Main navigation">
       <a href="index.php" class="brand-logo">QuizSpark <span class="brand-badge">LIVE QUIZ</span></a>
-      <div>
+      <div class="nav-actions">
+        <a href="student/join.php" class="btn btn-secondary">Join a Quiz</a>
         <?php if (isTeacherLoggedIn()): ?>
-          <a href="teacher/dashboard.php" class="btn btn-primary">📊 Teacher Dashboard</a>
+          <a href="teacher/dashboard.php" class="btn btn-primary">Teacher Dashboard</a>
         <?php else: ?>
           <a href="teacher/login.php" class="btn btn-secondary">Teacher Login</a>
         <?php endif; ?>
@@ -91,10 +133,10 @@ require_once __DIR__ . '/config/security.php';
       </p>
 
       <div class="hero-buttons animate-pop">
-        <a href="teacher/login.php" class="btn btn-primary btn-lg" style="font-size: 1.3rem; padding: 18px 40px;">
-          👨‍🏫 Host a Quiz (Teacher Login)
-        </a>
+        <a href="teacher/login.php" class="btn btn-primary btn-lg">Host a Quiz</a>
+        <a href="student/join.php" class="btn btn-secondary btn-lg">Join with a Code</a>
       </div>
+      <p class="hero-note">No student account required. Enter a code and start playing.</p>
 
       <!-- Features Grid -->
       <div class="features-grid">

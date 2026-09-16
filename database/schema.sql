@@ -45,7 +45,7 @@ CREATE TABLE `questions` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `quiz_id` INT NOT NULL,
   `question_number` INT NOT NULL,
-  `question_type` ENUM('multiple_choice', 'true_false') DEFAULT 'multiple_choice',
+  `question_type` ENUM('multiple_choice', 'true_false', 'image', 'music') DEFAULT 'multiple_choice',
   `question_text` TEXT NOT NULL,
   `option_a` VARCHAR(255) NOT NULL,
   `option_b` VARCHAR(255) NOT NULL,
@@ -53,6 +53,7 @@ CREATE TABLE `questions` (
   `option_d` VARCHAR(255) NULL,
   `correct_option` ENUM('A', 'B', 'C', 'D') NOT NULL,
   `image_url` VARCHAR(500) NULL,
+  `audio_url` VARCHAR(500) NULL,
   `time_limit` INT DEFAULT 10,
   FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE,
   INDEX (`quiz_id`, `question_number`)

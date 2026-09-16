@@ -34,6 +34,15 @@ function sanitizeString(?string $str): string {
     return htmlspecialchars(trim($str), ENT_QUOTES, 'UTF-8');
 }
 
+function isValidMediaUrl(?string $url): bool {
+    if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+        return false;
+    }
+
+    $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+    return in_array($scheme, ['http', 'https'], true);
+}
+
 /**
  * Return JSON response and exit
  */

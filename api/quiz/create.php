@@ -49,14 +49,18 @@ try {
     // Insert Questions
     $qStmt = $pdo->prepare("
         INSERT INTO `questions` 
-        (`quiz_id`, `question_number`, `question_type`, `question_text`, `option_a`, `option_b`, `option_c`, `option_d`, `correct_option`, `image_url`, `time_limit`) 
-        VALUES (:quiz_id, :q_num, :q_type, :q_text, :opt_a, :opt_b, :opt_c, :opt_d, :correct, :image_url, :time_limit)
+        (`quiz_id`, `question_number`, `question_type`, `question_text`, `option_a`, `option_b`, `option_c`, `option_d`, `correct_option`, `image_url`, `audio_url`, `time_limit`)
+        VALUES (:quiz_id, :q_num, :q_type, :q_text, :opt_a, :opt_b, :opt_c, :opt_d, :correct, :image_url, :audio_url, :time_limit)
     ");
 
     foreach ($questions as $idx => $q) {
         $qText = sanitizeString($q['question_text'] ?? '');
-        $qType = (($q['question_type'] ?? 'multiple_choice') === 'true_false') ? 'true_false' : 'multiple_choice';
+        $qType = $q['question_type'] ?? 'multiple_choice';
+        if (!in_array($qType, ['multiple_choice', 'true_false', 'image', 'music'], true)) {
+            $qType = 'multiple_choice';
+        }
         $imageUrl = !empty($q['image_url']) ? sanitizeString($q['image_url']) : null;
+        $audioUrl = !empty($q['audio_url']) ? sanitizeString($q['audio_url']) : null;
         $correct = strtoupper(trim($q['correct_option'] ?? 'A'));
         $timeLimit = (int)($q['time_limit'] ?? 10);
 
@@ -86,6 +90,23 @@ try {
             }
         }
 
+        if ($qType === 'image' && empty($imageUrl)) {
+            $pdo->rollBack();
+            sendJsonResponse(false, "Question #" . ($idx + 1) . " requires an image URL.", [], 400);
+        }
+        if ($qType === 'music' && empty($audioUrl)) {
+            $pdo->rollBack();
+            sendJsonResponse(false, "Question #" . ($idx + 1) . " requires an audio URL.", [], 400);
+        }
+        if ($qType === 'image' && !isValidMediaUrl($imageUrl)) {
+            $pdo->rollBack();
+            sendJsonResponse(false, "Question #" . ($idx + 1) . " has an invalid image URL.", [], 400);
+        }
+        if ($qType === 'music' && !isValidMediaUrl($audioUrl)) {
+            $pdo->rollBack();
+            sendJsonResponse(false, "Question #" . ($idx + 1) . " has an invalid audio URL.", [], 400);
+        }
+
         $qStmt->execute([
             'quiz_id'    => $quizId,
             'q_num'      => $idx + 1,
@@ -97,6 +118,7 @@ try {
             'opt_d'      => $optD,
             'correct'    => $correct,
             'image_url'  => $imageUrl,
+            'audio_url'  => $audioUrl,
             'time_limit' => $timeLimit
         ]);
     }

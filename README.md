@@ -76,6 +76,8 @@ c:/Users/Jnaneshwar B A/OneDrive/project/q1/
    ```
    *Or manually import `database/schema.sql` and `database/seed.sql` into MySQL.*
 
+If QuizSpark is already installed, run `database/migrate_question_media.sql` once instead of re-running the initializer. This adds Image and Music question support without deleting existing quiz data.
+
 ### 3. Running Locally with PHP Built-in Server
 Execute the following command in the project root:
 ```bash

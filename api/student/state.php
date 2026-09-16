@@ -95,6 +95,7 @@ try {
             'option_c'        => $question['option_c'],
             'option_d'        => $question['option_d'],
             'image_url'       => $question['image_url'] ?? null,
+            'audio_url'       => $question['audio_url'] ?? null,
             'correct_option'  => ($currentQStatus === 'ended' || $currentQStatus === 'leaderboard') ? $question['correct_option'] : null,
             'time_limit'      => (int)$question['time_limit'],
             'time_remaining'  => $timeRemaining

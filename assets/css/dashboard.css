@@ -280,6 +280,34 @@
   color: #ffffff;
 }
 
+.url-preview-area {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.url-image-preview {
+  max-width: 240px;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
+.url-preview-area audio {
+  width: 100%;
+  max-width: 460px;
+}
+
+.media-url-error {
+  display: none;
+  color: #ff7675;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 /* Responsive Sidebar */
 @media (max-width: 900px) {
   .dashboard-layout {
