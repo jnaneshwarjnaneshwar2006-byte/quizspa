@@ -137,20 +137,21 @@ if (!$student) {
           const audioError = document.getElementById('qAudioError');
           mediaContainer.style.display = 'none';
           audioContainer.style.display = 'none';
-          mediaError.style.display = 'none';
-          audioError.style.display = 'none';
+          mediaImg.style.display = 'block';
           mediaImg.src = '';
           audioPlayer.removeAttribute('src');
-          audioPlayer.load();
 
           if (q.image_url) {
-            mediaImg.src = q.image_url;
             mediaContainer.style.display = 'flex';
-            mediaImg.onerror = () => { mediaError.style.display = 'block'; };
+            mediaImg.onload = () => { mediaError.style.display = 'none'; mediaImg.style.display = 'block'; };
+            mediaImg.onerror = () => { mediaError.style.display = 'block'; mediaImg.style.display = 'none'; };
+            mediaImg.src = q.image_url;
           } else if (q.question_type === 'music' && q.audio_url) {
-            audioPlayer.src = q.audio_url;
             audioContainer.style.display = 'block';
+            audioPlayer.oncanplay = () => { audioError.style.display = 'none'; };
             audioPlayer.onerror = () => { audioError.style.display = 'block'; };
+            audioPlayer.src = q.audio_url;
+            audioPlayer.load();
           }
 
           // Question Type Handling (Kahoot True/False vs Multiple Choice)

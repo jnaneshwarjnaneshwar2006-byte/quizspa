@@ -288,18 +288,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      target.innerHTML = '';
       if (kind === 'image') {
-        target.innerHTML = `<img src="${escapeHtml(url)}" class="url-image-preview" alt="Image URL preview"><span class="media-url-error">Unable to load this image URL.</span>`;
-        const image = target.querySelector('img');
-        const error = target.querySelector('.media-url-error');
-        image.addEventListener('load', () => { error.style.display = 'none'; });
-        image.addEventListener('error', () => { error.style.display = 'block'; });
+        const img = document.createElement('img');
+        img.className = 'url-image-preview';
+        img.alt = 'Image URL preview';
+
+        const errSpan = document.createElement('span');
+        errSpan.className = 'media-url-error';
+        errSpan.textContent = '⚠️ Unable to load this image URL. Please check the link.';
+        errSpan.style.display = 'none';
+
+        img.onload = () => { errSpan.style.display = 'none'; img.style.display = 'block'; };
+        img.onerror = () => { errSpan.style.display = 'block'; img.style.display = 'none'; };
+        img.src = url;
+
+        target.appendChild(img);
+        target.appendChild(errSpan);
       } else {
-        target.innerHTML = `<audio src="${escapeHtml(url)}" controls preload="metadata"></audio><span class="media-url-error">Unable to load this audio URL.</span>`;
-        const audio = target.querySelector('audio');
-        const error = target.querySelector('.media-url-error');
-        audio.addEventListener('canplay', () => { error.style.display = 'none'; });
-        audio.addEventListener('error', () => { error.style.display = 'block'; });
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.preload = 'metadata';
+
+        const errSpan = document.createElement('span');
+        errSpan.className = 'media-url-error';
+        errSpan.textContent = '⚠️ Unable to load this audio URL. Please check the link.';
+        errSpan.style.display = 'none';
+
+        audio.oncanplay = () => { errSpan.style.display = 'none'; };
+        audio.onerror = () => { errSpan.style.display = 'block'; };
+        audio.src = url;
+
+        target.appendChild(audio);
+        target.appendChild(errSpan);
       }
     }
 

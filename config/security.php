@@ -35,12 +35,21 @@ function sanitizeString(?string $str): string {
 }
 
 function isValidMediaUrl(?string $url): bool {
-    if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+    if (empty($url)) {
         return false;
     }
 
-    $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
-    return in_array($scheme, ['http', 'https'], true);
+    if (filter_var($url, FILTER_VALIDATE_URL)) {
+        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+        return in_array($scheme, ['http', 'https'], true);
+    }
+
+    // Allow local uploaded file paths
+    if (preg_match('/^(\/|\.\.\/|\.\/)?uploads\/[a-zA-Z0-9_\-\.\/]+$/i', $url)) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
