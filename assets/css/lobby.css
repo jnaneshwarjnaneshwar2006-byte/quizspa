@@ -1,0 +1,138 @@
+/* Lobby, Student Join, & Player Grid Styling */
+
+.lobby-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.lobby-header {
+  background: rgba(24, 20, 42, 0.9);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.join-code-badge {
+  display: inline-block;
+  font-family: 'Outfit', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 12px;
+  background: linear-gradient(135deg, #fd79a8, #a29bfe, #00cec9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding: 10px 24px;
+  border-radius: var(--radius-lg);
+  border: 2px dashed rgba(162, 155, 254, 0.4);
+  margin: 15px 0;
+}
+
+.lobby-meta-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.qr-box {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  display: inline-block;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  margin: 15px 0;
+}
+
+.qr-box img, .qr-box canvas, .qr-box svg {
+  display: block;
+  max-width: 180px;
+  max-height: 180px;
+  margin: 0 auto;
+}
+
+/* Player Grid */
+.players-counter {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #a29bfe;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.player-card {
+  background: var(--bg-dark-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-bounce), border-color var(--transition-fast);
+}
+
+.player-card:hover {
+  transform: scale(1.04);
+  border-color: var(--primary);
+}
+
+.player-emoji {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.player-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Student Emoji Selector */
+.emoji-selector {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin: 15px 0 25px 0;
+}
+
+.emoji-option {
+  font-size: 2rem;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  user-select: none;
+}
+
+.emoji-option:hover {
+  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.emoji-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-glow);
+  transform: scale(1.2);
+}
