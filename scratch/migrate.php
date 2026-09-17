@@ -2,9 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 
 try {
-    $pdo = new PDO('mysql:host=127.0.0.1;port=3306;dbname=quizspark_db;charset=utf8mb4', 'root', '', [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $pdo = getDBConnection();
 
     echo "[*] Modifying question_type ENUM...\n";
     $pdo->exec("ALTER TABLE `questions` MODIFY `question_type` ENUM('multiple_choice', 'true_false', 'image', 'music') DEFAULT 'multiple_choice'");

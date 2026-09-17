@@ -78,6 +78,20 @@ c:/Users/Jnaneshwar B A/OneDrive/project/q1/
 
 If QuizSpark is already installed, run `database/migrate_question_media.sql` once instead of re-running the initializer. This adds Image and Music question support without deleting existing quiz data.
 
+### 2a. Render Environment Variables
+
+For a Render deployment, configure these environment variables in the web service. Use the connection details from your hosted MySQL provider, not your laptop's XAMPP server:
+
+```text
+DB_HOST=your-remote-mysql-host
+DB_PORT=3306
+DB_NAME=your-database-name
+DB_USER=your-database-user
+DB_PASSWORD=your-database-password
+```
+
+The application reads `DB_PASSWORD` for hosted deployments and supports the older `DB_PASS` name for backward compatibility. On Render (`RENDER=true`) or when `APP_ENV=production`, all five variables are required and loopback hosts are rejected. Outside production, the local-development defaults are `127.0.0.1`, port `3306`, database `quizspark_db`, user `root`, and an empty password for XAMPP.
+
 ### 3. Running Locally with PHP Built-in Server
 Execute the following command in the project root:
 ```bash
