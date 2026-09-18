@@ -13,14 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('pageshow', clearLoginFields);
 
-  ['email', 'password'].forEach((fieldId) => {
-    const field = document.getElementById(fieldId);
-    if (field) {
-      field.addEventListener('focus', () => {
-        field.readOnly = false;
-      }, { once: true });
-    }
-  });
+  // Readonly hack removed to prevent login issues
 
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -85,11 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (email) {
       email.value = '';
-      email.readOnly = true;
     }
     if (password) {
       password.value = '';
-      password.readOnly = true;
     }
   }
 
