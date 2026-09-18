@@ -20,7 +20,7 @@ if (!$input) {
 }
 
 $email = filter_var($input['email'] ?? '', FILTER_VALIDATE_EMAIL);
-$password = trim($input['password'] ?? '');
+$password = is_string($input['password'] ?? null) ? $input['password'] : '';
 $csrfToken = $input['csrf_token'] ?? '';
 
 if (!$email || empty($password)) {
@@ -40,7 +40,7 @@ try {
     $stmt->execute(['email' => $email]);
     $teacher = $stmt->fetch();
 
-    if (!$teacher || !password_verify($password, $teacher['password_hash'])) {
+    if (!$teacher || empty($teacher['password_hash']) || !password_verify($password, $teacher['password_hash'])) {
         sendJsonResponse(false, 'Invalid email or password.', [], 401);
     }
 

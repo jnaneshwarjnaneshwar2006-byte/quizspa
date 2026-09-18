@@ -92,6 +92,20 @@ DB_PASSWORD=your-database-password
 
 The application reads `DB_PASSWORD` for hosted deployments and supports the older `DB_PASS` name for backward compatibility. On Render (`RENDER=true`) or when `APP_ENV=production`, all five variables are required and loopback hosts are rejected. Outside production, the local-development defaults are `127.0.0.1`, port `3306`, database `quizspark_db`, user `root`, and an empty password for XAMPP.
 
+### 2b. InfinityFree Database Configuration
+
+InfinityFree provides MySQL values in the hosting control panel rather than through Render-style environment variables. Copy `config/database.local.php.example` to `config/database.local.php`, enter the values shown by InfinityFree, and upload the filled `database.local.php` file. `database.local.php` is ignored by Git and must never contain a password committed to the repository.
+
+Before logging in, verify that the online database contains the teacher row:
+
+```sql
+SELECT id, name, email, password_hash
+FROM teachers
+WHERE email = 'jnanesh2006@gmail.com';
+```
+
+The row must contain a bcrypt hash beginning with `$2y$`, not the plain-text password. The seeded demo credentials are `jnanesh2006@gmail.com` / `123456`.
+
 ### 3. Running Locally with PHP Built-in Server
 Execute the following command in the project root:
 ```bash
@@ -107,8 +121,8 @@ Now open your browser and navigate to:
 
 ## 🔑 Teacher Account Credentials
 
-- **Email**: `teacher@quizspark.com`
-- **Password**: `password123`
+- **Email**: `jnanesh2006@gmail.com`
+- **Password**: `123456`
 
 ---
 
@@ -116,7 +130,7 @@ Now open your browser and navigate to:
 
 1. **Log in as Teacher**:
    - Go to `http://127.0.0.1:8000/teacher/login.php`.
-   - Login using `teacher@quizspark.com` / `password123`.
+   - Login using `jnanesh2006@gmail.com` / `123456`.
 
 2. **Publish or Create a Quiz**:
    - Go to **My Quizzes** and click **Publish** on the demo quiz, or click **Create Quiz** to add custom questions.

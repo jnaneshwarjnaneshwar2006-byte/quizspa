@@ -4,24 +4,47 @@
  * QuizSpark Live Quiz Application
  */
 
-define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-define('DB_PORT', getenv('DB_PORT') ?: '3306');
-define('DB_NAME', getenv('DB_NAME') ?: 'quizspark_db');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define(
-    'DB_PASSWORD',
-    getenv('DB_PASSWORD') !== false
-        ? getenv('DB_PASSWORD')
-        : (getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'root1234')
-);
+$databaseLocalConfig = [];
+$databaseLocalConfigFile = __DIR__ . '/database.local.php';
+if (is_file($databaseLocalConfigFile)) {
+    $loadedDatabaseConfig = require $databaseLocalConfigFile;
+    if (is_array($loadedDatabaseConfig)) {
+        $databaseLocalConfig = $loadedDatabaseConfig;
+    }
+}
+
+function getDatabaseSetting(string $environmentName, string $localName, string $default): string
+{
+    global $databaseLocalConfig;
+
+    $environmentValue = getenv($environmentName);
+    if ($environmentValue !== false && $environmentValue !== '') {
+        return (string)$environmentValue;
+    }
+
+    if (isset($databaseLocalConfig[$localName]) && $databaseLocalConfig[$localName] !== '') {
+        return (string)$databaseLocalConfig[$localName];
+    }
+
+    return $default;
+}
+
+define('DB_HOST', getDatabaseSetting('DB_HOST', 'host', '127.0.0.1'));
+define('DB_PORT', getDatabaseSetting('DB_PORT', 'port', '3306'));
+define('DB_NAME', getDatabaseSetting('DB_NAME', 'name', 'quizspark_db'));
+define('DB_USER', getDatabaseSetting('DB_USER', 'user', 'root'));
+define('DB_PASSWORD', getDatabaseSetting('DB_PASSWORD', 'password', ''));
 define('DB_PASS', DB_PASSWORD);
 
 function isProductionEnvironment(): bool
 {
     $renderEnvironment = strtolower((string)getenv('RENDER')) === 'true';
     $applicationEnvironment = strtolower((string)getenv('APP_ENV'));
+    $requestHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    $requestHost = preg_replace('/:\d+$/', '', $requestHost);
+    $isHostedRequest = $requestHost !== '' && !in_array($requestHost, ['localhost', '127.0.0.1', '::1'], true);
 
-    return $renderEnvironment || in_array($applicationEnvironment, ['production', 'prod'], true);
+    return $renderEnvironment || $isHostedRequest || in_array($applicationEnvironment, ['production', 'prod'], true);
 }
 
 function failDatabaseConnection(string $message, ?Throwable $exception = null): void
@@ -57,15 +80,21 @@ function getDBConnection(): PDO
         if (isProductionEnvironment()) {
             $missingVariables = [];
 
-            foreach (['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'] as $variable) {
-                if (getenv($variable) === false || getenv($variable) === '') {
+            foreach ([
+                'DB_HOST' => DB_HOST,
+                'DB_PORT' => DB_PORT,
+                'DB_NAME' => DB_NAME,
+                'DB_USER' => DB_USER,
+                'DB_PASSWORD' => DB_PASSWORD,
+            ] as $variable => $value) {
+                if ($value === '') {
                     $missingVariables[] = $variable;
                 }
             }
 
             if ($missingVariables !== []) {
                 failDatabaseConnection(
-                    'Production database configuration is incomplete. Set these Render environment variables: ' .
+                    'Hosted database configuration is incomplete. Set the database values in environment variables or config/database.local.php: ' .
                     implode(', ', $missingVariables) . '.'
                 );
             }

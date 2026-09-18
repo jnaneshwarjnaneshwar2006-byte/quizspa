@@ -1,0 +1,9 @@
+<?php
+
+return [
+    'host' => 'your-infinityfree-mysql-host',
+    'port' => '3306',
+    'name' => 'your-infinityfree-database-name',
+    'user' => 'your-infinityfree-database-user',
+    'password' => 'your-infinityfree-database-password',
+];
