@@ -109,8 +109,9 @@
 
 /* Student Emoji Selector */
 .emoji-selector {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
   margin: 15px 0 25px 0;
 }

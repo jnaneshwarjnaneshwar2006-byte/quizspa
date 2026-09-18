@@ -8,6 +8,11 @@ if (session_status() === PHP_SESSION_NONE) {
     // Set secure session parameters
     ini_set('session.cookie_httponly', '1');
     ini_set('session.use_only_cookies', '1');
+    
+    // Persistent sessions (30 days)
+    ini_set('session.cookie_lifetime', (string)(86400 * 30));
+    ini_set('session.gc_maxlifetime', (string)(86400 * 30));
+    
     session_start();
 }
 

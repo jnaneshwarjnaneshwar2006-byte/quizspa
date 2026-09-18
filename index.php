@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/config/session.php';
 require_once __DIR__ . '/config/security.php';
+
+// Auto-redirect to dashboard if teacher is logged in
+if (isTeacherLoggedIn()) {
+    header('Location: ' . getBaseUrl() . '/teacher/dashboard.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
