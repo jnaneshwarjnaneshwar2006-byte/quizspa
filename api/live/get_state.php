@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
+require_once __DIR__ . '/../../config/live_quiz.php';
 
 $quizId = (int)($_GET['quiz_id'] ?? 0);
 if (!$quizId) {
@@ -23,6 +24,14 @@ try {
 
     if (!$quiz) {
         sendJsonResponse(false, 'Quiz not found.', [], 404);
+    }
+
+    if ($quiz['current_question_status'] === 'leaderboard' &&
+        (float)($quiz['leaderboard_start_time'] ?? 0) > 0 &&
+        getMicroTime() - (float)$quiz['leaderboard_start_time'] >= 5) {
+        advanceQuizFromLeaderboard($pdo, $quizId, 5);
+        $stmt->execute(['id' => $quizId]);
+        $quiz = $stmt->fetch();
     }
 
     $currentQuestionNum = (int)$quiz['current_question'];
@@ -52,10 +61,14 @@ try {
 
             // Auto-expire question if timer reached 0 and still marked 'active'
             if ($timeRemaining <= 0 && $currentQStatus === 'active') {
-                $upd = $pdo->prepare("UPDATE `quizzes` SET `current_question_status` = 'ended' WHERE `id` = :id");
-                $upd->execute(['id' => $quizId]);
-                $quiz['current_question_status'] = 'ended';
-                $currentQStatus = 'ended';
+                $upd = $pdo->prepare(
+                    "UPDATE `quizzes`
+                     SET `current_question_status` = 'leaderboard', `leaderboard_start_time` = :started_at
+                     WHERE `id` = :id AND `current_question_status` = 'active'"
+                );
+                $upd->execute(['id' => $quizId, 'started_at' => getMicroTime()]);
+                $quiz['current_question_status'] = 'leaderboard';
+                $currentQStatus = 'leaderboard';
             }
 
             // Fetch answer statistics for teacher / display
@@ -81,6 +94,10 @@ try {
     $pCountStmt = $pdo->prepare("SELECT COUNT(*) as count FROM `participants` WHERE `quiz_id` = :quiz_id");
     $pCountStmt->execute(['quiz_id' => $quizId]);
     $participantCount = (int)($pCountStmt->fetch()['count'] ?? 0);
+    $leaderboardRemaining = 0;
+    if ($currentQStatus === 'leaderboard') {
+        $leaderboardRemaining = max(0, ceil(5 - (getMicroTime() - (float)($quiz['leaderboard_start_time'] ?? 0))));
+    }
 
     sendJsonResponse(true, 'Live state retrieved.', [
         'quiz' => [
@@ -90,7 +107,8 @@ try {
             'current_question'        => $currentQuestionNum,
             'current_question_status' => $quiz['current_question_status'],
             'total_questions'         => $totalQuestions,
-            'participant_count'       => $participantCount
+            'participant_count'       => $participantCount,
+            'leaderboard_remaining'   => $leaderboardRemaining
         ],
         'question' => $question ? [
             'id'              => (int)$question['id'],

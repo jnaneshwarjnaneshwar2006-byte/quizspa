@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
+require_once __DIR__ . '/../../config/live_quiz.php';
 
 $quizId = (int)($_GET['quiz_id'] ?? 0);
 $token = getStudentToken();
@@ -25,6 +26,14 @@ try {
 
     if (!$quiz) {
         sendJsonResponse(false, 'Quiz not found.', [], 404);
+    }
+
+    if ($quiz['current_question_status'] === 'leaderboard' &&
+        (float)($quiz['leaderboard_start_time'] ?? 0) > 0 &&
+        getMicroTime() - (float)$quiz['leaderboard_start_time'] >= 5) {
+        advanceQuizFromLeaderboard($pdo, $quizId, 5);
+        $stmt->execute(['id' => $quizId]);
+        $quiz = $stmt->fetch();
     }
 
     $currentQuestionNum = (int)$quiz['current_question'];
@@ -52,10 +61,14 @@ try {
             $timeRemaining = max(0, round($timeLimit - $elapsed, 2));
 
             if ($timeRemaining <= 0 && $currentQStatus === 'active') {
-                $upd = $pdo->prepare("UPDATE `quizzes` SET `current_question_status` = 'ended' WHERE `id` = :id");
-                $upd->execute(['id' => $quizId]);
-                $quiz['current_question_status'] = 'ended';
-                $currentQStatus = 'ended';
+                $upd = $pdo->prepare(
+                    "UPDATE `quizzes`
+                     SET `current_question_status` = 'leaderboard', `leaderboard_start_time` = :started_at
+                     WHERE `id` = :id AND `current_question_status` = 'active'"
+                );
+                $upd->execute(['id' => $quizId, 'started_at' => getMicroTime()]);
+                $quiz['current_question_status'] = 'leaderboard';
+                $currentQStatus = 'leaderboard';
             }
         }
     }
@@ -83,7 +96,10 @@ try {
             'status'                  => $quiz['status'],
             'current_question'        => $currentQuestionNum,
             'current_question_status' => $quiz['current_question_status'],
-            'total_questions'         => $totalQuestions
+            'total_questions'         => $totalQuestions,
+            'leaderboard_remaining'   => $currentQStatus === 'leaderboard'
+                ? max(0, ceil(5 - (getMicroTime() - (float)($quiz['leaderboard_start_time'] ?? 0))))
+                : 0
         ],
         'question' => $question ? [
             'id'              => (int)$question['id'],

@@ -78,6 +78,8 @@ c:/Users/Jnaneshwar B A/OneDrive/project/q1/
 
 If QuizSpark is already installed, run `database/migrate_question_media.sql` once instead of re-running the initializer. This adds Image and Music question support without deleting existing quiz data.
 
+For an existing live installation, also run `database/migrate_live_quiz_sync.sql` once. This adds the timestamp used to synchronize the five-second leaderboard countdown without deleting existing quiz data.
+
 ### 2a. Render Environment Variables
 
 For a Render deployment, configure these environment variables in the web service. Use the connection details from your hosted MySQL provider, not your laptop's XAMPP server:

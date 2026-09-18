@@ -35,12 +35,12 @@ $csrfToken = generateCsrfToken();
         
         <div class="form-group">
           <label class="form-label" for="email">Email Address</label>
-          <input type="email" id="email" class="form-control" placeholder="jnanesh2006@gmail.com" required autofocus>
+          <input type="email" id="email" name="login_email" class="form-control" autocomplete="off" required autofocus readonly>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="password">Password</label>
-          <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+          <input type="password" id="password" name="login_password" class="form-control" autocomplete="new-password" required readonly>
         </div>
 
         <button type="submit" id="loginBtn" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px;">

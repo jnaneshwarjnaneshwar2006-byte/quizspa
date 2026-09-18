@@ -8,6 +8,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const alertContainer = document.getElementById('alertContainer');
   const loginBtn = document.getElementById('loginBtn');
 
+  clearLoginStorage();
+  clearLoginFields();
+
+  window.addEventListener('pageshow', clearLoginFields);
+
+  ['email', 'password'].forEach((fieldId) => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.addEventListener('focus', () => {
+        field.readOnly = false;
+      }, { once: true });
+    }
+  });
+
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -63,5 +77,26 @@ document.addEventListener('DOMContentLoaded', () => {
         <span>${message}</span>
       </div>
     `;
+  }
+
+  function clearLoginFields() {
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+
+    if (email) {
+      email.value = '';
+      email.readOnly = true;
+    }
+    if (password) {
+      password.value = '';
+      password.readOnly = true;
+    }
+  }
+
+  function clearLoginStorage() {
+    ['teacher_id', 'teacher_name', 'teacher_email', 'auth_token', 'access_token', 'token'].forEach((key) => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
   }
 });

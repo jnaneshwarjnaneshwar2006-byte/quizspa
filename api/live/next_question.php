@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
+require_once __DIR__ . '/../../config/live_quiz.php';
 
 requireTeacherAuth();
 
@@ -33,40 +34,17 @@ try {
         sendJsonResponse(false, 'Quiz not found or unauthorized.', [], 404);
     }
 
-    $currentQ = (int)$quiz['current_question'];
+    $transition = advanceQuizFromLeaderboard($pdo, $quizId);
 
-    // Fetch Total Questions
-    $qCountStmt = $pdo->prepare("SELECT COUNT(*) as total FROM `questions` WHERE `quiz_id` = :quiz_id");
-    $qCountStmt->execute(['quiz_id' => $quizId]);
-    $totalQ = (int)($qCountStmt->fetch()['total'] ?? 0);
-
-    if ($currentQ >= $totalQ) {
-        // Auto trigger end quiz if no more questions
-        header('Location: ' . getBaseUrl() . '/api/live/end_quiz.php');
-        sendJsonResponse(false, 'All questions completed. Ending quiz...', ['redirect' => 'end_quiz']);
+    if (!$transition['changed']) {
+        sendJsonResponse(false, 'The quiz is not waiting at a leaderboard.', [], 409);
     }
 
-    $nextQ = $currentQ + 1;
-    $now = getMicroTime();
+    if ($transition['completed']) {
+        sendJsonResponse(true, 'Quiz completed successfully.', ['redirect' => 'end_quiz']);
+    }
 
-    $upd = $pdo->prepare("
-        UPDATE `quizzes` 
-        SET `current_question` = :next_q, 
-            `current_question_status` = 'active',
-            `question_start_time` = :start_time 
-        WHERE `id` = :id
-    ");
-    $upd->execute([
-        'next_q'     => $nextQ,
-        'start_time' => $now,
-        'id'         => $quizId
-    ]);
-
-    sendJsonResponse(true, "Advanced to Question {$nextQ}.", [
-        'quiz_id'          => $quizId,
-        'current_question' => $nextQ,
-        'start_time'       => $now
-    ]);
+    sendJsonResponse(true, 'Advanced to the next question.', ['quiz_id' => $quizId]);
 
 } catch (Exception $e) {
     sendJsonResponse(false, 'Failed to advance to next question: ' . $e->getMessage(), [], 500);

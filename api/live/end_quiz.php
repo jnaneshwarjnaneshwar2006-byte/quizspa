@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
+require_once __DIR__ . '/../../config/live_quiz.php';
 
 requireTeacherAuth();
 
@@ -34,54 +35,7 @@ try {
     }
 
     $pdo->beginTransaction();
-
-    // 1. Update Quiz Status to Completed
-    $updQuiz = $pdo->prepare("UPDATE `quizzes` SET `status` = 'completed', `current_question_status` = 'ended', `ended_at` = NOW() WHERE `id` = :id");
-    $updQuiz->execute(['id' => $quizId]);
-
-    // 2. Fetch Total Questions
-    $qCountStmt = $pdo->prepare("SELECT COUNT(*) as total FROM `questions` WHERE `quiz_id` = :quiz_id");
-    $qCountStmt->execute(['quiz_id' => $quizId]);
-    $totalQuestions = (int)($qCountStmt->fetch()['total'] ?? 0);
-
-    // 3. Fetch Participants sorted by total_score DESC, total_time ASC
-    $pStmt = $pdo->prepare("
-        SELECT p.*, COUNT(CASE WHEN a.is_correct = 1 THEN 1 END) as correct_count
-        FROM `participants` p
-        LEFT JOIN `answers` a ON p.id = a.participant_id
-        WHERE p.quiz_id = :quiz_id
-        GROUP BY p.id
-        ORDER BY p.total_score DESC, p.total_time ASC
-    ");
-    $pStmt->execute(['quiz_id' => $quizId]);
-    $participants = $pStmt->fetchAll();
-
-    // 4. Clear existing results for this quiz to avoid duplicate key errors
-    $delRes = $pdo->prepare("DELETE FROM `quiz_results` WHERE `quiz_id` = :quiz_id");
-    $delRes->execute(['quiz_id' => $quizId]);
-
-    $insRes = $pdo->prepare("
-        INSERT INTO `quiz_results` 
-        (`quiz_id`, `participant_id`, `rank`, `total_score`, `total_time`, `correct_answers`, `total_questions`, `completed_at`) 
-        VALUES (:quiz_id, :p_id, :rank, :score, :time, :correct, :total_q, NOW())
-    ");
-
-    foreach ($participants as $rankIdx => $p) {
-        $insRes->execute([
-            'quiz_id' => $quizId,
-            'p_id'    => $p['id'],
-            'rank'    => $rankIdx + 1,
-            'score'   => $p['total_score'],
-            'time'    => $p['total_time'],
-            'correct' => $p['correct_count'],
-            'total_q' => $totalQuestions
-        ]);
-    }
-
-    // Update participants status to completed
-    $updP = $pdo->prepare("UPDATE `participants` SET `status` = 'completed' WHERE `quiz_id` = :quiz_id");
-    $updP->execute(['quiz_id' => $quizId]);
-
+    completeQuiz($pdo, $quizId);
     $pdo->commit();
 
     sendJsonResponse(true, 'Quiz completed successfully! Final results compiled.', ['quiz_id' => $quizId]);

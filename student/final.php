@@ -130,7 +130,7 @@ $quiz = $qzStmt->fetch();
         // Render Standings List
         const container = document.getElementById('leaderboardList');
         container.innerHTML = list.map(p => `
-          <div class="rank-row ${p.is_me ? 'current-player' : ''} animate-pop">
+          <div class="rank-row ${p.is_me ? 'current-player' : ''}">
             <div class="rank-left">
               <span class="rank-num">#${p.rank}</span>
               <div class="rank-player-info">

@@ -1,3 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/session.php';
-require_once __DIR__ . '/../api/auth/logout.php';
+
+clearQuizSparkSession();
+header('Location: ' . getBaseUrl() . '/teacher/login.php');
+exit;

@@ -24,7 +24,7 @@ if (!$quizId || !$token) {
   <div class="leaderboard-container">
     <div class="leaderboard-header">
       <h1 class="leaderboard-title">🏆 LEADERBOARD</h1>
-      <p style="color: var(--text-muted);">Waiting for teacher to launch the next question...</p>
+      <p id="leaderboardCountdown" style="color: var(--accent-yellow); font-weight: 700;">Next question in 5 seconds</p>
     </div>
 
     <!-- Student Personal Rank Card -->
@@ -68,11 +68,13 @@ if (!$quizId || !$token) {
             return;
           }
 
+          updateLeaderboardCountdown(qz.leaderboard_remaining);
           fetchLeaderboardData();
         }
       });
 
       engine.start();
+      let leaderboardSignature = '';
 
       async function fetchLeaderboardData() {
         try {
@@ -80,6 +82,9 @@ if (!$quizId || !$token) {
           const data = await res.json();
 
           if (data.success && data.data) {
+            const signature = JSON.stringify({ leaderboard: data.data.leaderboard, myRank: data.data.my_rank });
+            if (signature === leaderboardSignature) return;
+            leaderboardSignature = signature;
             renderLeaderboard(data.data.leaderboard, data.data.my_rank);
           }
         } catch(e) {}
@@ -96,7 +101,7 @@ if (!$quizId || !$token) {
         }
 
         container.innerHTML = list.map(p => `
-          <div class="rank-row ${p.is_me ? 'current-player' : ''} animate-pop">
+          <div class="rank-row ${p.is_me ? 'current-player' : ''}">
             <div class="rank-left">
               <span class="rank-num">#${p.rank}</span>
               <div class="rank-player-info">
@@ -110,6 +115,13 @@ if (!$quizId || !$token) {
             </div>
           </div>
         `).join('');
+      }
+
+      function updateLeaderboardCountdown(secondsRemaining) {
+        const seconds = Math.max(0, Number(secondsRemaining) || 0);
+        const suffix = seconds === 1 ? 'second' : 'seconds';
+        document.getElementById('leaderboardCountdown').textContent =
+          `Next question in ${seconds} ${suffix}`;
       }
 
       function escapeHtml(text) {

@@ -33,8 +33,12 @@ try {
         sendJsonResponse(false, 'Quiz not found or unauthorized.', [], 404);
     }
 
-    $upd = $pdo->prepare("UPDATE `quizzes` SET `current_question_status` = 'leaderboard' WHERE `id` = :id");
-    $upd->execute(['id' => $quizId]);
+    $upd = $pdo->prepare(
+        "UPDATE `quizzes`
+         SET `current_question_status` = 'leaderboard', `leaderboard_start_time` = :started_at
+         WHERE `id` = :id AND `current_question_status` IN ('active', 'ended')"
+    );
+    $upd->execute(['id' => $quizId, 'started_at' => getMicroTime()]);
 
     sendJsonResponse(true, 'Question ended. Showing leaderboard.', ['quiz_id' => $quizId]);
 

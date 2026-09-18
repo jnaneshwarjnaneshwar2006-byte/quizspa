@@ -105,6 +105,7 @@ if (!$quiz) {
     <div id="leaderboardView" style="display: none; margin-top: 20px;">
       <div class="leaderboard-header">
         <h2 class="leaderboard-title">🏆 CURRENT LEADERBOARD</h2>
+        <p id="leaderboardCountdown" style="color: var(--accent-yellow); font-weight: 700;">Next question in 5 seconds</p>
       </div>
       <div id="leaderboardRows" class="leaderboard-list">
         <!-- Rendered dynamically -->
@@ -127,6 +128,7 @@ if (!$quiz) {
       });
 
       engine.start();
+      let leaderboardSignature = '';
 
       function renderTeacherState(data) {
         const q = data.question;
@@ -219,10 +221,12 @@ if (!$quiz) {
         if (qz.current_question_status === 'leaderboard') {
           activeView.style.display = 'none';
           lbView.style.display = 'block';
+          updateLeaderboardCountdown(qz.leaderboard_remaining);
           fetchAndRenderLeaderboard();
         } else {
           activeView.style.display = 'block';
           lbView.style.display = 'none';
+          leaderboardSignature = '';
         }
 
         if (qz.status === 'completed') {
@@ -236,9 +240,12 @@ if (!$quiz) {
           const res = await fetch(`../api/student/leaderboard.php?quiz_id=${quizId}`);
           const data = await res.json();
           if (data.success) {
+            const signature = JSON.stringify(data.data.leaderboard);
+            if (signature === leaderboardSignature) return;
+            leaderboardSignature = signature;
             const rowsContainer = document.getElementById('leaderboardRows');
             rowsContainer.innerHTML = data.data.leaderboard.map(p => `
-              <div class="rank-row animate-pop">
+              <div class="rank-row">
                 <div class="rank-left">
                   <span class="rank-num">#${p.rank}</span>
                   <div class="rank-player-info">
@@ -254,6 +261,13 @@ if (!$quiz) {
             `).join('');
           }
         } catch(e) {}
+      }
+
+      function updateLeaderboardCountdown(secondsRemaining) {
+        const seconds = Math.max(0, Number(secondsRemaining) || 0);
+        const suffix = seconds === 1 ? 'second' : 'seconds';
+        document.getElementById('leaderboardCountdown').textContent =
+          `Next question in ${seconds} ${suffix}`;
       }
 
       // Bind Controller Action Buttons
