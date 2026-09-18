@@ -35,7 +35,7 @@ $csrfToken = generateCsrfToken();
         
         <div class="form-group">
           <label class="form-label" for="email">Email Address</label>
-          <input type="email" id="email" name="login_email" class="form-control" autocomplete="off" required autofocus readonly>
+          <input type="email" id="email" name="login_email" class="form-control" autocomplete="off" required readonly>
         </div>
 
         <div class="form-group">
