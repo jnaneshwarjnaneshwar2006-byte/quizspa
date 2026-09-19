@@ -1,12 +1,13 @@
 <?php
 /**
  * Student Answer Submission API Endpoint
- * fahh Live Quiz Application
+ * QuizSpark Live Quiz Application
  */
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
+require_once __DIR__ . '/../../config/live_quiz.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -44,13 +45,16 @@ try {
 
     $participantId = (int)$participant['id'];
 
-    // 2. Fetch Quiz State
-    $qzStmt = $pdo->prepare("SELECT * FROM `quizzes` WHERE `id` = :id LIMIT 1");
-    $qzStmt->execute(['id' => $quizId]);
-    $quiz = $qzStmt->fetch();
+    // 2. Fetch Quiz State (also processes any pending transitions)
+    $quiz = processLiveQuizState($pdo, $quizId);
 
     if (!$quiz || $quiz['status'] !== 'running' || $quiz['current_question_status'] !== 'active') {
         sendJsonResponse(false, 'Question is not currently active for answering.', [], 400);
+    }
+
+    // Verify submitted question matches current active question
+    if ((int)$quiz['current_question'] !== $qNum) {
+        sendJsonResponse(false, 'Submitted question number does not match current active question.', [], 400);
     }
 
     // 3. Fetch Question Details
@@ -73,6 +77,8 @@ try {
 
     // Allow 1.0s buffer for network latency
     if ($actualTimeTaken > ($timeLimit + 1.0)) {
+        // Time expired; auto transition to leaderboard if not already
+        transitionToLeaderboard($pdo, $quizId, 'Answer submitted after timer expired');
         sendJsonResponse(false, 'Time expired. Answer submitted too late!', [
             'is_correct' => false,
             'points'     => 0,
@@ -133,10 +139,31 @@ try {
 
     $pdo->commit();
 
+    // 8. Check if ALL active participants have now answered
+    $pCountStmt = $pdo->prepare("SELECT COUNT(*) AS total FROM `participants` WHERE `quiz_id` = :quiz_id");
+    $pCountStmt->execute(['quiz_id' => $quizId]);
+    $participantCount = (int)($pCountStmt->fetch()['total'] ?? 0);
+
+    $ansCountStmt = $pdo->prepare("SELECT COUNT(*) AS total FROM `answers` WHERE `quiz_id` = :quiz_id AND `question_id` = :q_id");
+    $ansCountStmt->execute(['quiz_id' => $quizId, 'q_id' => $questionId]);
+    $answeredCount = (int)($ansCountStmt->fetch()['total'] ?? 0);
+
+    $questionEnded = false;
+    if ($participantCount > 0 && $answeredCount >= $participantCount) {
+        $questionEnded = transitionToLeaderboard(
+            $pdo,
+            $quizId,
+            "All {$answeredCount}/{$participantCount} answers received"
+        );
+    }
+
     sendJsonResponse(true, 'Answer submitted successfully!', [
-        'is_correct' => (bool)$isCorrect,
-        'points'     => $points,
-        'time_taken' => $actualTimeTaken
+        'is_correct'     => (bool)$isCorrect,
+        'points'         => $points,
+        'time_taken'     => $actualTimeTaken,
+        'question_ended' => $questionEnded,
+        'answered_count' => $answeredCount,
+        'total_players'  => $participantCount
     ]);
 
 } catch (Exception $e) {

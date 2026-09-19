@@ -45,6 +45,8 @@ try {
             `current_question` = 1, 
             `current_question_status` = 'active',
             `question_start_time` = :start_time,
+            `leaderboard_start_time` = NULL,
+            `next_question_at` = NULL,
             `started_at` = NOW() 
         WHERE `id` = :id
     ");

@@ -56,20 +56,28 @@ if (!$quizId || !$token) {
           const qz = data.quiz;
 
           // Auto redirect to play page when next question starts
-          if (qz.current_question_status === 'active') {
+          if (qz.current_question_status === 'active' || qz.state === 'QUESTION_ACTIVE') {
             engine.stop();
             window.location.href = `play.php?quiz_id=${quizId}`;
             return;
           }
 
-          if (qz.status === 'completed') {
+          if (qz.status === 'completed' || qz.state === 'QUIZ_FINISHED') {
             engine.stop();
             window.location.href = `final.php?quiz_id=${quizId}`;
             return;
           }
 
-          updateLeaderboardCountdown(qz.leaderboard_remaining);
-          fetchLeaderboardData();
+          const secondsLeft = (qz.next_question_at && qz.server_time)
+            ? Math.max(0, Math.ceil(qz.next_question_at - qz.server_time))
+            : (qz.leaderboard_remaining || 0);
+
+          updateLeaderboardCountdown(secondsLeft);
+          if (data.leaderboard) {
+            renderLeaderboard(data.leaderboard, data.my_rank);
+          } else {
+            fetchLeaderboardData();
+          }
         }
       });
 

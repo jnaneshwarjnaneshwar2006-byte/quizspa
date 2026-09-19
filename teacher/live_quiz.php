@@ -38,7 +38,7 @@ if (!$quiz) {
     <div class="quiz-header">
       <div style="display: flex; align-items: center; gap: 12px;">
         <span class="brand-logo" style="font-size: 1.5rem;">QuizSpark</span>
-        <span class="badge badge-running">LIVE CONTROL</span>
+        <span id="quizStatusBadge" class="badge badge-running">LIVE CONTROL</span>
       </div>
       <div>
         <span class="question-counter">Question <span id="qNumDisplay">1</span> of <span id="totalQDisplay">10</span></span>
@@ -86,18 +86,8 @@ if (!$quiz) {
         </div>
       </div>
 
-      <div style="text-align: center; color: var(--text-muted); font-size: 1.1rem; font-weight: 700; margin-bottom: 24px;">
+      <div style="text-align: center; color: var(--text-muted); font-size: 1.15rem; font-weight: 700; margin-bottom: 20px;">
         Total Answers Received: <span id="totalAnsDisplay" style="color: var(--accent-cyan);">0</span> / <span id="totalPlayersDisplay">0</span>
-      </div>
-    </div>
-
-    <!-- Teacher Action Control Bar -->
-    <div class="card" style="margin-top: auto; padding: 20px;">
-      <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-        <button id="endQuestionBtn" class="btn btn-secondary">🛑 End Question Early</button>
-        <button id="showLeaderboardBtn" class="btn btn-accent">🏆 Show Leaderboard</button>
-        <button id="nextQuestionBtn" class="btn btn-primary btn-lg">➡️ Next Question</button>
-        <button id="endQuizBtn" class="btn btn-danger">🏁 End Quiz</button>
       </div>
     </div>
 
@@ -105,10 +95,29 @@ if (!$quiz) {
     <div id="leaderboardView" style="display: none; margin-top: 20px;">
       <div class="leaderboard-header">
         <h2 class="leaderboard-title">🏆 CURRENT LEADERBOARD</h2>
-        <p id="leaderboardCountdown" style="color: var(--accent-yellow); font-weight: 700;">Next question in 5 seconds</p>
+        <div style="margin-top: 10px; padding: 12px 20px; background: rgba(241, 196, 15, 0.15); border: 1px solid var(--accent-yellow); border-radius: var(--radius-md); display: inline-block;">
+          <span style="font-weight: 800; font-size: 1.1rem; color: var(--accent-yellow);">
+            ⚡ Status: Leaderboard &mdash; Auto-advancing in <span id="leaderboardCountdown">5</span> seconds
+          </span>
+        </div>
       </div>
       <div id="leaderboardRows" class="leaderboard-list">
         <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Teacher Action Control Bar (NO Next Question button - Auto-advances!) -->
+    <div class="card" style="margin-top: auto; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button id="endQuestionBtn" class="btn btn-secondary">🛑 End Question Early</button>
+          <span id="autoAdvanceHint" style="font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">
+            Questions advance automatically when all students answer or timer ends.
+          </span>
+        </div>
+        <div>
+          <button id="endQuizBtn" class="btn btn-danger">🏁 End Quiz</button>
+        </div>
       </div>
     </div>
   </div>
@@ -134,6 +143,8 @@ if (!$quiz) {
         const q = data.question;
         const qz = data.quiz;
         const stats = data.stats || { A: 0, B: 0, C: 0, D: 0, total: 0 };
+        const statusBadge = document.getElementById('quizStatusBadge');
+        const endQuestionBtn = document.getElementById('endQuestionBtn');
 
         document.getElementById('qNumDisplay').textContent = qz.current_question || 1;
         document.getElementById('totalQDisplay').textContent = qz.total_questions || 10;
@@ -221,11 +232,24 @@ if (!$quiz) {
         if (qz.current_question_status === 'leaderboard') {
           activeView.style.display = 'none';
           lbView.style.display = 'block';
+          statusBadge.textContent = 'LEADERBOARD';
+          statusBadge.className = 'badge badge-published';
+          endQuestionBtn.disabled = true;
+          endQuestionBtn.style.opacity = '0.5';
+
           updateLeaderboardCountdown(qz.leaderboard_remaining);
-          fetchAndRenderLeaderboard();
+          if (data.leaderboard) {
+            renderLeaderboardList(data.leaderboard);
+          } else {
+            fetchAndRenderLeaderboard();
+          }
         } else {
           activeView.style.display = 'block';
           lbView.style.display = 'none';
+          statusBadge.textContent = 'QUESTION ACTIVE';
+          statusBadge.className = 'badge badge-running';
+          endQuestionBtn.disabled = false;
+          endQuestionBtn.style.opacity = '1';
           leaderboardSignature = '';
         }
 
@@ -235,45 +259,51 @@ if (!$quiz) {
         }
       }
 
+      function renderLeaderboardList(list) {
+        const signature = JSON.stringify(list);
+        if (signature === leaderboardSignature) return;
+        leaderboardSignature = signature;
+        const rowsContainer = document.getElementById('leaderboardRows');
+        rowsContainer.innerHTML = list.map(p => `
+          <div class="rank-row">
+            <div class="rank-left">
+              <span class="rank-num">#${p.rank}</span>
+              <div class="rank-player-info">
+                <span style="font-size: 1.5rem;">${p.emoji}</span>
+                <span class="rank-player-name">${escapeHtml(p.name)}</span>
+              </div>
+            </div>
+            <div class="rank-right">
+              <span class="rank-pts">${p.total_score} pts</span>
+              <span class="rank-time">${p.total_time}s</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
       async function fetchAndRenderLeaderboard() {
         try {
           const res = await fetch(`../api/student/leaderboard.php?quiz_id=${quizId}`);
           const data = await res.json();
-          if (data.success) {
-            const signature = JSON.stringify(data.data.leaderboard);
-            if (signature === leaderboardSignature) return;
-            leaderboardSignature = signature;
-            const rowsContainer = document.getElementById('leaderboardRows');
-            rowsContainer.innerHTML = data.data.leaderboard.map(p => `
-              <div class="rank-row">
-                <div class="rank-left">
-                  <span class="rank-num">#${p.rank}</span>
-                  <div class="rank-player-info">
-                    <span style="font-size: 1.5rem;">${p.emoji}</span>
-                    <span class="rank-player-name">${escapeHtml(p.name)}</span>
-                  </div>
-                </div>
-                <div class="rank-right">
-                  <span class="rank-pts">${p.total_score} pts</span>
-                  <span class="rank-time">${p.total_time}s</span>
-                </div>
-              </div>
-            `).join('');
+          if (data.success && data.data && data.data.leaderboard) {
+            renderLeaderboardList(data.data.leaderboard);
           }
         } catch(e) {}
       }
 
       function updateLeaderboardCountdown(secondsRemaining) {
         const seconds = Math.max(0, Number(secondsRemaining) || 0);
-        const suffix = seconds === 1 ? 'second' : 'seconds';
-        document.getElementById('leaderboardCountdown').textContent =
-          `Next question in ${seconds} ${suffix}`;
+        const elem = document.getElementById('leaderboardCountdown');
+        if (elem) {
+          elem.textContent = seconds;
+        }
       }
 
-      // Bind Controller Action Buttons
-      document.getElementById('endQuestionBtn').addEventListener('click', () => callControlApi('end_question.php'));
-      document.getElementById('showLeaderboardBtn').addEventListener('click', () => callControlApi('end_question.php'));
-      document.getElementById('nextQuestionBtn').addEventListener('click', () => callControlApi('next_question.php'));
+      // Bind Controller Action Buttons (No Next Question button)
+      document.getElementById('endQuestionBtn').addEventListener('click', async () => {
+        await callControlApi('end_question.php');
+      });
+
       document.getElementById('endQuizBtn').addEventListener('click', () => {
         if (confirm('Are you sure you want to end the quiz session now?')) {
           callControlApi('end_quiz.php');

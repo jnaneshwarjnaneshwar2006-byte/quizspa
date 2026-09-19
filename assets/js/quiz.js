@@ -1,6 +1,6 @@
 /**
  * Real-Time Quiz & Question Sync Engine
- * fahh Live Quiz Application
+ * QuizSpark Live Quiz Application
  */
 
 class QuizEngine {
@@ -34,8 +34,8 @@ class QuizEngine {
     this.isFetching = true;
 
     const endpoint = this.role === 'teacher'
-      ? `../api/live/get_state.php?quiz_id=${this.quizId}`
-      : `../api/student/state.php?quiz_id=${this.quizId}`;
+      ? `../api/live/get_state.php?quiz_id=${this.quizId}&_t=${Date.now()}`
+      : `../api/student/state.php?quiz_id=${this.quizId}&_t=${Date.now()}`;
 
     try {
       const response = await fetch(endpoint, {
@@ -46,9 +46,11 @@ class QuizEngine {
       const data = await response.json();
 
       if (data.success && this.onStateChange) {
+        const qNum = data.data.quiz.current_question || data.data.quiz.question_number || 0;
+
         // Detect question change to reset answer state
-        if (data.data.quiz.current_question !== this.currentQuestionNum) {
-          this.currentQuestionNum = data.data.quiz.current_question;
+        if (qNum !== this.currentQuestionNum) {
+          this.currentQuestionNum = qNum;
           this.hasAnsweredCurrent = false;
         }
         this.currentQuestionStatus = data.data.quiz.current_question_status;
@@ -63,10 +65,11 @@ class QuizEngine {
   }
 
   // Student answer submission
-  async submitAnswer(selectedOption, timeTaken) {
+  async submitAnswer(selectedOption, timeTaken = 0, questionNum = null) {
     if (this.hasAnsweredCurrent) return { success: false, message: 'Already answered.' };
 
     this.hasAnsweredCurrent = true;
+    const qNum = questionNum || this.currentQuestionNum;
 
     try {
       const response = await fetch('../api/student/answer.php', {
@@ -74,7 +77,7 @@ class QuizEngine {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quiz_id: this.quizId,
-          question_number: this.currentQuestionNum,
+          question_number: qNum,
           selected_option: selectedOption,
           time_taken: timeTaken
         })

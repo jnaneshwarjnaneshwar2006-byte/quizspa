@@ -1,12 +1,13 @@
 <?php
 /**
- * End Question API Endpoint (Teacher Control)
- * fahh Live Quiz Application
+ * End Question API Endpoint (Teacher Control: "End Question Early")
+ * QuizSpark Live Quiz Application
  */
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
+require_once __DIR__ . '/../../config/live_quiz.php';
 
 requireTeacherAuth();
 
@@ -33,14 +34,16 @@ try {
         sendJsonResponse(false, 'Quiz not found or unauthorized.', [], 404);
     }
 
-    $upd = $pdo->prepare(
-        "UPDATE `quizzes`
-         SET `current_question_status` = 'leaderboard', `leaderboard_start_time` = :started_at
-         WHERE `id` = :id AND `current_question_status` IN ('active', 'ended')"
-    );
-    $upd->execute(['id' => $quizId, 'started_at' => getMicroTime()]);
+    if ($quiz['status'] !== 'running') {
+        sendJsonResponse(false, 'Quiz is not running.', [], 400);
+    }
 
-    sendJsonResponse(true, 'Question ended. Showing leaderboard.', ['quiz_id' => $quizId]);
+    $ended = transitionToLeaderboard($pdo, $quizId, 'Teacher clicked End Question Early');
+
+    sendJsonResponse(true, 'Question ended early. Showing leaderboard for 5 seconds.', [
+        'quiz_id' => $quizId,
+        'ended'   => $ended
+    ]);
 
 } catch (Exception $e) {
     sendJsonResponse(false, 'Failed to end question: ' . $e->getMessage(), [], 500);

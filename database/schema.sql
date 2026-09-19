@@ -34,6 +34,7 @@ CREATE TABLE `quizzes` (
   `current_question_status` ENUM('inactive', 'active', 'ended', 'leaderboard') DEFAULT 'inactive',
   `question_start_time` DOUBLE NULL,
   `leaderboard_start_time` DOUBLE NULL,
+  `next_question_at` DOUBLE NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `published_at` DATETIME NULL,
   `started_at` DATETIME NULL,
