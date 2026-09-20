@@ -106,7 +106,22 @@ function isApiRequest(): bool {
  * Student participant token helper
  */
 function getStudentToken(): ?string {
-    return $_SESSION['student_token'] ?? $_COOKIE['student_token'] ?? null;
+    if (!empty($_SESSION['student_token'])) {
+        return $_SESSION['student_token'];
+    }
+    if (!empty($_COOKIE['student_token'])) {
+        return $_COOKIE['student_token'];
+    }
+    if (!empty($_GET['token'])) {
+        return trim((string)$_GET['token']);
+    }
+    if (!empty($_SERVER['HTTP_X_STUDENT_TOKEN'])) {
+        return trim((string)$_SERVER['HTTP_X_STUDENT_TOKEN']);
+    }
+    if (!empty($_SERVER['HTTP_AUTHORIZATION']) && preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $m)) {
+        return trim($m[1]);
+    }
+    return null;
 }
 
 function setStudentToken(string $token): void {

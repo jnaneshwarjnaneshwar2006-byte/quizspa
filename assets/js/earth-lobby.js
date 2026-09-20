@@ -67,7 +67,9 @@
       });
       this.renderer.setSize(width, height);
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      this.renderer.outputEncoding = THREE.sRGBEncoding;
+      if (THREE.sRGBEncoding) {
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+      }
       
       // Ensure canvas styling
       this.renderer.domElement.style.width = '100%';
@@ -131,7 +133,6 @@
       const colors = new Float32Array(starCount * 3);
 
       for (let i = 0; i < starCount; i++) {
-        // Spherical distribution around outer shell
         const r = 450 + Math.random() * 450;
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(2 * Math.random() - 1);
@@ -140,14 +141,13 @@
         positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
         positions[i * 3 + 2] = r * Math.cos(phi);
 
-        // Star colors: vibrant cyan, purple, and bright white
         const colorType = Math.random();
         if (colorType > 0.8) {
-          colors[i * 3] = 0.6; colors[i * 3 + 1] = 0.8; colors[i * 3 + 2] = 1.0; // blue-white
+          colors[i * 3] = 0.6; colors[i * 3 + 1] = 0.8; colors[i * 3 + 2] = 1.0;
         } else if (colorType > 0.6) {
-          colors[i * 3] = 0.9; colors[i * 3 + 1] = 0.7; colors[i * 3 + 2] = 1.0; // soft violet
+          colors[i * 3] = 0.9; colors[i * 3 + 1] = 0.7; colors[i * 3 + 2] = 1.0;
         } else {
-          colors[i * 3] = 1.0; colors[i * 3 + 1] = 1.0; colors[i * 3 + 2] = 1.0; // crisp white
+          colors[i * 3] = 1.0; colors[i * 3 + 1] = 1.0; colors[i * 3 + 2] = 1.0;
         }
       }
 
@@ -193,12 +193,11 @@
         ctx.beginPath();
         ctx.ellipse(cx, cy, rx * 1.15, ry * 1.15, 0, 0, Math.PI * 2);
         ctx.fillStyle = col;
-        ctx.filter = 'blur(16px)';
         ctx.fill();
         ctx.restore();
       }
 
-      // Land Masses (Realistic Continents Geometry)
+      // Land Masses
       function drawLandMass(cx, cy, rx, ry, rotation = 0, colorStops = []) {
         ctx.save();
         ctx.translate(cx, cy);
@@ -208,16 +207,15 @@
         if (colorStops.length > 0) {
           colorStops.forEach(s => grad.addColorStop(s.pos, s.col));
         } else {
-          grad.addColorStop(0.0, '#20bf6b'); // lush green core
-          grad.addColorStop(0.5, '#05c46b'); // vibrant green
-          grad.addColorStop(0.8, '#e58e26'); // savanna amber
-          grad.addColorStop(1.0, '#d28c2c'); // shoreline
+          grad.addColorStop(0.0, '#20bf6b');
+          grad.addColorStop(0.5, '#05c46b');
+          grad.addColorStop(0.8, '#e58e26');
+          grad.addColorStop(1.0, '#d28c2c');
         }
 
         ctx.fillStyle = grad;
         ctx.beginPath();
 
-        // Organic coastline generation
         const points = 36;
         for (let i = 0; i <= points; i++) {
           const angle = (i / points) * Math.PI * 2;
@@ -232,7 +230,7 @@
         ctx.restore();
       }
 
-      // 2. North America
+      // North America
       drawContinentalShelf(w * 0.23, h * 0.32, w * 0.14, h * 0.18);
       drawLandMass(w * 0.23, h * 0.32, w * 0.13, h * 0.16, -0.15, [
         { pos: 0.0, col: '#2ed573' },
@@ -241,23 +239,23 @@
         { pos: 1.0, col: '#e67e22' }
       ]);
 
-      // Greenland / Arctic Ice
+      // Greenland / Arctic
       drawLandMass(w * 0.37, h * 0.16, w * 0.06, h * 0.08, 0.2, [
         { pos: 0.0, col: '#ffffff' },
         { pos: 0.7, col: '#dff9fb' },
         { pos: 1.0, col: '#c7ecee' }
       ]);
 
-      // 3. South America
+      // South America
       drawContinentalShelf(w * 0.32, h * 0.65, w * 0.09, h * 0.2);
       drawLandMass(w * 0.32, h * 0.65, w * 0.08, h * 0.19, 0.25, [
-        { pos: 0.0, col: '#05c46b' }, // Amazon jungle deep green
+        { pos: 0.0, col: '#05c46b' },
         { pos: 0.6, col: '#20bf6b' },
         { pos: 0.9, col: '#d28c2c' },
         { pos: 1.0, col: '#8b5a2b' }
       ]);
 
-      // 4. Europe
+      // Europe
       drawContinentalShelf(w * 0.52, h * 0.28, w * 0.08, h * 0.1);
       drawLandMass(w * 0.52, h * 0.28, w * 0.07, h * 0.09, 0.1, [
         { pos: 0.0, col: '#2ed573' },
@@ -265,21 +263,21 @@
         { pos: 1.0, col: '#e58e26' }
       ]);
 
-      // 5. Africa
+      // Africa
       drawContinentalShelf(w * 0.53, h * 0.54, w * 0.11, h * 0.2);
       drawLandMass(w * 0.53, h * 0.54, w * 0.10, h * 0.19, 0.05, [
-        { pos: 0.0, col: '#e67e22' }, // Sahara desert
+        { pos: 0.0, col: '#e67e22' },
         { pos: 0.4, col: '#f39c12' },
-        { pos: 0.7, col: '#05c46b' }, // Central African rainforest
+        { pos: 0.7, col: '#05c46b' },
         { pos: 1.0, col: '#20bf6b' }
       ]);
 
-      // 6. Asia / Eurasia
+      // Asia / Eurasia
       drawContinentalShelf(w * 0.72, h * 0.32, w * 0.22, h * 0.2);
       drawLandMass(w * 0.72, h * 0.32, w * 0.21, h * 0.18, -0.05, [
         { pos: 0.0, col: '#26de81' },
         { pos: 0.3, col: '#20bf6b' },
-        { pos: 0.6, col: '#d28c2c' }, // Gobi desert / Himalayas
+        { pos: 0.6, col: '#d28c2c' },
         { pos: 0.9, col: '#8b5a2b' },
         { pos: 1.0, col: '#05c46b' }
       ]);
@@ -291,23 +289,23 @@
         { pos: 1.0, col: '#d28c2c' }
       ]);
 
-      // 7. Australia & Pacific Islands
+      // Australia
       drawContinentalShelf(w * 0.84, h * 0.7, w * 0.09, h * 0.12);
       drawLandMass(w * 0.84, h * 0.7, w * 0.08, h * 0.11, -0.1, [
-        { pos: 0.0, col: '#e67e22' }, // Outback
+        { pos: 0.0, col: '#e67e22' },
         { pos: 0.5, col: '#d28c2c' },
         { pos: 0.8, col: '#20bf6b' },
         { pos: 1.0, col: '#05c46b' }
       ]);
 
-      // 8. Antarctica Ice Shield
+      // Antarctica
       drawLandMass(w * 0.5, h * 0.95, w * 0.48, h * 0.09, 0, [
         { pos: 0.0, col: '#ffffff' },
         { pos: 0.6, col: '#dff9fb' },
         { pos: 1.0, col: '#a29bfe' }
       ]);
 
-      // Subtle Grid Coordinate Lines (Lat/Lon Aesthetic Lines)
+      // Lat/Lon coordinate lines
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
       ctx.lineWidth = 1;
       for (let lat = 0; lat <= h; lat += h / 12) {
@@ -323,20 +321,14 @@
         ctx.stroke();
       }
 
-      // Night City Lights (Luminous warm specks on land)
+      // City lights
       ctx.fillStyle = '#ffeaa7';
-      const cityCount = 380;
-      for (let i = 0; i < cityCount; i++) {
-        // Distribute within land zones
+      for (let i = 0; i < 350; i++) {
         const cx = (0.15 + Math.random() * 0.75) * w;
         const cy = (0.2 + Math.random() * 0.6) * h;
-        const p = ctx.getImageData(Math.floor(cx), Math.floor(cy), 1, 1).data;
-        // If pixel is green or brown (land)
-        if (p[1] > 100 || p[0] > 120) {
-          ctx.beginPath();
-          ctx.arc(cx, cy, 1.2 + Math.random() * 1.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        ctx.beginPath();
+        ctx.arc(cx, cy, 1.2 + Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       const texture = new THREE.CanvasTexture(canvas);
@@ -361,9 +353,6 @@
       this.earthGroup.add(this.earthMesh);
     }
 
-    /**
-     * Generates a procedural translucent cloud texture
-     */
     generateCloudTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 1024;
@@ -371,10 +360,7 @@
       const ctx = canvas.getContext('2d');
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Organic swirling cloud shapes
       ctx.fillStyle = 'rgba(255, 255, 255, 0.78)';
-      ctx.filter = 'blur(12px)';
 
       for (let i = 0; i < 45; i++) {
         const x = Math.random() * canvas.width;
@@ -419,7 +405,6 @@
       const radius = this.options.globeRadius * 1.09;
       const geometry = new THREE.SphereGeometry(radius, 36, 36);
 
-      // Custom smooth atmosphere rim glow
       const customMaterial = new THREE.ShaderMaterial({
         vertexShader: `
           varying vec3 vNormal;
@@ -447,27 +432,24 @@
 
     /**
      * Deterministic calculation of lat/lon from participant ID & index
-     * Spreads players elegantly across the globe using Fibonacci sphere
+     * Arranges players aesthetically on the front visible hemisphere
      */
     getParticipantCoordinates(id, index, total) {
-      const totalCount = Math.max(total, 12);
+      const totalCount = Math.max(total, 8);
       const offset = 2 / totalCount;
       const increment = Math.PI * (3 - Math.sqrt(5)); // Golden angle
 
       const y = ((index * offset) - 1) + (offset / 2);
-      const r = Math.sqrt(Math.max(0, 1 - y * y));
-      const phi = ((index + (id % 13) * 0.23) % totalCount) * increment;
-
-      const lat = Math.asin(y) * (180 / Math.PI);
-      let lon = (phi * (180 / Math.PI)) % 360;
+      const lat = Math.asin(Math.max(-0.92, Math.min(0.92, y))) * (180 / Math.PI) * 0.75;
+      
+      // Face front by default
+      let lon = ((index * increment * (180 / Math.PI)) % 360) - 90;
       if (lon > 180) lon -= 360;
+      if (lon < -180) lon += 360;
 
       return { lat, lon };
     }
 
-    /**
-     * Converts spherical latitude/longitude to 3D Cartesian coordinates
-     */
     latLonToVector3(lat, lon, radius = this.options.globeRadius) {
       const phi = (90 - lat) * (Math.PI / 180);
       const theta = (lon + 180) * (Math.PI / 180);
@@ -479,9 +461,6 @@
       return new THREE.Vector3(x, y, z);
     }
 
-    /**
-     * Generates a 2D canvas sprite for player display name tag
-     */
     createNameplateSprite(name) {
       const canvas = document.createElement('canvas');
       canvas.width = 256;
@@ -490,8 +469,7 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Pill Background
-      ctx.fillStyle = 'rgba(15, 12, 27, 0.88)';
+      ctx.fillStyle = 'rgba(15, 12, 27, 0.9)';
       ctx.strokeStyle = '#00d2d3';
       ctx.lineWidth = 3;
 
@@ -506,13 +484,11 @@
       ctx.fill();
       ctx.stroke();
 
-      // Green Online Beacon Dot
       ctx.fillStyle = '#20bf6b';
       ctx.beginPath();
       ctx.arc(28, 32, 6, 0, Math.PI * 2);
       ctx.fill();
 
-      // Text
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'left';
@@ -534,16 +510,12 @@
       return sprite;
     }
 
-    /**
-     * Generates a 2D canvas sprite for the player avatar badge
-     */
     createAvatarSprite(avatarData, emoji = '😀') {
       const canvas = document.createElement('canvas');
       canvas.width = 128;
       canvas.height = 128;
       const ctx = canvas.getContext('2d');
 
-      // Outer glow disc
       const grad = ctx.createRadialGradient(64, 64, 20, 64, 64, 62);
       grad.addColorStop(0.0, 'rgba(108, 92, 231, 0.95)');
       grad.addColorStop(0.7, 'rgba(0, 206, 201, 0.85)');
@@ -554,7 +526,6 @@
       ctx.arc(64, 64, 60, 0, Math.PI * 2);
       ctx.fill();
 
-      // Inner circular card
       ctx.fillStyle = '#1e1b38';
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 4;
@@ -563,7 +534,6 @@
       ctx.fill();
       ctx.stroke();
 
-      // Draw Style Icon / Emoji
       ctx.font = '48px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -582,22 +552,17 @@
       return sprite;
     }
 
-    /**
-     * Creates a 3D player character entity standing radially outward on the Earth
-     */
     createPlayer3D(participant, index, total) {
       const group = new THREE.Group();
       const coords = this.getParticipantCoordinates(participant.id, index, total);
       
-      // Position on Earth surface
       const surfacePos = this.latLonToVector3(coords.lat, coords.lon, this.options.globeRadius);
       group.position.copy(surfacePos);
 
-      // Orient outward radially normal to Earth sphere
       const normal = surfacePos.clone().normalize();
       group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
 
-      // 1. Pedestal Ground Ring Base
+      // Base ring
       const baseGeo = new THREE.CylinderGeometry(4.5, 5.2, 0.8, 16);
       const baseMat = new THREE.MeshPhongMaterial({
         color: 0x6c5ce7,
@@ -609,33 +574,29 @@
       baseMesh.position.y = 0.4;
       group.add(baseMesh);
 
-      // 2. Beacon Light Stem Pin
+      // Light stem
       const stemGeo = new THREE.CylinderGeometry(0.35, 0.35, 6, 8);
       const stemMat = new THREE.MeshBasicMaterial({ color: 0x00d2d3, transparent: true, opacity: 0.9 });
       const stemMesh = new THREE.Mesh(stemGeo, stemMat);
       stemMesh.position.y = 3.2;
       group.add(stemMesh);
 
-      // 3. Avatar Sprite
+      // Avatar Sprite
       const avatarSprite = this.createAvatarSprite(participant.avatar_data, participant.emoji);
       avatarSprite.position.y = 9.5;
       group.add(avatarSprite);
 
-      // 4. Floating Nameplate Sprite
+      // Name Sprite
       const nameSprite = this.createNameplateSprite(participant.name);
       nameSprite.position.y = 17.5;
       group.add(nameSprite);
 
-      // Store references for raycasting & animation
       baseMesh.userData = { participantId: participant.id, participant };
       avatarSprite.userData = { participantId: participant.id, participant };
       nameSprite.userData = { participantId: participant.id, participant };
       group.userData = { participantId: participant.id, participant };
 
-      // Add to EarthGroup so player rotates WITH the Earth
       this.earthGroup.add(group);
-
-      // Start at scale 0 for pop-in entrance animation
       group.scale.set(0.001, 0.001, 0.001);
 
       return {
@@ -650,18 +611,14 @@
       };
     }
 
-    /**
-     * Updates the live lobby participants from polling
-     */
     updateParticipants(newParticipants = []) {
       this.participants = newParticipants;
       const activeIds = new Set(newParticipants.map(p => p.id));
       const total = newParticipants.length;
 
-      // 1. Remove Disconnected Players
+      // 1. Remove Disconnected
       for (const [id, item] of this.playerMeshes.entries()) {
         if (!activeIds.has(id)) {
-          // Animate scale down then remove
           item.targetScale = 0;
           setTimeout(() => {
             if (item.group && item.group.parent) {
@@ -673,7 +630,7 @@
         }
       }
 
-      // 2. Add or Update Existing Players
+      // 2. Add or Update
       newParticipants.forEach((p, idx) => {
         if (this.playerMeshes.has(p.id)) {
           const item = this.playerMeshes.get(p.id);
@@ -686,20 +643,15 @@
       });
     }
 
-    /**
-     * Highlights a specific player (e.g. from sidebar click)
-     */
     highlightPlayer(participantId) {
       const item = this.playerMeshes.get(participantId);
       if (!item) return;
 
-      // Temporarily scale up and bounce
       item.targetScale = 1.35;
       setTimeout(() => {
         item.targetScale = 1.0;
       }, 1200);
 
-      // Rotate Earth smoothly to face this player
       if (item.coords) {
         const targetLon = -item.coords.lon * (Math.PI / 180);
         const targetLat = item.coords.lat * (Math.PI / 180);
@@ -711,7 +663,6 @@
     bindEvents() {
       const dom = this.renderer.domElement;
 
-      // Mouse / Touch Drag Events for manual 3D rotation
       const onPointerDown = (e) => {
         this.isDragging = true;
         this.userInteracting = true;
@@ -728,7 +679,6 @@
         const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
         const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
 
-        // Raycasting coordinate calculation
         const rect = dom.getBoundingClientRect();
         this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
@@ -739,13 +689,10 @@
 
           this.targetRotationY += deltaX * 0.006;
           this.targetRotationX += deltaY * 0.006;
-
-          // Clamp vertical tilt
           this.targetRotationX = Math.max(-0.9, Math.min(0.9, this.targetRotationX));
 
           this.previousMousePosition = { x: clientX, y: clientY };
         } else {
-          // Hover Raycast
           this.checkHover();
         }
       };
@@ -754,14 +701,12 @@
         this.isDragging = false;
         dom.style.cursor = 'grab';
 
-        // Auto-resume continuous rotation after 3.5s of inactivity
         if (this.resumeTimeout) clearTimeout(this.resumeTimeout);
         this.resumeTimeout = setTimeout(() => {
           this.userInteracting = false;
         }, 3500);
       };
 
-      // Click / Tap on Player
       const onClick = (e) => {
         if (this.isDragging) return;
         
@@ -784,7 +729,6 @@
         }
       };
 
-      // Zoom Wheel
       const onWheel = (e) => {
         e.preventDefault();
         this.targetCameraDistance += e.deltaY * 0.25;
@@ -802,7 +746,6 @@
       dom.addEventListener('click', onClick);
       dom.addEventListener('wheel', onWheel, { passive: false });
 
-      // Window Resize Listener
       this.onResize = () => {
         if (!this.container || !this.renderer || !this.camera) return;
         const width = this.container.clientWidth;
@@ -844,7 +787,7 @@
       if (this.isDestroyed) return;
       this.animId = requestAnimationFrame(this.animate);
 
-      // Smooth Camera Zoom Interpolation
+      // Smooth Camera Zoom
       this.currentCameraDistance += (this.targetCameraDistance - this.currentCameraDistance) * 0.1;
       this.camera.position.z = this.currentCameraDistance;
 
@@ -859,27 +802,22 @@
           this.earthGroup.rotation.y += this.options.rotationSpeed;
           this.targetRotationY = this.earthGroup.rotation.y;
         }
-        // Smooth return of tilt
         this.currentRotationX += (0.15 - this.currentRotationX) * 0.05;
         this.earthGroup.rotation.x = this.currentRotationX;
       }
 
-      // Volumetric cloud layer rotation (slightly faster around Y axis)
       if (this.cloudMesh) {
         this.cloudMesh.rotation.y += (this.options.cloudRotationSpeed - this.options.rotationSpeed);
       }
 
-      // Starfield subtle slow drift
       if (this.starPoints) {
         this.starPoints.rotation.y -= 0.0003;
       }
 
-      // Smooth Elastic Pop-in and subtle idle breathing for player meshes
+      // Smooth Elastic Pop-in & breathing
       const time = Date.now() * 0.003;
       for (const item of this.playerMeshes.values()) {
         item.currentScale += (item.targetScale - item.currentScale) * 0.14;
-        
-        // Idle breathing effect
         const breath = 1 + Math.sin(time + (item.participant.id || 0)) * 0.04;
         const s = Math.max(0.001, item.currentScale * breath);
         item.group.scale.set(s, s, s);

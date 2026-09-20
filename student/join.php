@@ -6,7 +6,7 @@ require_once __DIR__ . '/../config/security.php';
 $codeFromUrl = trim($_GET['code'] ?? '');
 $quizTitle = '';
 
-if (!empty($codeFromUrl)) {
+if (!empty($codeFromUrl) && preg_match('/^\d{6}$/', $codeFromUrl)) {
     try {
         $pdo = getDBConnection();
         $stmt = $pdo->prepare("SELECT title, status FROM `quizzes` WHERE `join_code` = :code LIMIT 1");
@@ -46,12 +46,12 @@ if (!empty($codeFromUrl)) {
 
       <div id="alertContainer"></div>
 
-      <form id="joinForm">
+      <form id="joinForm" autocomplete="off">
         <div class="form-group">
           <label class="form-label" for="joinCode">6-Digit Join Code *</label>
-          <input type="text" id="joinCode" class="form-control" placeholder="e.g. 482731" 
+          <input type="text" id="joinCode" class="form-control" placeholder="e.g. 240877" 
                  value="<?= htmlspecialchars($codeFromUrl) ?>" 
-                 maxlength="6" required pattern="[0-9]{6}"
+                 maxlength="6" inputmode="numeric" required pattern="[0-9]{6}"
                  style="font-size: 1.6rem; text-align: center; letter-spacing: 6px; font-weight: 900;" autofocus>
         </div>
 
@@ -102,6 +102,12 @@ if (!empty($codeFromUrl)) {
     document.addEventListener('DOMContentLoaded', () => {
       let currentStyle = 'boy';
       let currentAvatarConfig = null;
+
+      // Clean numeric inputs on join code
+      const joinCodeInput = document.getElementById('joinCode');
+      joinCodeInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+      });
 
       // Load saved avatar from localStorage or initialize with default
       try {
@@ -203,21 +209,24 @@ if (!empty($codeFromUrl)) {
       joinForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const joinCode = document.getElementById('joinCode').value.trim();
+        const joinCode = joinCodeInput.value.trim();
         const name = document.getElementById('studentName').value.trim();
 
-        if (!joinCode || joinCode.length !== 6) {
+        if (!joinCode || joinCode.length !== 6 || !/^\d{6}$/.test(joinCode)) {
           showAlert('Please enter a valid 6-digit numeric join code.', 'danger');
+          joinCodeInput.focus();
           return;
         }
 
-        if (!name) {
-          showAlert('Please enter your name.', 'danger');
+        if (!name || name.length < 1 || name.length > 30) {
+          showAlert('Please enter a valid display name (1-30 characters).', 'danger');
+          document.getElementById('studentName').focus();
           return;
         }
 
         joinBtn.disabled = true;
         joinBtn.textContent = 'Joining Quiz...';
+        alertContainer.innerHTML = '';
 
         try {
           const res = await fetch('../api/student/join.php', {
@@ -232,23 +241,25 @@ if (!empty($codeFromUrl)) {
 
           const data = await res.json();
 
-          if (data.success) {
+          if (data && data.success) {
             try {
               localStorage.setItem('quizspark_avatar_cfg', JSON.stringify(currentAvatarConfig));
             } catch(e) {}
 
-            showAlert('Joined successfully! Redirecting to lobby...', 'success');
+            showAlert('Joined successfully! Entering game lobby...', 'success');
+            const targetQuizId = data.quiz_id || (data.data && data.data.quiz_id);
             setTimeout(() => {
-              window.location.href = `lobby.php?quiz_id=${data.data.quiz_id}`;
-            }, 750);
+              window.location.href = `lobby.php?quiz_id=${targetQuizId}`;
+            }, 600);
           } else {
-            showAlert(data.message || 'Failed to join quiz.', 'danger');
+            const errorMsg = (data && data.message) ? data.message : 'Unable to join the quiz right now. Please try again.';
+            showAlert(errorMsg, 'danger');
             joinBtn.disabled = false;
             joinBtn.textContent = '🚀 JOIN QUIZ';
           }
         } catch (err) {
           console.error('Join error:', err);
-          showAlert('Network error joining quiz.', 'danger');
+          showAlert('Network or server connection error. Please try again.', 'danger');
           joinBtn.disabled = false;
           joinBtn.textContent = '🚀 JOIN QUIZ';
         }
@@ -256,7 +267,7 @@ if (!empty($codeFromUrl)) {
 
       function showAlert(msg, type) {
         alertContainer.innerHTML = `
-          <div class="alert alert-${type} animate-pop">
+          <div class="alert alert-${type} animate-pop" style="margin-bottom: 16px;">
             <span>${msg}</span>
           </div>
         `;

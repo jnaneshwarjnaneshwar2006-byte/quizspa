@@ -58,11 +58,20 @@ function isValidMediaUrl(?string $url): bool {
 function sendJsonResponse(bool $success, string $message, array $data = [], int $statusCode = 200): void {
     http_response_code($statusCode);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode([
+    
+    $response = [
         'success' => $success,
         'message' => $message,
         'data'    => $data
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    ];
+    // Promote key top-level properties for clean JSON consumption
+    foreach (['error_code', 'quiz_id', 'player_id', 'player_name', 'join_code', 'status', 'token', 'redirect'] as $key) {
+        if (isset($data[$key])) {
+            $response[$key] = $data[$key];
+        }
+    }
+
+    echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 

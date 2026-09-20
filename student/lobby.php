@@ -43,7 +43,7 @@ $quiz = $qzStmt->fetch();
     <div class="lobby-header animate-pop">
       <div style="font-size: 3rem; margin-bottom: 10px; animation: pulse 2s infinite;">⏳</div>
       <p style="color: var(--accent-cyan); font-weight: 800; font-size: 1.1rem;">YOU'RE IN!</p>
-      <h1 style="font-size: 2.2rem; margin: 10px 0;"><?= htmlspecialchars($quiz['title']) ?></h1>
+      <h1 style="font-size: 2.2rem; margin: 10px 0;"><?= htmlspecialchars($quiz['title'] ?? 'Live Quiz') ?></h1>
       <p style="color: var(--text-muted); font-size: 1rem;">Waiting for the creator to start the quiz...</p>
 
       <!-- Student 3D Avatar Ready Card -->
@@ -82,9 +82,11 @@ $quiz = $qzStmt->fetch();
         AvatarEngine.mount(myBadge, myAvatarConfig, { mode: 'badge', animated: true });
       }
 
+      let lastGridData = '';
+
       const lobbyEngine = new LobbyEngine({
         quizId: quizId,
-        role: 'student',
+        role: 'student_lobby',
         pollIntervalMs: 1000,
         onStateUpdate: (data) => {
           renderStudentLobby(data);
@@ -94,6 +96,7 @@ $quiz = $qzStmt->fetch();
       lobbyEngine.start();
 
       function renderStudentLobby(data) {
+        if (!data) return;
         const qz = data.quiz;
 
         // Auto-redirect to play page when creator starts quiz
@@ -103,40 +106,29 @@ $quiz = $qzStmt->fetch();
           return;
         }
 
-        fetchLivePlayers();
-      }
+        const count = data.player_count || (data.participants ? data.participants.length : 1);
+        document.getElementById('playerCountDisplay').textContent = count;
+        
+        const participants = data.participants || [];
+        const sig = JSON.stringify(participants);
+        if (sig === lastGridData) return;
+        lastGridData = sig;
 
-      let lastGridData = '';
+        const grid = document.getElementById('playersGrid');
+        grid.innerHTML = participants.map(p => `
+          <div class="player-card animate-pop">
+            <div class="avatar-badge-wrapper badge-lg" id="p_badge_${p.id}"></div>
+            <span class="player-name">${escapeHtml(p.name)}</span>
+          </div>
+        `).join('');
 
-      async function fetchLivePlayers() {
-        try {
-          const res = await fetch(`../api/live/get_lobby.php?quiz_id=${quizId}`);
-          const data = await res.json();
-          if (data.success && data.data) {
-            document.getElementById('playerCountDisplay').textContent = data.data.player_count || 1;
-            
-            const participants = data.data.participants || [];
-            const sig = JSON.stringify(participants);
-            if (sig === lastGridData) return;
-            lastGridData = sig;
-
-            const grid = document.getElementById('playersGrid');
-            grid.innerHTML = participants.map(p => `
-              <div class="player-card animate-pop">
-                <div class="avatar-badge-wrapper badge-lg" id="p_badge_${p.id}"></div>
-                <span class="player-name">${escapeHtml(p.name)}</span>
-              </div>
-            `).join('');
-
-            // Mount avatar SVGs
-            participants.forEach(p => {
-              const el = document.getElementById(`p_badge_${p.id}`);
-              if (el) {
-                AvatarEngine.mount(el, p.avatar_data || myAvatarConfig, { mode: 'badge', animated: false });
-              }
-            });
+        // Mount avatar SVGs
+        participants.forEach(p => {
+          const el = document.getElementById(`p_badge_${p.id}`);
+          if (el) {
+            AvatarEngine.mount(el, p.avatar_data || myAvatarConfig, { mode: 'badge', animated: false });
           }
-        } catch(e) {}
+        });
       }
 
       function escapeHtml(text) {
