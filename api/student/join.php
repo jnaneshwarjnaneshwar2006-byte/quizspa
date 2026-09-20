@@ -1,12 +1,13 @@
 <?php
 /**
  * Student Join Quiz API Endpoint
- * fahh Live Quiz Application
+ * QuizSpark Live Quiz Application with 3D Avatar System
  */
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
+require_once __DIR__ . '/../../config/avatar.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -19,7 +20,7 @@ if (!$input) $input = $_POST;
 
 $joinCode = trim($input['join_code'] ?? '');
 $name = sanitizeString($input['name'] ?? '');
-$emoji = sanitizeString($input['emoji'] ?? '😀');
+$rawAvatar = $input['avatar_data'] ?? null;
 
 if (empty($joinCode)) {
     sendJsonResponse(false, 'Please provide a valid 6-digit join code.', [], 400);
@@ -29,10 +30,14 @@ if (empty($name) || mb_strlen($name) > 40) {
     sendJsonResponse(false, 'Please enter a valid display name (1-40 characters).', [], 400);
 }
 
-// Valid emojis list fallback check
-$allowedEmojis = ['😀', '😎', '🤓', '🥳', '😁', '😍', '🤩', '🧠', '🚀', '🔥', '👑', '🎯', '🐼', '🦁', '🐯', '🐸'];
-if (!in_array($emoji, $allowedEmojis)) {
-    $emoji = '😀';
+// Validate & Sanitize Avatar Configuration
+$avatarJson = validateAndSanitizeAvatar($rawAvatar);
+$avatarArray = json_decode($avatarJson, true);
+
+// Set representative fallback emoji for legacy compatibility
+$fallbackEmoji = '👦';
+if (($avatarArray['style'] ?? '') === 'girl') {
+    $fallbackEmoji = '👧';
 }
 
 try {
@@ -55,7 +60,7 @@ try {
         sendJsonResponse(false, 'The quiz is already in progress and cannot accept new players.', [], 400);
     }
     if ($quiz['status'] === 'draft') {
-        sendJsonResponse(false, 'This quiz has not been published yet by the teacher.', [], 400);
+        sendJsonResponse(false, 'This quiz has not been published yet by the creator.', [], 400);
     }
 
     // 3. Check for Existing Participant Session
@@ -73,21 +78,34 @@ try {
         $sessionToken = bin2hex(random_bytes(32));
         setStudentToken($sessionToken);
 
-        $insStmt = $pdo->prepare("INSERT INTO `participants` (`quiz_id`, `session_token`, `name`, `emoji`, `joined_at`, `status`) VALUES (:quiz_id, :token, :name, :emoji, NOW(), 'joined')");
+        $insStmt = $pdo->prepare("
+            INSERT INTO `participants` (`quiz_id`, `session_token`, `name`, `emoji`, `avatar_data`, `joined_at`, `status`) 
+            VALUES (:quiz_id, :token, :name, :emoji, :avatar_data, NOW(), 'joined')
+        ");
         $insStmt->execute([
-            'quiz_id' => $quiz['id'],
-            'token'   => $sessionToken,
-            'name'    => $name,
-            'emoji'   => $emoji
+            'quiz_id'     => $quiz['id'],
+            'token'       => $sessionToken,
+            'name'        => $name,
+            'emoji'       => $fallbackEmoji,
+            'avatar_data' => $avatarJson
         ]);
         $participantId = (int)$pdo->lastInsertId();
     } else {
         $sessionToken = $existingToken;
         $participantId = (int)$participant['id'];
         
-        // Update name/emoji/status
-        $updStmt = $pdo->prepare("UPDATE `participants` SET `name` = :name, `emoji` = :emoji, `status` = 'joined', `last_seen` = NOW() WHERE `id` = :id");
-        $updStmt->execute(['name' => $name, 'emoji' => $emoji, 'id' => $participantId]);
+        // Update name, avatar_data, and last_seen
+        $updStmt = $pdo->prepare("
+            UPDATE `participants` 
+            SET `name` = :name, `emoji` = :emoji, `avatar_data` = :avatar_data, `status` = 'joined', `last_seen` = NOW() 
+            WHERE `id` = :id
+        ");
+        $updStmt->execute([
+            'name'        => $name, 
+            'emoji'       => $fallbackEmoji, 
+            'avatar_data' => $avatarJson,
+            'id'          => $participantId
+        ]);
     }
 
     sendJsonResponse(true, 'Joined successfully!', [
@@ -96,9 +114,11 @@ try {
         'participant_id' => $participantId,
         'session_token'  => $sessionToken,
         'name'           => $name,
-        'emoji'          => $emoji
+        'emoji'          => $fallbackEmoji,
+        'avatar_data'    => $avatarArray
     ]);
 
 } catch (Exception $e) {
-    sendJsonResponse(false, 'Error joining quiz: ' . $e->getMessage(), [], 500);
+    error_log("Error in api/student/join.php: " . $e->getMessage());
+    sendJsonResponse(false, 'Unable to join the quiz right now. Please try again.', [], 500);
 }

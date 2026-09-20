@@ -15,7 +15,7 @@ $csrfToken = generateCsrfToken();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teacher Login - QuizSpark Live Quiz</title>
+  <title>Creator Login - QuizSpark Live Quiz</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/auth.css">
 </head>
@@ -23,8 +23,8 @@ $csrfToken = generateCsrfToken();
   <div class="auth-wrapper">
     <div class="auth-card animate-pop">
       <div class="auth-header">
-        <a href="../index.php" class="brand-logo" style="margin-bottom: 12px;">QuizSpark <span class="brand-badge">PRO</span></a>
-        <h1>Teacher Portal</h1>
+        <a href="../index.php" class="brand-logo" style="margin-bottom: 12px;">QuizSpark <span class="brand-badge">CREATOR</span></a>
+        <h1>Creator Portal</h1>
         <p>Sign in to manage and launch live interactive quizzes</p>
       </div>
 

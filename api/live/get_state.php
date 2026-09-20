@@ -1,6 +1,6 @@
 <?php
 /**
- * Master Real-Time State API Endpoint (Teacher Live Control & Sync)
+ * Master Real-Time State API Endpoint (Creator Live Control & Sync with 3D Avatar Data)
  * QuizSpark Live Quiz Application
  */
 
@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
 require_once __DIR__ . '/../../config/live_quiz.php';
+require_once __DIR__ . '/../../config/avatar.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -51,7 +52,7 @@ try {
             $elapsed = $startTime > 0 ? max(0, $now - $startTime) : 0;
             $timeRemaining = max(0, round($timeLimit - $elapsed, 2));
 
-            // Fetch answer statistics for teacher display
+            // Fetch answer statistics for creator display
             $ansStmt = $pdo->prepare("
                 SELECT selected_option, COUNT(*) as count 
                 FROM `answers` 
@@ -87,12 +88,12 @@ try {
         $leaderboardRemaining = max(0, ceil($nextQuestionAt - $now));
     }
 
-    // 6. Include live leaderboard data for teacher view
+    // 6. Include live leaderboard data for creator view
     $leaderboardList = [];
     if ($currentQStatus === 'leaderboard' || $quiz['status'] === 'completed') {
         $lbStmt = $pdo->prepare("
             SELECT 
-                p.id, p.name, p.emoji, p.total_score, p.total_time,
+                p.id, p.name, p.emoji, p.avatar_data, p.total_score, p.total_time,
                 COUNT(CASE WHEN a.is_correct = 1 THEN 1 END) as correct_answers
             FROM `participants` p
             LEFT JOIN `answers` a ON p.id = a.participant_id
@@ -109,6 +110,7 @@ try {
                 'id'              => (int)$p['id'],
                 'name'            => $p['name'],
                 'emoji'           => $p['emoji'],
+                'avatar_data'     => getParticipantAvatarData($p),
                 'total_score'     => (int)$p['total_score'],
                 'total_time'      => (float)$p['total_time'],
                 'correct_answers' => (int)$p['correct_answers']

@@ -39,10 +39,24 @@
 }
 
 .podium-avatar {
-  font-size: 3rem;
+  width: 100px;
+  height: 130px;
   margin-bottom: 8px;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
-  animation: bounce 2s infinite ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
+}
+
+.podium-avatar svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.podium-1st-avatar {
+  width: 125px;
+  height: 160px;
 }
 
 .podium-name {

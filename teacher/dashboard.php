@@ -7,7 +7,7 @@ requireTeacherAuth();
 
 $pdo = getDBConnection();
 $teacherId = getTeacherId();
-$teacherName = $_SESSION['teacher_name'] ?? 'Teacher';
+$teacherName = $_SESSION['teacher_name'] ?? 'Creator';
 
 // Fetch Summary Metrics
 $mTotal = $pdo->prepare("SELECT COUNT(*) FROM `quizzes` WHERE `teacher_id` = :id");
@@ -48,7 +48,7 @@ $quizzes = $stmt->fetchAll();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teacher Dashboard - QuizSpark</title>
+  <title>Creator Dashboard - QuizSpark</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/dashboard.css">
 </head>
@@ -57,7 +57,7 @@ $quizzes = $stmt->fetchAll();
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="dashboard.php" class="brand-logo">QuizSpark <span class="brand-badge">TEACHER</span></a>
+        <a href="dashboard.php" class="brand-logo">QuizSpark <span class="brand-badge">CREATOR</span></a>
       </div>
       <ul class="sidebar-menu">
         <li class="menu-item active"><a href="dashboard.php">📊 Dashboard</a></li>

@@ -122,9 +122,9 @@ if (isTeacherLoggedIn()) {
       <div class="nav-actions">
         <a href="student/join.php" class="btn btn-secondary">Join a Quiz</a>
         <?php if (isTeacherLoggedIn()): ?>
-          <a href="teacher/dashboard.php" class="btn btn-primary">Teacher Dashboard</a>
+          <a href="teacher/dashboard.php" class="btn btn-primary">Creator Dashboard</a>
         <?php else: ?>
-          <a href="teacher/login.php" class="btn btn-secondary">Teacher Login</a>
+          <a href="teacher/login.php" class="btn btn-secondary">Creator Login</a>
         <?php endif; ?>
       </div>
     </nav>

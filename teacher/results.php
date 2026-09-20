@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/security.php';
+require_once __DIR__ . '/../config/avatar.php';
 
 requireTeacherAuth();
 
@@ -30,7 +31,7 @@ if ($quizId) {
         $resStmt = $pdo->prepare("
             SELECT 
                 r.*, 
-                p.name, p.emoji
+                p.name, p.emoji, p.avatar_data
             FROM `quiz_results` r
             JOIN `participants` p ON r.participant_id = p.id
             WHERE r.quiz_id = :quiz_id
@@ -50,12 +51,14 @@ if ($quizId) {
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/dashboard.css">
   <link rel="stylesheet" href="../assets/css/leaderboard.css">
+  <link rel="stylesheet" href="../assets/css/avatar.css">
+  <script src="../assets/js/avatar-engine.js"></script>
 </head>
 <body>
   <div class="dashboard-layout">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="dashboard.php" class="brand-logo">QuizSpark <span class="brand-badge">TEACHER</span></a>
+        <a href="dashboard.php" class="brand-logo">QuizSpark <span class="brand-badge">CREATOR</span></a>
       </div>
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="dashboard.php">📊 Dashboard</a></li>
@@ -119,8 +122,12 @@ if ($quizId) {
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($results as $r): 
+                <?php 
+                $avatarMap = [];
+                foreach ($results as $r): 
                   $accuracy = $r['total_questions'] > 0 ? round(($r['correct_answers'] / $r['total_questions']) * 100, 1) : 0;
+                  $avatarData = getParticipantAvatarData($r);
+                  $avatarMap[$r['participant_id']] = $avatarData;
                 ?>
                   <tr>
                     <td style="font-weight: 800; font-size: 1.1rem;">
@@ -132,8 +139,10 @@ if ($quizId) {
                       ?>
                     </td>
                     <td style="font-weight: 700;">
-                      <span style="font-size: 1.4rem; vertical-align: middle; margin-right: 8px;"><?= htmlspecialchars($r['emoji']) ?></span>
-                      <?= htmlspecialchars($r['name']) ?>
+                      <div style="display: inline-flex; align-items: center; gap: 10px;">
+                        <div class="avatar-badge-wrapper badge-sm" id="res_badge_<?= $r['participant_id'] ?>"></div>
+                        <span><?= htmlspecialchars($r['name']) ?></span>
+                      </div>
                     </td>
                     <td style="color: #55efc4; font-weight: 800; font-size: 1.1rem;"><?= (int)$r['total_score'] ?> pts</td>
                     <td><?= (int)$r['correct_answers'] ?> / <?= (int)$r['total_questions'] ?></td>
@@ -154,5 +163,16 @@ if ($quizId) {
   </div>
 
   <script src="../assets/js/leaderboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const avatarMap = <?= json_encode($avatarMap ?? [], JSON_UNESCAPED_UNICODE) ?>;
+      Object.keys(avatarMap).forEach(pid => {
+        const el = document.getElementById(`res_badge_${pid}`);
+        if (el) {
+          AvatarEngine.mount(el, avatarMap[pid], { mode: 'badge', animated: false });
+        }
+      });
+    });
+  </script>
 </body>
 </html>

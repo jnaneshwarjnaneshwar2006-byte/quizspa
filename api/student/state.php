@@ -1,6 +1,6 @@
 <?php
 /**
- * Student-Specific Real-Time State API Endpoint
+ * Student-Specific Real-Time State API Endpoint with 3D Avatar Data
  * QuizSpark Live Quiz Application
  */
 
@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/security.php';
 require_once __DIR__ . '/../../config/live_quiz.php';
+require_once __DIR__ . '/../../config/avatar.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -88,7 +89,7 @@ try {
     if ($currentQStatus === 'leaderboard' || $quiz['status'] === 'completed') {
         $lbStmt = $pdo->prepare("
             SELECT 
-                p.id, p.name, p.emoji, p.total_score, p.total_time, p.session_token,
+                p.id, p.name, p.emoji, p.avatar_data, p.total_score, p.total_time, p.session_token,
                 COUNT(CASE WHEN a.is_correct = 1 THEN 1 END) as correct_answers
             FROM `participants` p
             LEFT JOIN `answers` a ON p.id = a.participant_id
@@ -107,6 +108,7 @@ try {
                 'id'              => (int)$p['id'],
                 'name'            => $p['name'],
                 'emoji'           => $p['emoji'],
+                'avatar_data'     => getParticipantAvatarData($p),
                 'total_score'     => (int)$p['total_score'],
                 'total_time'      => (float)$p['total_time'],
                 'correct_answers' => (int)$p['correct_answers'],
@@ -153,6 +155,7 @@ try {
             'id'          => (int)$participant['id'],
             'name'        => $participant['name'],
             'emoji'       => $participant['emoji'],
+            'avatar_data' => getParticipantAvatarData($participant),
             'total_score' => (int)$participant['total_score'],
             'total_time'  => (float)$participant['total_time']
         ] : null,

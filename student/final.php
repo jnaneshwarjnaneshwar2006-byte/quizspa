@@ -24,6 +24,7 @@ $quiz = $qzStmt->fetch();
   <title>Final Podium - QuizSpark</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/leaderboard.css">
+  <link rel="stylesheet" href="../assets/css/avatar.css">
 </head>
 <body>
   <div class="leaderboard-container">
@@ -39,7 +40,7 @@ $quiz = $qzStmt->fetch();
     <div class="podium" id="podiumContainer">
       <!-- 2nd Place -->
       <div class="podium-step" id="step2nd" style="visibility: hidden;">
-        <div class="podium-avatar" id="avatar2nd">🥈</div>
+        <div class="podium-avatar" id="avatar2nd"></div>
         <div class="podium-name" id="name2nd">Player 2</div>
         <div class="podium-score" id="score2nd">0 pts</div>
         <div class="podium-block podium-2nd">2</div>
@@ -47,7 +48,7 @@ $quiz = $qzStmt->fetch();
 
       <!-- 1st Place -->
       <div class="podium-step" id="step1st" style="visibility: hidden;">
-        <div class="podium-avatar" id="avatar1st">🥇</div>
+        <div class="podium-avatar podium-1st-avatar" id="avatar1st"></div>
         <div class="podium-name" id="name1st">Player 1</div>
         <div class="podium-score" id="score1st">0 pts</div>
         <div class="podium-block podium-1st">1</div>
@@ -55,7 +56,7 @@ $quiz = $qzStmt->fetch();
 
       <!-- 3rd Place -->
       <div class="podium-step" id="step3rd" style="visibility: hidden;">
-        <div class="podium-avatar" id="avatar3rd">🥉</div>
+        <div class="podium-avatar" id="avatar3rd"></div>
         <div class="podium-name" id="name3rd">Player 3</div>
         <div class="podium-score" id="score3rd">0 pts</div>
         <div class="podium-block podium-3rd">3</div>
@@ -64,10 +65,15 @@ $quiz = $qzStmt->fetch();
 
     <!-- Personal Result Box -->
     <div id="personalResultCard" class="personal-rank-card animate-pop" style="display: none; margin-bottom: 30px;">
-      <h2 style="font-size: 1.6rem; color: #ffffff;" id="personalRankText">You finished #1!</h2>
-      <div style="display: flex; justify-content: center; gap: 30px; margin-top: 14px; font-weight: 800; font-size: 1.1rem;">
-        <span>Final Score: <strong id="personalScore" style="color: #55efc4;">0</strong> pts</span>
-        <span>Accuracy: <strong id="personalCorrect" style="color: var(--accent-cyan);">0</strong> Correct</span>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+        <div id="personalAvatarBadge" class="avatar-badge-wrapper badge-lg"></div>
+        <div>
+          <h2 style="font-size: 1.6rem; color: #ffffff;" id="personalRankText">You finished #1!</h2>
+          <div style="display: flex; justify-content: center; gap: 30px; margin-top: 10px; font-weight: 800; font-size: 1.1rem;">
+            <span>Final Score: <strong id="personalScore" style="color: #55efc4;">0</strong> pts</span>
+            <span>Accuracy: <strong id="personalCorrect" style="color: var(--accent-cyan);">0</strong> Correct</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -84,6 +90,7 @@ $quiz = $qzStmt->fetch();
     </div>
   </div>
 
+  <script src="../assets/js/avatar-engine.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const quizId = <?= $quizId ?>;
@@ -101,19 +108,28 @@ $quiz = $qzStmt->fetch();
         // Render 1st, 2nd, 3rd place podium elements
         if (list[0]) {
           document.getElementById('step1st').style.visibility = 'visible';
-          document.getElementById('avatar1st').textContent = list[0].emoji || '🥇';
+          const el1 = document.getElementById('avatar1st');
+          if (el1) {
+            AvatarEngine.mount(el1, list[0].avatar_data, { mode: 'full', animated: true });
+          }
           document.getElementById('name1st').textContent = list[0].name;
           document.getElementById('score1st').textContent = `${list[0].total_score} pts`;
         }
         if (list[1]) {
           document.getElementById('step2nd').style.visibility = 'visible';
-          document.getElementById('avatar2nd').textContent = list[1].emoji || '🥈';
+          const el2 = document.getElementById('avatar2nd');
+          if (el2) {
+            AvatarEngine.mount(el2, list[1].avatar_data, { mode: 'full', animated: true });
+          }
           document.getElementById('name2nd').textContent = list[1].name;
           document.getElementById('score2nd').textContent = `${list[1].total_score} pts`;
         }
         if (list[2]) {
           document.getElementById('step3rd').style.visibility = 'visible';
-          document.getElementById('avatar3rd').textContent = list[2].emoji || '🥉';
+          const el3 = document.getElementById('avatar3rd');
+          if (el3) {
+            AvatarEngine.mount(el3, list[2].avatar_data, { mode: 'full', animated: true });
+          }
           document.getElementById('name3rd').textContent = list[2].name;
           document.getElementById('score3rd').textContent = `${list[2].total_score} pts`;
         }
@@ -122,9 +138,13 @@ $quiz = $qzStmt->fetch();
         if (myRank) {
           const card = document.getElementById('personalResultCard');
           card.style.display = 'block';
-          document.getElementById('personalRankText').textContent = `🎉 You finished #${myRank.rank}! (${myRank.emoji} ${myRank.name})`;
+          document.getElementById('personalRankText').textContent = `🎉 You finished #${myRank.rank}! (${myRank.name})`;
           document.getElementById('personalScore').textContent = myRank.total_score;
           document.getElementById('personalCorrect').textContent = myRank.correct_answers;
+          const pBadge = document.getElementById('personalAvatarBadge');
+          if (pBadge) {
+            AvatarEngine.mount(pBadge, myRank.avatar_data, { mode: 'badge', animated: false });
+          }
         }
 
         // Render Standings List
@@ -134,7 +154,7 @@ $quiz = $qzStmt->fetch();
             <div class="rank-left">
               <span class="rank-num">#${p.rank}</span>
               <div class="rank-player-info">
-                <span style="font-size: 1.5rem;">${p.emoji}</span>
+                <div class="avatar-badge-wrapper badge-sm" id="final_badge_${p.id}"></div>
                 <span class="rank-player-name">${escapeHtml(p.name)} ${p.is_me ? '<span class="badge badge-published" style="margin-left:8px;">YOU</span>' : ''}</span>
               </div>
             </div>
@@ -144,6 +164,14 @@ $quiz = $qzStmt->fetch();
             </div>
           </div>
         `).join('');
+
+        // Mount Avatar badges for all list items
+        list.forEach(p => {
+          const badgeEl = document.getElementById(`final_badge_${p.id}`);
+          if (badgeEl) {
+            AvatarEngine.mount(badgeEl, p.avatar_data, { mode: 'badge', animated: false });
+          }
+        });
       }
 
       function escapeHtml(text) {

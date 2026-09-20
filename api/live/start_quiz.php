@@ -34,6 +34,15 @@ try {
         sendJsonResponse(false, 'Quiz not found or unauthorized.', [], 404);
     }
 
+    // Verify Quiz has questions
+    $qCountStmt = $pdo->prepare("SELECT COUNT(*) FROM `questions` WHERE `quiz_id` = :quiz_id");
+    $qCountStmt->execute(['quiz_id' => $quizId]);
+    $questionCount = (int)$qCountStmt->fetchColumn();
+
+    if ($questionCount === 0) {
+        sendJsonResponse(false, 'Cannot start quiz: Please add at least one question before starting.', [], 400);
+    }
+
     $now = getMicroTime();
 
     $pdo->beginTransaction();
@@ -50,7 +59,10 @@ try {
             `started_at` = NOW() 
         WHERE `id` = :id
     ");
-    $upd->execute(['start_time' => $now, 'id' => $quizId]);
+    $upd->execute([
+        'start_time'      => $now, 
+        'id'              => $quizId
+    ]);
 
     // Update Participants to playing
     $updP = $pdo->prepare("UPDATE `participants` SET `status` = 'playing' WHERE `quiz_id` = :quiz_id");
@@ -61,6 +73,7 @@ try {
     sendJsonResponse(true, 'Quiz started! Question 1 is live.', [
         'quiz_id'          => $quizId,
         'current_question' => 1,
+        'total_questions'  => $questionCount,
         'start_time'       => $now
     ]);
 

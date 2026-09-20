@@ -18,7 +18,7 @@ $csrfToken = generateCsrfToken();
   <div class="dashboard-layout">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <a href="dashboard.php" class="brand-logo">QuizSpark <span class="brand-badge">TEACHER</span></a>
+        <a href="dashboard.php" class="brand-logo">QuizSpark <span class="brand-badge">CREATOR</span></a>
       </div>
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="dashboard.php">📊 Dashboard</a></li>

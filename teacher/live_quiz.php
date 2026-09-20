@@ -32,6 +32,8 @@ if (!$quiz) {
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/quiz.css">
   <link rel="stylesheet" href="../assets/css/leaderboard.css">
+  <link rel="stylesheet" href="../assets/css/avatar.css">
+  <script src="../assets/js/avatar-engine.js"></script>
 </head>
 <body>
   <div class="quiz-layout">
@@ -269,7 +271,7 @@ if (!$quiz) {
             <div class="rank-left">
               <span class="rank-num">#${p.rank}</span>
               <div class="rank-player-info">
-                <span style="font-size: 1.5rem;">${p.emoji}</span>
+                <div class="avatar-badge-wrapper badge-sm" id="t_lb_badge_${p.id}"></div>
                 <span class="rank-player-name">${escapeHtml(p.name)}</span>
               </div>
             </div>
@@ -279,6 +281,13 @@ if (!$quiz) {
             </div>
           </div>
         `).join('');
+
+        list.forEach(p => {
+          const bEl = document.getElementById(`t_lb_badge_${p.id}`);
+          if (bEl) {
+            AvatarEngine.mount(bEl, p.avatar_data, { mode: 'badge', animated: false });
+          }
+        });
       }
 
       async function fetchAndRenderLeaderboard() {

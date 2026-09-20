@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/security.php';
+require_once __DIR__ . '/../config/avatar.php';
 
 $quizId = (int)($_GET['quiz_id'] ?? 0);
 $token = getStudentToken();
@@ -20,6 +21,8 @@ if (!$student) {
     header('Location: join.php');
     exit;
 }
+
+$studentAvatar = getParticipantAvatarData($student);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,12 +33,13 @@ if (!$student) {
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/quiz.css">
   <link rel="stylesheet" href="../assets/css/leaderboard.css">
+  <link rel="stylesheet" href="../assets/css/avatar.css">
 </head>
 <body>
   <div class="quiz-layout">
     <div class="quiz-header">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 1.8rem;"><?= htmlspecialchars($student['emoji']) ?></span>
+        <div id="headerAvatarBadge" class="avatar-badge-wrapper badge-sm"></div>
         <span style="font-weight: 800; font-size: 1.1rem;"><?= htmlspecialchars($student['name']) ?></span>
       </div>
       <div>
@@ -98,9 +102,14 @@ if (!$student) {
 
       <!-- Student Personal Rank Card -->
       <div id="personalRankContainer" class="personal-rank-card animate-pop" style="display: none; margin-bottom: 20px;">
-        <h2 style="font-size: 1.5rem; color: #ffffff;" id="personalRankText">You are #1</h2>
-        <div style="display: flex; justify-content: center; gap: 30px; margin-top: 10px; font-weight: 800;">
-          <span>Score: <strong id="personalScore" style="color: #55efc4;">0</strong> pts</span>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 14px;">
+          <div id="personalRankAvatar" class="avatar-badge-wrapper badge-lg"></div>
+          <div>
+            <h2 style="font-size: 1.4rem; color: #ffffff;" id="personalRankText">You are #1</h2>
+            <div style="margin-top: 4px; font-weight: 800;">
+              <span>Score: <strong id="personalScore" style="color: #55efc4;">0</strong> pts</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -113,10 +122,19 @@ if (!$student) {
     </div>
   </div>
 
+  <script src="../assets/js/avatar-engine.js"></script>
   <script src="../assets/js/quiz.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const quizId = <?= $quizId ?>;
+      const myAvatarConfig = <?= json_encode($studentAvatar, JSON_UNESCAPED_UNICODE) ?>;
+      
+      // Render Header Avatar Badge
+      const headerBadge = document.getElementById('headerAvatarBadge');
+      if (headerBadge) {
+        AvatarEngine.mount(headerBadge, myAvatarConfig, { mode: 'badge', animated: false });
+      }
+
       let hasAnsweredCurrent = false;
       let activeQuestionNum = 0;
       let targetAdvanceTimestamp = null;
@@ -144,7 +162,6 @@ if (!$student) {
         const qz = data.quiz;
         const q = data.question;
         const myAns = data.my_answer;
-        const studentInfo = data.student;
 
         // 1. If Quiz Finished, redirect to final podium
         if (qz.status === 'completed' || qz.state === 'QUIZ_FINISHED') {
@@ -383,12 +400,16 @@ if (!$student) {
 
         const container = document.getElementById('leaderboardList');
         const personalCard = document.getElementById('personalRankContainer');
+        const personalRankAvatar = document.getElementById('personalRankAvatar');
 
         if (myRank) {
           personalCard.style.display = 'block';
           document.getElementById('personalRankText').textContent =
-            `You are #${myRank.rank} ${myRank.emoji} ${myRank.name}`;
+            `You are #${myRank.rank} ${myRank.name}`;
           document.getElementById('personalScore').textContent = myRank.total_score;
+          if (personalRankAvatar) {
+            AvatarEngine.mount(personalRankAvatar, myRank.avatar_data || myAvatarConfig, { mode: 'badge', animated: false });
+          }
         }
 
         container.innerHTML = list.map(p => `
@@ -396,7 +417,7 @@ if (!$student) {
             <div class="rank-left">
               <span class="rank-num">#${p.rank}</span>
               <div class="rank-player-info">
-                <span style="font-size: 1.5rem;">${p.emoji}</span>
+                <div class="avatar-badge-wrapper badge-sm" id="lb_badge_${p.id}"></div>
                 <span class="rank-player-name">${escapeHtml(p.name)} ${p.is_me ? '<span class="badge badge-published" style="margin-left:8px;">YOU</span>' : ''}</span>
               </div>
             </div>
@@ -406,6 +427,14 @@ if (!$student) {
             </div>
           </div>
         `).join('');
+
+        // Mount 3D Avatar Badges for each player
+        list.forEach(p => {
+          const el = document.getElementById(`lb_badge_${p.id}`);
+          if (el) {
+            AvatarEngine.mount(el, p.avatar_data || myAvatarConfig, { mode: 'badge', animated: false });
+          }
+        });
       }
 
       function escapeHtml(text) {

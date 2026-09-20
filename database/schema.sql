@@ -68,6 +68,7 @@ CREATE TABLE `participants` (
   `session_token` VARCHAR(64) NOT NULL UNIQUE,
   `name` VARCHAR(50) NOT NULL,
   `emoji` VARCHAR(20) DEFAULT '😀',
+  `avatar_data` TEXT NULL,
   `total_score` INT DEFAULT 0,
   `total_time` DOUBLE DEFAULT 0,
   `joined_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
