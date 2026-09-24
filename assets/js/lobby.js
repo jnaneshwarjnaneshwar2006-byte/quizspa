@@ -6,9 +6,10 @@
 class LobbyEngine {
   constructor(options = {}) {
     this.quizId = options.quizId || null;
-    this.role = options.role || 'lobby'; // 'teacher', 'student_lobby', 'lobby', 'student_play'
+    this.role = options.role || 'lobby'; // 'teacher', 'student_lobby', 'lobby'
     this.customEndpoint = options.endpoint || null;
     this.pollIntervalMs = options.pollIntervalMs || 1000;
+    this.token = options.token || (new URLSearchParams(window.location.search).get('token')) || '';
     this.timerId = null;
     this.isFetching = false;
     this.consecutiveFailures = 0;
@@ -34,30 +35,36 @@ class LobbyEngine {
 
     let endpoint = this.customEndpoint;
     if (!endpoint) {
-      if (this.role === 'teacher' || this.role === 'lobby' || this.role === 'student_lobby') {
-        endpoint = `../api/live/get_lobby.php?quiz_id=${this.quizId}`;
-      } else {
-        endpoint = `../api/student/state.php?quiz_id=${this.quizId}`;
-      }
+      const tokenParam = this.token ? `&token=${encodeURIComponent(this.token)}` : '';
+      endpoint = `../api/live/get_lobby.php?quiz_id=${this.quizId}${tokenParam}&_t=${Date.now()}`;
     }
 
     try {
       const response = await fetch(endpoint, {
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: {
+          'Cache-Control': 'no-cache',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
       });
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
 
-      this.consecutiveFailures = 0;
-      this.hideReconnectBanner();
+      if (data && data.success) {
+        this.consecutiveFailures = 0;
+        this.hideReconnectBanner();
 
-      if (data && data.success && this.onStateUpdate) {
-        this.onStateUpdate(data.data || data);
+        if (this.onStateUpdate) {
+          this.onStateUpdate(data.data || data);
+        }
+      } else {
+        throw new Error(data.message || 'Lobby polling unsuccessful');
       }
     } catch (err) {
       this.consecutiveFailures++;
-      console.warn(`Lobby polling attempt failed (${this.consecutiveFailures}):`, err);
       if (this.consecutiveFailures >= 5) {
         this.showReconnectBanner();
       }
@@ -72,14 +79,16 @@ class LobbyEngine {
       banner = document.createElement('div');
       banner.id = 'reconnectBanner';
       banner.className = 'reconnect-banner';
-      banner.innerHTML = '⚡ Connecting to live quiz lobby...';
+      banner.innerHTML = '⚡ Reconnecting to quiz lobby...';
       document.body.appendChild(banner);
     }
   }
 
   hideReconnectBanner() {
     const banner = document.getElementById('reconnectBanner');
-    if (banner) banner.remove();
+    if (banner) {
+      banner.remove();
+    }
   }
 }
 

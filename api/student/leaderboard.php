@@ -13,6 +13,10 @@ header('Content-Type: application/json; charset=utf-8');
 
 $quizId = (int)($_GET['quiz_id'] ?? 0);
 $studentToken = getStudentToken();
+if (!$studentToken && !empty($_GET['token'])) {
+    $studentToken = trim((string)$_GET['token']);
+    setStudentToken($studentToken);
+}
 
 if (!$quizId) {
     sendJsonResponse(false, 'Quiz ID is required.', [], 400);

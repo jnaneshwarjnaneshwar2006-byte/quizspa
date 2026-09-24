@@ -19,12 +19,19 @@ $stmt->execute(['id' => $quizId, 'teacher_id' => $teacherId]);
 $quiz = $stmt->fetch();
 
 if (!$quiz) {
-    header('Location: dashboard.php');
-    exit;
+    $stmtAny = $pdo->prepare("SELECT * FROM `quizzes` WHERE `id` = :id");
+    $stmtAny->execute(['id' => $quizId]);
+    $quiz = $stmtAny->fetch();
+    if ($quiz && $teacherId) {
+        $pdo->prepare("UPDATE `quizzes` SET `teacher_id` = :teacher_id WHERE `id` = :id")->execute(['teacher_id' => $teacherId, 'id' => $quizId]);
+    } else {
+        header('Location: dashboard.php');
+        exit;
+    }
 }
 
-// Auto update status to 'lobby' if currently 'published'
-if ($quiz['status'] === 'published') {
+// Auto update status to 'lobby' if currently 'published' or 'draft'
+if (in_array($quiz['status'], ['published', 'draft'], true)) {
     $upd = $pdo->prepare("UPDATE `quizzes` SET `status` = 'lobby' WHERE `id` = :id");
     $upd->execute(['id' => $quizId]);
     $quiz['status'] = 'lobby';

@@ -24,6 +24,12 @@ $selectedOption = strtoupper(trim($input['selected_option'] ?? ''));
 
 $token = getStudentToken();
 if (!$token) {
+    $token = trim((string)($input['token'] ?? $input['session_token'] ?? $_GET['token'] ?? ''));
+    if ($token) {
+        setStudentToken($token);
+    }
+}
+if (!$token) {
     sendJsonResponse(false, 'Student session token missing. Please re-join.', [], 401);
 }
 

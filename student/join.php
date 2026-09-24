@@ -248,9 +248,11 @@ if (!empty($codeFromUrl) && preg_match('/^\d{6}$/', $codeFromUrl)) {
 
             showAlert('Joined successfully! Entering game lobby...', 'success');
             const targetQuizId = data.quiz_id || (data.data && data.data.quiz_id);
+            const token = data.token || (data.data && (data.data.token || data.data.session_token)) || '';
+            const redirectUrl = data.redirect || (data.data && data.data.redirect) || `lobby.php?quiz_id=${targetQuizId}&token=${encodeURIComponent(token)}`;
             setTimeout(() => {
-              window.location.href = `lobby.php?quiz_id=${targetQuizId}`;
-            }, 600);
+              window.location.href = redirectUrl;
+            }, 400);
           } else {
             const errorMsg = (data && data.message) ? data.message : 'Unable to join the quiz right now. Please try again.';
             showAlert(errorMsg, 'danger');

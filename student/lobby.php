@@ -6,27 +6,45 @@ require_once __DIR__ . '/../config/avatar.php';
 
 $quizId = (int)($_GET['quiz_id'] ?? 0);
 $token = getStudentToken();
+if (!$token && !empty($_GET['token'])) {
+    $token = trim((string)$_GET['token']);
+    setStudentToken($token);
+}
 
-if (!$quizId || !$token) {
+if (!$quizId) {
     header('Location: join.php');
     exit;
 }
 
 $pdo = getDBConnection();
-$pStmt = $pdo->prepare("SELECT * FROM `participants` WHERE `session_token` = :token AND `quiz_id` = :quiz_id LIMIT 1");
-$pStmt->execute(['token' => $token, 'quiz_id' => $quizId]);
-$student = $pStmt->fetch();
+$student = null;
+
+if ($token) {
+    $pStmt = $pdo->prepare("SELECT * FROM `participants` WHERE `session_token` = :token AND `quiz_id` = :quiz_id LIMIT 1");
+    $pStmt->execute(['token' => $token, 'quiz_id' => $quizId]);
+    $student = $pStmt->fetch();
+}
+
+if (!$student && !empty($_SESSION['participant_id'])) {
+    $pStmt = $pdo->prepare("SELECT * FROM `participants` WHERE `id` = :id AND `quiz_id` = :quiz_id LIMIT 1");
+    $pStmt->execute(['id' => (int)$_SESSION['participant_id'], 'quiz_id' => $quizId]);
+    $student = $pStmt->fetch();
+    if ($student && !empty($student['session_token'])) {
+        $token = $student['session_token'];
+        setStudentToken($token);
+    }
+}
+
+$qzStmt = $pdo->prepare("SELECT id, title, status, join_code FROM `quizzes` WHERE `id` = :id LIMIT 1");
+$qzStmt->execute(['id' => $quizId]);
+$quiz = $qzStmt->fetch();
 
 if (!$student) {
-    header('Location: join.php');
+    header('Location: join.php' . ($quiz ? '?code=' . urlencode($quiz['join_code']) : ''));
     exit;
 }
 
 $studentAvatar = getParticipantAvatarData($student);
-
-$qzStmt = $pdo->prepare("SELECT title, status FROM `quizzes` WHERE `id` = :id LIMIT 1");
-$qzStmt->execute(['id' => $quizId]);
-$quiz = $qzStmt->fetch();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -102,7 +120,8 @@ $quiz = $qzStmt->fetch();
         // Auto-redirect to play page when creator starts quiz
         if (qz && qz.status === 'running') {
           lobbyEngine.stop();
-          window.location.href = `play.php?quiz_id=${quizId}`;
+          const currentToken = new URLSearchParams(window.location.search).get('token') || <?= json_encode($token) ?>;
+          window.location.href = `play.php?quiz_id=${quizId}${currentToken ? '&token=' + encodeURIComponent(currentToken) : ''}`;
           return;
         }
 

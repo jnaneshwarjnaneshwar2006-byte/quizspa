@@ -7,6 +7,7 @@ class QuizEngine {
   constructor(options = {}) {
     this.quizId = options.quizId || null;
     this.role = options.role || 'student'; // 'teacher' or 'student'
+    this.token = options.token || (new URLSearchParams(window.location.search).get('token')) || window.STUDENT_TOKEN || '';
     this.pollIntervalMs = options.pollIntervalMs || 800;
     this.timerId = null;
     this.isFetching = false;
@@ -33,9 +34,10 @@ class QuizEngine {
     if (this.isFetching || !this.quizId) return;
     this.isFetching = true;
 
+    const tokenParam = (this.role === 'student' && this.token) ? `&token=${encodeURIComponent(this.token)}` : '';
     const endpoint = this.role === 'teacher'
       ? `../api/live/get_state.php?quiz_id=${this.quizId}&_t=${Date.now()}`
-      : `../api/student/state.php?quiz_id=${this.quizId}&_t=${Date.now()}`;
+      : `../api/student/state.php?quiz_id=${this.quizId}${tokenParam}&_t=${Date.now()}`;
 
     try {
       const response = await fetch(endpoint, {
@@ -77,6 +79,8 @@ class QuizEngine {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quiz_id: this.quizId,
+          token: this.token,
+          session_token: this.token,
           question_number: qNum,
           selected_option: selectedOption,
           time_taken: timeTaken

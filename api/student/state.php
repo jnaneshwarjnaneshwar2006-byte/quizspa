@@ -14,6 +14,10 @@ header('Content-Type: application/json; charset=utf-8');
 
 $quizId = (int)($_GET['quiz_id'] ?? 0);
 $token = getStudentToken();
+if (!$token && !empty($_GET['token'])) {
+    $token = trim((string)$_GET['token']);
+    setStudentToken($token);
+}
 
 if (!$quizId) {
     sendJsonResponse(false, 'Quiz ID is required.', [], 400);
@@ -46,6 +50,13 @@ try {
         $qStmt = $pdo->prepare("SELECT * FROM `questions` WHERE `quiz_id` = :quiz_id AND `question_number` = :q_num LIMIT 1");
         $qStmt->execute(['quiz_id' => $quizId, 'q_num' => $currentQuestionNum]);
         $question = $qStmt->fetch();
+
+        // Fallback: If exact question_number not found, fetch closest available question
+        if (!$question) {
+            $qFallback = $pdo->prepare("SELECT * FROM `questions` WHERE `quiz_id` = :quiz_id ORDER BY `question_number` ASC LIMIT 1");
+            $qFallback->execute(['quiz_id' => $quizId]);
+            $question = $qFallback->fetch();
+        }
 
         if ($question) {
             $startTime = (float)($quiz['question_start_time'] ?? 0);
@@ -121,9 +132,29 @@ try {
         }
     }
 
+    // Diagnostic logging for student question requests
+    error_log(sprintf(
+        '[QuizSpark STUDENT_STATE] Player %d (quiz %d, status: %s, q: %d) state polled at %f',
+        $participant['id'] ?? 0, $quizId, $quiz['status'], $currentQuestionNum, $now
+    ));
+
+    // Formatted Question Options Array
+    $formattedOptions = [];
+    if ($question) {
+        $formattedOptions[] = ['id' => 'A', 'key' => 'A', 'text' => $question['option_a']];
+        $formattedOptions[] = ['id' => 'B', 'key' => 'B', 'text' => $question['option_b']];
+        if (!empty($question['option_c'])) {
+            $formattedOptions[] = ['id' => 'C', 'key' => 'C', 'text' => $question['option_c']];
+        }
+        if (!empty($question['option_d'])) {
+            $formattedOptions[] = ['id' => 'D', 'key' => 'D', 'text' => $question['option_d']];
+        }
+    }
+
     sendJsonResponse(true, 'Student state retrieved.', [
         'quiz' => [
             'id'                      => (int)$quiz['id'],
+            'session_id'              => (int)$quiz['id'],
             'title'                   => $quiz['title'],
             'status'                  => $quiz['status'],
             'state'                   => $stateName,
@@ -138,9 +169,12 @@ try {
         ],
         'question' => $question ? [
             'id'              => (int)$question['id'],
+            'number'          => (int)$question['question_number'],
             'question_number' => (int)$question['question_number'],
             'question_type'   => $question['question_type'] ?? 'multiple_choice',
             'question_text'   => $question['question_text'],
+            'text'            => $question['question_text'],
+            'options'         => $formattedOptions,
             'option_a'        => $question['option_a'],
             'option_b'        => $question['option_b'],
             'option_c'        => $question['option_c'],
@@ -153,6 +187,7 @@ try {
         ] : null,
         'student' => $participant ? [
             'id'          => (int)$participant['id'],
+            'player_id'   => (int)$participant['id'],
             'name'        => $participant['name'],
             'emoji'       => $participant['emoji'],
             'avatar_data' => getParticipantAvatarData($participant),

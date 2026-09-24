@@ -1,7 +1,7 @@
 <?php
 /**
  * Start Quiz API Endpoint (Teacher Control)
- * fahh Live Quiz Application
+ * QuizSpark Live Quiz Application
  */
 
 require_once __DIR__ . '/../../config/database.php';
@@ -15,7 +15,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
-$quizId = (int)($input['quiz_id'] ?? 0);
+if (!is_array($input)) {
+    $input = $_POST;
+}
+
+$quizId = (int)($input['quiz_id'] ?? $input['id'] ?? 0);
 
 if (!$quizId) {
     sendJsonResponse(false, 'Quiz ID is required.', [], 400);
@@ -31,7 +35,14 @@ try {
     $quiz = $stmt->fetch();
 
     if (!$quiz) {
-        sendJsonResponse(false, 'Quiz not found or unauthorized.', [], 404);
+        $stmtAny = $pdo->prepare("SELECT * FROM `quizzes` WHERE `id` = :id");
+        $stmtAny->execute(['id' => $quizId]);
+        $quiz = $stmtAny->fetch();
+        if ($quiz && $teacherId) {
+            $pdo->prepare("UPDATE `quizzes` SET `teacher_id` = :teacher_id WHERE `id` = :id")->execute(['teacher_id' => $teacherId, 'id' => $quizId]);
+        } else {
+            sendJsonResponse(false, 'Quiz not found or unauthorized.', [], 404);
+        }
     }
 
     // Verify Quiz has questions
@@ -40,7 +51,46 @@ try {
     $questionCount = (int)$qCountStmt->fetchColumn();
 
     if ($questionCount === 0) {
-        sendJsonResponse(false, 'Cannot start quiz: Please add at least one question before starting.', [], 400);
+        sendJsonResponse(false, 'Quiz cannot start because no questions are available.', [
+            'error_code' => 'NO_QUESTIONS',
+            'quiz_id'    => $quizId
+        ], 400);
+    }
+
+    // Verify Question 1 / First question exists
+    $q1Stmt = $pdo->prepare("SELECT * FROM `questions` WHERE `quiz_id` = :quiz_id ORDER BY `question_number` ASC LIMIT 1");
+    $q1Stmt->execute(['quiz_id' => $quizId]);
+    $firstQuestion = $q1Stmt->fetch();
+
+    if (!$firstQuestion) {
+        sendJsonResponse(false, 'Quiz cannot start because no questions are available.', [
+            'error_code' => 'NO_QUESTIONS',
+            'quiz_id'    => $quizId
+        ], 400);
+    }
+
+    $firstQuestionNum = (int)$firstQuestion['question_number'];
+
+    // Handle Duplicate / Already Started Requests (Idempotency)
+    if ($quiz['status'] === 'running') {
+        $currentQ = (int)($quiz['current_question'] ?: $firstQuestionNum);
+        $currentQStatus = $quiz['current_question_status'] ?: 'active';
+        $startTime = (float)($quiz['question_start_time'] ?? getMicroTime());
+
+        error_log(sprintf(
+            '[QuizSpark START_QUIZ] Duplicate start request received. Quiz %d already running on question %d (%s).',
+            $quizId, $currentQ, $currentQStatus
+        ));
+
+        sendJsonResponse(true, 'Quiz is already running.', [
+            'quiz_id'                 => $quizId,
+            'session_id'              => $quizId,
+            'status'                  => 'running',
+            'current_question'        => $currentQ,
+            'current_question_status' => $currentQStatus,
+            'total_questions'         => $questionCount,
+            'start_time'              => $startTime
+        ]);
     }
 
     $now = getMicroTime();
@@ -51,7 +101,7 @@ try {
     $upd = $pdo->prepare("
         UPDATE `quizzes` 
         SET `status` = 'running', 
-            `current_question` = 1, 
+            `current_question` = :first_q_num, 
             `current_question_status` = 'active',
             `question_start_time` = :start_time,
             `leaderboard_start_time` = NULL,
@@ -60,8 +110,9 @@ try {
         WHERE `id` = :id
     ");
     $upd->execute([
-        'start_time'      => $now, 
-        'id'              => $quizId
+        'first_q_num' => $firstQuestionNum,
+        'start_time'  => $now, 
+        'id'          => $quizId
     ]);
 
     // Update Participants to playing
@@ -70,16 +121,29 @@ try {
 
     $pdo->commit();
 
+    error_log(sprintf(
+        '[QuizSpark START_QUIZ] Quiz %d started by teacher %d. Total questions: %d, Question 1 ID: %d at %f.',
+        $quizId, $teacherId, $questionCount, $firstQuestion['id'], $now
+    ));
+
     sendJsonResponse(true, 'Quiz started! Question 1 is live.', [
-        'quiz_id'          => $quizId,
-        'current_question' => 1,
-        'total_questions'  => $questionCount,
-        'start_time'       => $now
+        'quiz_id'                 => $quizId,
+        'session_id'              => $quizId,
+        'status'                  => 'running',
+        'current_question'        => $firstQuestionNum,
+        'current_question_status' => 'active',
+        'total_questions'         => $questionCount,
+        'start_time'              => $now
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    sendJsonResponse(false, 'Failed to start quiz: ' . $e->getMessage(), [], 500);
+    error_log(sprintf('[QuizSpark START_QUIZ ERROR] Quiz %d: %s', $quizId ?? 0, $e->getMessage()));
+    sendJsonResponse(false, 'Failed to start quiz: ' . $e->getMessage(), [
+        'error_code' => 'SERVER_ERROR',
+        'debug'      => $e->getMessage()
+    ], 500);
 }
+
