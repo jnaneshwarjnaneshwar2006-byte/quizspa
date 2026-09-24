@@ -75,8 +75,8 @@ try {
         $participant = $checkStmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // If not found by token, check if participant exists by exact name in this quiz
-    if (!$participant) {
+    // If not found by token, check if participant exists in session for this quiz
+    if (!$participant && !empty($_SESSION['student_name']) && strtolower($_SESSION['student_name']) === strtolower($name) && !empty($_SESSION['student_quiz_id']) && (int)$_SESSION['student_quiz_id'] === $quizId) {
         $checkNameStmt = $pdo->prepare("SELECT * FROM `participants` WHERE `quiz_id` = :quiz_id AND `name` = :name LIMIT 1");
         $checkNameStmt->execute(['quiz_id' => $quizId, 'name' => $name]);
         $participant = $checkNameStmt->fetch(PDO::FETCH_ASSOC);
@@ -102,6 +102,19 @@ try {
     }
 
     if (!$participant) {
+        // If another player in the quiz has this name, create a unique display name for new player
+        $originalName = $name;
+        $counter = 1;
+        while (true) {
+            $checkDup = $pdo->prepare("SELECT `id` FROM `participants` WHERE `quiz_id` = :quiz_id AND `name` = :name LIMIT 1");
+            $checkDup->execute(['quiz_id' => $quizId, 'name' => $name]);
+            if (!$checkDup->fetch()) {
+                break;
+            }
+            $counter++;
+            $name = $originalName . " " . $counter;
+        }
+
         // Create new participant with fresh unique session token
         $sessionToken = bin2hex(random_bytes(32));
         setStudentToken($sessionToken);
@@ -179,6 +192,9 @@ try {
         'redirect'       => $responseData['redirect']
     ];
 
+    if (ob_get_length()) {
+        ob_clean();
+    }
     echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 
@@ -187,7 +203,7 @@ try {
         $pdo->rollBack();
     }
     error_log("Error in api/student/join.php: " . $e->getMessage() . "\n" . $e->getTraceAsString());
-    sendJsonResponse(false, 'Unable to join the quiz right now. Please try again.', [
+    sendJsonResponse(false, 'Unable to join quiz: ' . $e->getMessage(), [
         'error_code' => 'SERVER_ERROR',
         'debug'      => $e->getMessage()
     ], 500);

@@ -22,7 +22,7 @@ function getDatabaseSetting(string $environmentName, string $localName, string $
         return (string)$environmentValue;
     }
 
-    if (isset($databaseLocalConfig[$localName]) && $databaseLocalConfig[$localName] !== '') {
+    if (array_key_exists($localName, $databaseLocalConfig) && $databaseLocalConfig[$localName] !== null) {
         return (string)$databaseLocalConfig[$localName];
     }
 
@@ -49,6 +49,7 @@ function isProductionEnvironment(): bool
 
 function failDatabaseConnection(string $message, ?Throwable $exception = null): void
 {
+    $debugMessage = $exception ? $exception->getMessage() : $message;
     if ($exception !== null) {
         error_log(sprintf(
             'QuizSpark database connection failed for %s:%s/%s: %s',
@@ -61,13 +62,18 @@ function failDatabaseConnection(string $message, ?Throwable $exception = null): 
         error_log('QuizSpark database configuration error: ' . $message);
     }
 
+    if (ob_get_length()) {
+        ob_clean();
+    }
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
 
     echo json_encode([
-        'success' => false,
-        'message' => $message
-    ]);
+        'success'    => false,
+        'message'    => 'Database connection error: ' . $debugMessage,
+        'error_code' => 'DB_CONNECTION_ERROR',
+        'debug'      => $debugMessage
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     exit;
 }
@@ -77,35 +83,6 @@ function getDBConnection(): PDO
     static $pdo = null;
 
     if ($pdo === null) {
-        if (isProductionEnvironment()) {
-            $missingVariables = [];
-
-            foreach ([
-                'DB_HOST' => DB_HOST,
-                'DB_PORT' => DB_PORT,
-                'DB_NAME' => DB_NAME,
-                'DB_USER' => DB_USER,
-                'DB_PASSWORD' => DB_PASSWORD,
-            ] as $variable => $value) {
-                if ($value === '') {
-                    $missingVariables[] = $variable;
-                }
-            }
-
-            if ($missingVariables !== []) {
-                failDatabaseConnection(
-                    'Hosted database configuration is incomplete. Set the database values in environment variables or config/database.local.php: ' .
-                    implode(', ', $missingVariables) . '.'
-                );
-            }
-
-            if (in_array(strtolower(DB_HOST), ['localhost', '127.0.0.1', '::1'], true)) {
-                failDatabaseConnection(
-                    'Production database configuration must use a remote MySQL host, not localhost or 127.0.0.1.'
-                );
-            }
-        }
-
         $dsn = "mysql:host=" . DB_HOST .
                ";port=" . DB_PORT .
                ";dbname=" . DB_NAME .
@@ -118,17 +95,15 @@ function getDBConnection(): PDO
         ];
 
         try {
-
             $pdo = new PDO(
                 $dsn,
                 DB_USER,
                 DB_PASSWORD,
                 $options
             );
-
         } catch (PDOException $e) {
             failDatabaseConnection(
-                'Database connection failed. Check the remote MySQL host, port, database name, credentials, and network access.',
+                'Database connection failed. Check host, port, database name, and credentials.',
                 $e
             );
         }
