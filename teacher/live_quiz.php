@@ -41,6 +41,7 @@ if (!$quiz) {
   <link rel="stylesheet" href="../assets/css/leaderboard.css">
   <link rel="stylesheet" href="../assets/css/avatar.css">
   <script src="../assets/js/avatar-engine.js"></script>
+  <script src="../assets/js/leaderboard.js"></script>
 </head>
 <body>
   <div class="quiz-layout">
@@ -110,9 +111,8 @@ if (!$quiz) {
           </span>
         </div>
       </div>
-      <div id="leaderboardRows" class="leaderboard-list">
-        <!-- Rendered dynamically -->
-      </div>
+      <!-- 3D Game-Show Podium & Standings -->
+      <div id="teacherPodiumContainer"></div>
     </div>
 
     <!-- Teacher Action Control Bar (NO Next Question button - Auto-advances!) -->
@@ -269,32 +269,10 @@ if (!$quiz) {
       }
 
       function renderLeaderboardList(list) {
-        const signature = JSON.stringify(list);
-        if (signature === leaderboardSignature) return;
-        leaderboardSignature = signature;
-        const rowsContainer = document.getElementById('leaderboardRows');
-        rowsContainer.innerHTML = list.map(p => `
-          <div class="rank-row">
-            <div class="rank-left">
-              <span class="rank-num">#${p.rank}</span>
-              <div class="rank-player-info">
-                <div class="avatar-badge-wrapper badge-sm" id="t_lb_badge_${p.id}"></div>
-                <span class="rank-player-name">${escapeHtml(p.name)}</span>
-              </div>
-            </div>
-            <div class="rank-right">
-              <span class="rank-pts">${p.total_score} pts</span>
-              <span class="rank-time">${p.total_time}s</span>
-            </div>
-          </div>
-        `).join('');
-
-        list.forEach(p => {
-          const bEl = document.getElementById(`t_lb_badge_${p.id}`);
-          if (bEl) {
-            AvatarEngine.mount(bEl, p.avatar_data, { mode: 'badge', animated: false });
-          }
-        });
+        const container = document.getElementById('teacherPodiumContainer');
+        if (container && typeof QuizLeaderboard !== 'undefined') {
+          QuizLeaderboard.renderPodium(container, list, null);
+        }
       }
 
       async function fetchAndRenderLeaderboard() {

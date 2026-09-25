@@ -97,9 +97,11 @@ try {
     $points = 0;
 
     if ($isCorrect) {
-        // Kahoot Speed Score: max 1000 pts down to min 100 pts
+        // Dynamic speed score scaled by question's point value (default 1000)
+        $maxPoints = (int)($question['points'] ?? 1000);
+        if ($maxPoints <= 0) $maxPoints = 1000;
         $remainingRatio = max(0.1, ($timeLimit - min($actualTimeTaken, $timeLimit)) / $timeLimit);
-        $points = max(100, (int)round(1000 * $remainingRatio));
+        $points = max(10, (int)round($maxPoints * $remainingRatio));
     }
 
     $pdo->beginTransaction();
@@ -145,6 +147,11 @@ try {
 
     $pdo->commit();
 
+    // Fetch updated authoritative total score for student
+    $scoreCheck = $pdo->prepare("SELECT total_score FROM `participants` WHERE `id` = :id LIMIT 1");
+    $scoreCheck->execute(['id' => $participantId]);
+    $currentTotalScore = (int)($scoreCheck->fetch()['total_score'] ?? 0);
+
     // 8. Check if ALL active participants have now answered
     $pCountStmt = $pdo->prepare("SELECT COUNT(*) AS total FROM `participants` WHERE `quiz_id` = :quiz_id");
     $pCountStmt->execute(['quiz_id' => $quizId]);
@@ -166,6 +173,7 @@ try {
     sendJsonResponse(true, 'Answer submitted successfully!', [
         'is_correct'     => (bool)$isCorrect,
         'points'         => $points,
+        'total_score'    => $currentTotalScore,
         'time_taken'     => $actualTimeTaken,
         'question_ended' => $questionEnded,
         'answered_count' => $answeredCount,

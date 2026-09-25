@@ -65,7 +65,7 @@ function sendJsonResponse(bool $success, string $message, array $data = [], int 
         'data'    => $data
     ];
     // Promote key top-level properties for clean JSON consumption
-    foreach (['error_code', 'quiz_id', 'player_id', 'player_name', 'join_code', 'status', 'token', 'redirect'] as $key) {
+    foreach (['csrf_token', 'error_code', 'quiz_id', 'player_id', 'player_name', 'join_code', 'status', 'token', 'redirect'] as $key) {
         if (isset($data[$key])) {
             $response[$key] = $data[$key];
         }

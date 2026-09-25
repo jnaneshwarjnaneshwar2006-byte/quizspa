@@ -57,7 +57,8 @@ try {
             'id'    => $teacher['id'],
             'name'  => $teacher['name'],
             'email' => $teacher['email']
-        ]
+        ],
+        'csrf_token' => $_SESSION['csrf_token']
     ]);
 
 } catch (Exception $e) {

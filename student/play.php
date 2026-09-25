@@ -72,6 +72,27 @@ $studentAvatar = getParticipantAvatarData($student);
       </div>
     </div>
 
+    <!-- Persistent Student Question Score Bar -->
+    <div class="student-score-bar" id="studentScoreBar">
+      <div class="score-bar-chip">
+        <span class="chip-icon">⭐</span>
+        <div>
+          <span class="chip-label">Your Score: </span>
+          <span class="chip-value" id="currentScoreDisplay"><?= number_format((int)$student['total_score']) ?></span>
+          <span style="font-size: 0.85rem; font-weight: 700; color: #55efc4;">pts</span>
+        </div>
+      </div>
+      <div class="score-bar-chip worth-chip">
+        <span class="chip-icon">🎯</span>
+        <div>
+          <span class="chip-label">This Question: </span>
+          <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Up to </span>
+          <span class="chip-value" id="questionWorthDisplay">1,000</span>
+          <span style="font-size: 0.85rem; font-weight: 700; color: #fdcb6e;">pts</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Active Question View -->
     <div id="activeQuestionView">
       <!-- Question Card -->
@@ -114,12 +135,14 @@ $studentAvatar = getParticipantAvatarData($student);
     </div>
 
     <!-- Seamless In-Page Leaderboard View (Shown during LEADERBOARD state) -->
-    <div id="leaderboardView" style="display: none; width: 100%; max-width: 800px; margin: 0 auto;">
+    <div id="leaderboardView" style="display: none; width: 100%; max-width: 920px; margin: 0 auto;">
       <div class="leaderboard-header animate-pop">
         <h1 class="leaderboard-title">🏆 LEADERBOARD</h1>
-        <p id="leaderboardCountdown" style="color: var(--accent-yellow); font-weight: 700; font-size: 1.25rem; margin-top: 8px;">
-          Next question in 5 seconds
-        </p>
+        <div style="text-align: center; margin-top: 6px;">
+          <div class="leaderboard-countdown-pill" id="leaderboardCountdownPill">
+            ⏳ <span id="leaderboardCountdown">Next question in 5 seconds</span>
+          </div>
+        </div>
       </div>
 
       <!-- Student Personal Rank Card -->
@@ -135,16 +158,13 @@ $studentAvatar = getParticipantAvatarData($student);
         </div>
       </div>
 
-      <!-- Ranked Players List -->
-      <div class="card" style="margin-bottom: 20px;">
-        <div id="leaderboardList" class="leaderboard-list">
-          <!-- Rendered via JS -->
-        </div>
-      </div>
+      <!-- 3D Game-Show Podium Arena & Standings -->
+      <div id="podiumContainer"></div>
     </div>
   </div>
 
   <script src="../assets/js/avatar-engine.js"></script>
+  <script src="../assets/js/leaderboard.js"></script>
   <script src="../assets/js/quiz.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -162,12 +182,16 @@ $studentAvatar = getParticipantAvatarData($student);
       let targetAdvanceTimestamp = null;
       let countdownTickerId = null;
       let leaderboardSignature = '';
+      let localScore = <?= (int)$student['total_score'] ?>;
+      let isAnimatingScore = false;
 
       const answerBtns = document.querySelectorAll('.answer-btn');
       const feedbackBanner = document.getElementById('feedbackBanner');
       const activeQuestionView = document.getElementById('activeQuestionView');
       const leaderboardView = document.getElementById('leaderboardView');
       const countdownElem = document.getElementById('leaderboardCountdown');
+      const currentScoreDisplay = document.getElementById('currentScoreDisplay');
+      const questionWorthDisplay = document.getElementById('questionWorthDisplay');
       const studentToken = <?= json_encode($token) ?>;
       window.STUDENT_TOKEN = studentToken;
 
@@ -188,17 +212,34 @@ $studentAvatar = getParticipantAvatarData($student);
         const q = data.question;
         const myAns = data.my_answer;
 
-        // 1. If Quiz Finished, redirect to final podium
+        // 1. If Quiz Finished, redirect to final leaderboard
         if (qz.status === 'completed' || qz.state === 'QUIZ_FINISHED') {
           quizEngine.stop();
           if (countdownTickerId) clearInterval(countdownTickerId);
-          window.location.href = `final.php?quiz_id=${quizId}`;
+          window.location.href = `leaderboard.php?quiz_id=${quizId}`;
           return;
         }
 
         const serverQNum = Number(qz.current_question || qz.question_number || 1);
         document.getElementById('qNumDisplay').textContent = serverQNum;
         document.getElementById('totalQDisplay').textContent = qz.total_questions || 1;
+
+        // Sync Question Worth display
+        if (q && questionWorthDisplay) {
+          const qPoints = q.points || q.max_points || 1000;
+          questionWorthDisplay.textContent = Number(qPoints).toLocaleString();
+        }
+
+        // Sync Participant Total Score from server if not actively animating
+        if (data.student && typeof data.student.total_score !== 'undefined' && !isAnimatingScore) {
+          const serverScore = Number(data.student.total_score);
+          if (serverScore !== localScore) {
+            localScore = serverScore;
+            if (currentScoreDisplay) {
+              currentScoreDisplay.textContent = localScore.toLocaleString();
+            }
+          }
+        }
 
         // 2. Handle State Transitions: LEADERBOARD vs ACTIVE QUESTION
         if (qz.current_question_status === 'leaderboard' || qz.state === 'LEADERBOARD') {
@@ -246,6 +287,9 @@ $studentAvatar = getParticipantAvatarData($student);
           feedbackBanner.className = 'submitted-banner animate-pop';
           feedbackBanner.innerHTML = '✓ Answer submitted! Waiting for question result...';
           leaderboardSignature = '';
+          if (typeof QuizLeaderboard !== 'undefined') {
+            QuizLeaderboard.invalidate();
+          }
         }
 
         // Render Current Question Details
@@ -334,6 +378,13 @@ $studentAvatar = getParticipantAvatarData($student);
           disableAllAnswerButtons();
           highlightSelectedButton(myAns.selected_option);
           feedbackBanner.style.display = 'block';
+          if (myAns.is_correct) {
+            feedbackBanner.innerHTML = `🎉 Correct! <strong>+${myAns.points || 0} pts</strong>`;
+            feedbackBanner.style.borderColor = '#00b894';
+            feedbackBanner.style.color = '#55efc4';
+          } else {
+            feedbackBanner.innerHTML = `❌ Answer submitted (+0 pts). Waiting for next question...`;
+          }
         }
       }
 
@@ -349,17 +400,79 @@ $studentAvatar = getParticipantAvatarData($student);
           highlightSelectedButton(selectedOpt);
           disableAllAnswerButtons();
           feedbackBanner.style.display = 'block';
-          feedbackBanner.innerHTML = '✓ Answer submitted! Waiting for question result...';
+          feedbackBanner.innerHTML = '✓ Answer submitted! Calculating score...';
 
           // Submit answer to server
           const res = await quizEngine.submitAnswer(selectedOpt, 0, activeQuestionNum);
-          if (!res.success && res.message !== 'Already answered.') {
+          if (res.success && res.data) {
+            const earnedPts = Number(res.data.points || 0);
+            const isCorrect = !!res.data.is_correct;
+            const newTotalScore = (typeof res.data.total_score !== 'undefined')
+              ? Number(res.data.total_score)
+              : (localScore + earnedPts);
+
+            // Floating Gain Badge
+            showFloatingScoreGain(earnedPts, isCorrect);
+
+            // Smooth Score Count-Up
+            animateLocalScore(localScore, newTotalScore);
+            localScore = newTotalScore;
+
+            if (isCorrect) {
+              feedbackBanner.innerHTML = `🎉 Correct! <strong>+${earnedPts} pts</strong>`;
+              feedbackBanner.style.borderColor = '#00b894';
+              feedbackBanner.style.color = '#55efc4';
+            } else {
+              feedbackBanner.innerHTML = `❌ Incorrect (+0 pts). Waiting for next question...`;
+              feedbackBanner.style.borderColor = '#ff7675';
+              feedbackBanner.style.color = '#ff7675';
+            }
+          } else if (!res.success && res.message !== 'Already answered.') {
             feedbackBanner.innerHTML = `⚠️ ${res.message}`;
             feedbackBanner.style.borderColor = '#e74c3c';
             feedbackBanner.style.color = '#e74c3c';
           }
         });
       });
+
+      function showFloatingScoreGain(pts, isCorrect) {
+        const bar = document.getElementById('studentScoreBar');
+        if (!bar) return;
+        const badge = document.createElement('div');
+        badge.className = `score-gain-floating ${isCorrect ? 'gain-positive' : 'gain-zero'}`;
+        badge.textContent = isCorrect ? `+${pts} pts!` : `+0 pts`;
+        bar.appendChild(badge);
+        setTimeout(() => {
+          badge.remove();
+        }, 1500);
+      }
+
+      function animateLocalScore(startVal, endVal, duration = 800) {
+        const el = document.getElementById('currentScoreDisplay');
+        if (!el || startVal === endVal) {
+          if (el) el.textContent = Number(endVal).toLocaleString();
+          return;
+        }
+        isAnimatingScore = true;
+        const startTime = performance.now();
+        const diff = endVal - startVal;
+
+        function step(now) {
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          const current = Math.round(startVal + diff * ease);
+          el.textContent = current.toLocaleString();
+
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            el.textContent = Number(endVal).toLocaleString();
+            isAnimatingScore = false;
+          }
+        }
+        requestAnimationFrame(step);
+      }
 
       function disableAllAnswerButtons() {
         answerBtns.forEach(b => b.disabled = true);
@@ -419,11 +532,7 @@ $studentAvatar = getParticipantAvatarData($student);
       }
 
       function renderLeaderboard(list, myRank) {
-        const signature = JSON.stringify({ list, myRank });
-        if (signature === leaderboardSignature) return;
-        leaderboardSignature = signature;
-
-        const container = document.getElementById('leaderboardList');
+        const container = document.getElementById('podiumContainer');
         const personalCard = document.getElementById('personalRankContainer');
         const personalRankAvatar = document.getElementById('personalRankAvatar');
 
@@ -431,35 +540,15 @@ $studentAvatar = getParticipantAvatarData($student);
           personalCard.style.display = 'block';
           document.getElementById('personalRankText').textContent =
             `You are #${myRank.rank} ${myRank.name}`;
-          document.getElementById('personalScore').textContent = myRank.total_score;
+          document.getElementById('personalScore').textContent = (myRank.total_score || 0).toLocaleString();
           if (personalRankAvatar) {
             AvatarEngine.mount(personalRankAvatar, myRank.avatar_data || myAvatarConfig, { mode: 'badge', animated: false });
           }
         }
 
-        container.innerHTML = list.map(p => `
-          <div class="rank-row ${p.is_me ? 'current-player' : ''}">
-            <div class="rank-left">
-              <span class="rank-num">#${p.rank}</span>
-              <div class="rank-player-info">
-                <div class="avatar-badge-wrapper badge-sm" id="lb_badge_${p.id}"></div>
-                <span class="rank-player-name">${escapeHtml(p.name)} ${p.is_me ? '<span class="badge badge-published" style="margin-left:8px;">YOU</span>' : ''}</span>
-              </div>
-            </div>
-            <div class="rank-right">
-              <span class="rank-pts">${p.total_score} pts</span>
-              <span class="rank-time">${p.total_time}s</span>
-            </div>
-          </div>
-        `).join('');
-
-        // Mount 3D Avatar Badges for each player
-        list.forEach(p => {
-          const el = document.getElementById(`lb_badge_${p.id}`);
-          if (el) {
-            AvatarEngine.mount(el, p.avatar_data || myAvatarConfig, { mode: 'badge', animated: false });
-          }
-        });
+        if (container && typeof QuizLeaderboard !== 'undefined') {
+          QuizLeaderboard.renderPodium(container, list, studentToken);
+        }
       }
 
       function escapeHtml(text) {

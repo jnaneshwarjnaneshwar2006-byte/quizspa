@@ -908,6 +908,110 @@
         `;
       }
       return '';
+    },
+
+    // Winner Awards: Physically held in hand
+    heldAward(award, uid, colors) {
+      if (!award || award === 'none') return '';
+
+      const skinGrad = `url(#${uid}_skinGrad)`;
+
+      if (award === 'trophy_gold' || award === 'trophy') {
+        // Grand 3D Golden Trophy Cup held in avatar's hand
+        return `
+          <g id="${uid}_held_trophy" class="avatar-held-award-trophy">
+            <!-- Shadow cast by trophy -->
+            <ellipse cx="218" cy="298" rx="20" ry="6" fill="#000000" opacity="0.35" filter="url(#${uid}_dropShadow)" />
+            
+            <!-- Trophy Base (Solid dark marble pedestal with gold trim) -->
+            <path d="M 200 286 L 236 286 L 238 298 L 198 298 Z" fill="#2c3e50" filter="url(#${uid}_dropShadow)" />
+            <rect x="202" y="284" width="32" height="3" fill="#f1c40f" rx="1" />
+            <rect x="198" y="295" width="40" height="3" fill="#f39c12" rx="1" />
+            
+            <!-- Trophy Stem & Nodes -->
+            <path d="M 215 264 L 221 264 L 220 285 L 216 285 Z" fill="url(#${uid}_goldTrophy)" />
+            <ellipse cx="218" cy="275" rx="5" ry="3" fill="#fff275" />
+
+            <!-- Trophy Cup Handles -->
+            <!-- Left Handle (connects toward hand) -->
+            <path d="M 204 228 C 182 232, 178 258, 206 264" stroke="url(#${uid}_goldTrophy)" stroke-width="4.5" fill="none" stroke-linecap="round" />
+            <path d="M 204 230 C 186 234, 182 256, 206 262" stroke="#fff9a6" stroke-width="1.5" fill="none" stroke-linecap="round" />
+
+            <!-- Right Handle -->
+            <path d="M 232 228 C 254 232, 258 258, 230 264" stroke="url(#${uid}_goldTrophy)" stroke-width="4.5" fill="none" stroke-linecap="round" />
+            <path d="M 232 230 C 250 234, 254 256, 230 262" stroke="#fff9a6" stroke-width="1.5" fill="none" stroke-linecap="round" />
+
+            <!-- Trophy Cup Body (Polished Gold with Specular Highlight) -->
+            <path d="M 202 222 L 234 222 C 234 252, 224 266, 218 266 C 212 266, 202 252, 202 222 Z" fill="url(#${uid}_goldTrophy)" filter="url(#${uid}_dropShadow)" />
+            <!-- Cup Rim -->
+            <ellipse cx="218" cy="222" rx="16" ry="4.5" fill="#fff9a6" stroke="#d35400" stroke-width="1" />
+            <ellipse cx="218" cy="222" rx="13" ry="3" fill="#d35400" opacity="0.6" />
+
+            <!-- Embossed Star on Cup -->
+            <polygon points="218,234 220,240 226,240 221,244 223,250 218,246 213,250 215,244 210,240 216,240" fill="#ffffff" opacity="0.9" />
+
+            <!-- Hand Grip / Fingers Wrapped Around Handle & Stem -->
+            <!-- Hand palm base behind handle -->
+            <circle cx="192" cy="265" r="9" fill="${skinGrad}" />
+            <!-- Fingers clamped over handle -->
+            <ellipse cx="194" cy="254" rx="5.5" ry="3" fill="${skinGrad}" transform="rotate(-15 194 254)" />
+            <ellipse cx="195" cy="261" rx="5.5" ry="3" fill="${skinGrad}" transform="rotate(-10 195 261)" />
+            <ellipse cx="195" cy="268" rx="5.5" ry="3" fill="${skinGrad}" transform="rotate(-5 195 268)" />
+            <ellipse cx="194" cy="275" rx="5" ry="3" fill="${skinGrad}" />
+            <!-- Thumb pointing upward on front -->
+            <path d="M 190 266 C 188 258, 194 252, 197 256 C 199 260, 195 268, 190 266 Z" fill="${skinGrad}" />
+
+            <!-- Sparkle Accents on Trophy -->
+            <polygon points="230,220 231,223 234,224 231,225 230,228 229,225 226,224 229,223" fill="#ffffff" />
+            <polygon points="204,242 205,244 207,245 205,246 204,248 203,246 201,245 203,244" fill="#ffffff" opacity="0.8" />
+          </g>
+        `;
+      } else if (award === 'medal_silver' || award === 'silver') {
+        // Silver Medal on royal blue ribbon held in avatar's hand
+        return `
+          <g id="${uid}_held_silver_medal" class="avatar-held-award-medal">
+            <!-- Ribbon draped from hand -->
+            <path d="M 194 270 Q 186 288 194 306 L 200 306 Q 206 288 198 270 Z" fill="#2980b9" filter="url(#${uid}_dropShadow)" />
+            <path d="M 196 270 Q 190 288 196 306 L 198 306 Q 202 288 198 270 Z" fill="#ffffff" />
+
+            <!-- Medal Medallion -->
+            <circle cx="197" cy="316" r="17" fill="url(#${uid}_silverMedal)" stroke="#ffffff" stroke-width="2" filter="url(#${uid}_dropShadow)" />
+            <circle cx="197" cy="316" r="13" fill="none" stroke="#7f8c8d" stroke-width="1.5" stroke-dasharray="2 1" />
+            <text x="197" y="322" text-anchor="middle" font-size="14" font-weight="900" fill="#2c3e50" font-family="'Outfit', sans-serif">2</text>
+            <polygon points="208,306 209,308 211,309 209,310 208,312 207,310 205,309 207,308" fill="#ffffff" />
+
+            <!-- Hand Fingers Gripping Ribbon Loop -->
+            <circle cx="193" cy="272" r="8" fill="${skinGrad}" />
+            <ellipse cx="195" cy="268" rx="5" ry="3" fill="${skinGrad}" transform="rotate(-15 195 268)" />
+            <ellipse cx="196" cy="274" rx="5" ry="3" fill="${skinGrad}" transform="rotate(-10 196 274)" />
+            <ellipse cx="195" cy="280" rx="5" ry="3" fill="${skinGrad}" />
+            <path d="M 190 274 C 188 268, 194 262, 197 266 Z" fill="${skinGrad}" />
+          </g>
+        `;
+      } else if (award === 'medal_bronze' || award === 'bronze') {
+        // Bronze Medal on crimson ribbon held in avatar's hand
+        return `
+          <g id="${uid}_held_bronze_medal" class="avatar-held-award-medal">
+            <!-- Ribbon draped from hand -->
+            <path d="M 194 270 Q 186 288 194 306 L 200 306 Q 206 288 198 270 Z" fill="#c0392b" filter="url(#${uid}_dropShadow)" />
+            <path d="M 196 270 Q 190 288 196 306 L 198 306 Q 202 288 198 270 Z" fill="#f1c40f" />
+
+            <!-- Medal Medallion -->
+            <circle cx="197" cy="316" r="17" fill="url(#${uid}_bronzeMedal)" stroke="#ffaa5b" stroke-width="2" filter="url(#${uid}_dropShadow)" />
+            <circle cx="197" cy="316" r="13" fill="none" stroke="#d35400" stroke-width="1.5" stroke-dasharray="2 1" />
+            <text x="197" y="322" text-anchor="middle" font-size="14" font-weight="900" fill="#4a1c0d" font-family="'Outfit', sans-serif">3</text>
+            <polygon points="208,306 209,308 211,309 209,310 208,312 207,310 205,309 207,308" fill="#ffffff" />
+
+            <!-- Hand Fingers Gripping Ribbon Loop -->
+            <circle cx="193" cy="272" r="8" fill="${skinGrad}" />
+            <ellipse cx="195" cy="268" rx="5" ry="3" fill="${skinGrad}" transform="rotate(-15 195 268)" />
+            <ellipse cx="196" cy="274" rx="5" ry="3" fill="${skinGrad}" transform="rotate(-10 196 274)" />
+            <ellipse cx="195" cy="280" rx="5" ry="3" fill="${skinGrad}" />
+            <path d="M 190 274 C 188 268, 194 262, 197 266 Z" fill="${skinGrad}" />
+          </g>
+        `;
+      }
+      return '';
     }
   };
 
@@ -947,6 +1051,7 @@
     renderSvg(rawConfig, options = {}) {
       const mode = options.mode || 'full';
       const animated = options.animated !== false;
+      const award = options.heldAward || options.award || rawConfig.heldAward || null;
       const config = Object.assign({}, DEFAULT_CONFIGS.boy, rawConfig);
       const colors = this.resolveColors(config);
       const uid = getUid('av_' + mode);
@@ -954,6 +1059,27 @@
       // SVG Definitions (Gradients & Filters for 3D Volume & Specularity)
       const defs = `
         <defs>
+          <!-- Award 3D Gradients -->
+          <linearGradient id="${uid}_goldTrophy" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fff275" />
+            <stop offset="35%" stop-color="#f1c40f" />
+            <stop offset="75%" stop-color="#f39c12" />
+            <stop offset="100%" stop-color="#b33939" />
+          </linearGradient>
+
+          <linearGradient id="${uid}_silverMedal" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="40%" stop-color="#dfe4ea" />
+            <stop offset="80%" stop-color="#a4b0be" />
+            <stop offset="100%" stop-color="#57606f" />
+          </linearGradient>
+
+          <linearGradient id="${uid}_bronzeMedal" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffd8bf" />
+            <stop offset="40%" stop-color="#e17055" />
+            <stop offset="80%" stop-color="#d63031" />
+            <stop offset="100%" stop-color="#63171b" />
+          </linearGradient>
           <!-- 3D Skin Gradient -->
           <linearGradient id="${uid}_skinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="${colors.skin.highlight}" />
@@ -1069,6 +1195,7 @@
 
               ${Layers.accessories(config, uid)}
               ${Layers.specialItems(config, uid)}
+              ${Layers.heldAward(award, uid, colors)}
             </g>
           </g>
         </svg>

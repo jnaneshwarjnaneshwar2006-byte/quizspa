@@ -1,1 +1,4 @@
 config/database.local.php
+config/ai.local.php
+.env
+scratch/

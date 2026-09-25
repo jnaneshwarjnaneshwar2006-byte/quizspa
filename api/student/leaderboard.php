@@ -34,10 +34,23 @@ try {
         sendJsonResponse(false, 'Quiz not found.', [], 404);
     }
 
-    // 2. Fetch Leaderboard (Ranked by total_score DESC, total_time ASC)
+    // 2. Safely check if avatar_data column exists on participants
+    $hasAvatarData = true;
+    try {
+        $checkCol = $pdo->query("SHOW COLUMNS FROM `participants` LIKE 'avatar_data'");
+        if (!$checkCol || !$checkCol->fetch()) {
+            $hasAvatarData = false;
+        }
+    } catch (Throwable $t) {
+        $hasAvatarData = false;
+    }
+
+    $avatarField = $hasAvatarData ? "p.avatar_data," : "NULL AS avatar_data,";
+
+    // Fetch Leaderboard (Ranked by total_score DESC, total_time ASC)
     $stmt = $pdo->prepare("
         SELECT 
-            p.id, p.name, p.emoji, p.avatar_data, p.total_score, p.total_time, p.session_token,
+            p.id, p.name, p.emoji, {$avatarField} p.total_score, p.total_time, p.session_token,
             COUNT(CASE WHEN a.is_correct = 1 THEN 1 END) as correct_answers
         FROM `participants` p
         LEFT JOIN `answers` a ON p.id = a.participant_id
@@ -59,11 +72,12 @@ try {
             'rank'            => $rank,
             'id'              => (int)$p['id'],
             'name'            => $p['name'],
-            'emoji'           => $p['emoji'],
-            'avatar_data'     => getParticipantAvatarData($p),
+            'points'          => (int)$p['total_score'],
             'total_score'     => (int)$p['total_score'],
-            'total_time'      => (float)$p['total_time'],
-            'correct_answers' => (int)$p['correct_answers'],
+            'emoji'           => $p['emoji'] ?? '😀',
+            'avatar_data'     => getParticipantAvatarData($p),
+            'total_time'      => (float)($p['total_time'] ?? 0),
+            'correct_answers' => (int)($p['correct_answers'] ?? 0),
             'is_me'           => $isMe
         ];
 
@@ -87,5 +101,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    sendJsonResponse(false, 'Failed to fetch leaderboard: ' . $e->getMessage(), [], 500);
+    error_log("[QuizSpark Leaderboard Error] Quiz {$quizId}: " . $e->getMessage());
+    sendJsonResponse(false, 'Unable to load leaderboard. Please try again.', [], 500);
 }

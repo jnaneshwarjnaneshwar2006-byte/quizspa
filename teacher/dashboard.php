@@ -61,6 +61,7 @@ $quizzes = $stmt->fetchAll();
       </div>
       <ul class="sidebar-menu">
         <li class="menu-item active"><a href="dashboard.php">📊 Dashboard</a></li>
+        <li class="menu-item"><a href="ai_generator.php" style="color: #a29bfe; font-weight: 800;">✨ AI Generator</a></li>
         <li class="menu-item"><a href="create_quiz.php">➕ Create Quiz</a></li>
         <li class="menu-item"><a href="quizzes.php">📚 My Quizzes</a></li>
         <li class="menu-item"><a href="results.php">🏆 Results</a></li>
@@ -77,8 +78,9 @@ $quizzes = $stmt->fetchAll();
           <h1 style="font-size: 2rem;">Welcome, <?= htmlspecialchars($teacherName) ?>!</h1>
           <p style="color: var(--text-muted);">Manage your live quizzes and view participant progress.</p>
         </div>
-        <div class="user-profile">
-          <a href="create_quiz.php" class="btn btn-primary">➕ Create New Quiz</a>
+        <div class="user-profile" style="display: flex; gap: 10px;">
+          <a href="ai_generator.php" class="btn btn-primary" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe);">✨ Generate with AI</a>
+          <a href="create_quiz.php" class="btn btn-secondary">➕ Manual Quiz</a>
         </div>
       </div>
 

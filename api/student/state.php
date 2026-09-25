@@ -183,7 +183,9 @@ try {
             'audio_url'       => $question['audio_url'] ?? null,
             'correct_option'  => ($currentQStatus === 'ended' || $currentQStatus === 'leaderboard') ? $question['correct_option'] : null,
             'time_limit'      => (int)$question['time_limit'],
-            'time_remaining'  => $timeRemaining
+            'time_remaining'  => $timeRemaining,
+            'points'          => (int)($question['points'] ?? 1000),
+            'max_points'      => (int)($question['points'] ?? 1000)
         ] : null,
         'student' => $participant ? [
             'id'          => (int)$participant['id'],
