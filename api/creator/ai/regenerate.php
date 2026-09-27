@@ -107,7 +107,8 @@ $userPrompt = "Regenerate this question:\n" . json_encode($userPromptData, JSON_
 $aiResult = callAiService($systemPrompt, $userPrompt, 25);
 if (!$aiResult['success']) {
     logAiEvent($teacherId, 'regenerate_failed', ['code' => $aiResult['code'], 'message' => $aiResult['message']]);
-    sendAiError($aiResult['code'], $aiResult['message'], [], 502);
+    $httpCode = ($aiResult['code'] === 'AI_NOT_CONFIGURED') ? 500 : (($aiResult['code'] === 'AI_RATE_LIMITED') ? 429 : 502);
+    sendAiError($aiResult['code'], $aiResult['message'], [], $httpCode);
 }
 
 $rawQ = $aiResult['data'];
