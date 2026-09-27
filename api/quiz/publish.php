@@ -49,8 +49,8 @@ try {
         $joinCode = $candidateCode;
     }
 
-    // Generate Join URL using authoritative production helper
-    $joinUrl = getStudentJoinUrl($joinCode);
+    // Generate Join URL dynamically using getBaseUrl()
+    $joinUrl = getBaseUrl() . '/student/join.php?code=' . $joinCode;
 
     // Update Quiz Status
     $updateStmt = $pdo->prepare("UPDATE `quizzes` SET `status` = 'published', `join_code` = :join_code, `join_url` = :join_url, `published_at` = NOW() WHERE `id` = :id");

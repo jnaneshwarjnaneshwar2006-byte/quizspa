@@ -55,14 +55,13 @@ try {
     // Ensure join_code and join_url exist
     if (empty($quiz['join_code'])) {
         $newPin = generateJoinCode();
-        $joinUrl = getStudentJoinUrl($newPin);
+        $joinUrl = getBaseUrl() . '/student/join.php?code=' . $newPin;
         $pdo->prepare("UPDATE `quizzes` SET `join_code` = :code, `join_url` = :url WHERE `id` = :id")
             ->execute(['code' => $newPin, 'url' => $joinUrl, 'id' => $quizId]);
         $quiz['join_code'] = $newPin;
         $quiz['join_url'] = $joinUrl;
-    } else {
-        $joinUrl = getStudentJoinUrl($quiz['join_code']);
-        $quiz['join_url'] = $joinUrl;
+    } elseif (empty($quiz['join_url'])) {
+        $quiz['join_url'] = getBaseUrl() . '/student/join.php?code=' . $quiz['join_code'];
     }
 
     // Fetch Joined Participants

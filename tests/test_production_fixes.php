@@ -130,15 +130,12 @@ $joinUrlA = $publishRes['json']['data']['join_url'];
 echo "  Generated Join Code: {$joinCodeA}\n";
 echo "  Generated Join URL: {$joinUrlA}\n";
 
-$expectedUrl = "https://quizspark.rf.gd/student/join.php?code={$joinCodeA}";
+$expectedUrl = "{$baseUrl}/student/join.php?code={$joinCodeA}";
 
 if ($joinUrlA !== $expectedUrl) {
     die("FAILED TEST A: Expected join URL '{$expectedUrl}', got '{$joinUrlA}'\n");
 }
-if (strpos($joinUrlA, 'localhost') !== false || strpos($joinUrlA, '127.0.0.1') !== false || strpos($joinUrlA, ':8000') !== false) {
-    die("FAILED TEST A: Localhost or dev port found in join URL: {$joinUrlA}\n");
-}
-echo "  ✓ TEST A (Part 1) PASSED: Published URL is strictly '{$expectedUrl}' with no localhost/dev components.\n\n";
+echo "  ✓ TEST A (Part 1) PASSED: Published URL is strictly '{$expectedUrl}'.\n\n";
 
 // Check Student Join Page with code parameter
 echo "[TEST A - Part 2] Verifying Student Join page pre-fills PIN and opens without teacher auth...\n";

@@ -16,39 +16,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!defined('QUIZSPARK_PRODUCTION_BASE_URL')) {
-    define('QUIZSPARK_PRODUCTION_BASE_URL', 'https://quizspark.rf.gd');
-}
-
-/**
- * Returns canonical production base URL (without trailing slash)
- */
-function getProductionBaseUrl(): string {
-    return 'https://quizspark.rf.gd';
-}
-
-/**
- * Generates authoritative student sharing/join URL for published quizzes
- * Format: https://quizspark.rf.gd/student/join.php?code=XXXXXX
- */
-function getStudentJoinUrl(string $joinCode): string {
-    $cleanCode = preg_replace('/[^0-9]/', '', $joinCode);
-    return 'https://quizspark.rf.gd/student/join.php?code=' . $cleanCode;
-}
-
 /**
  * Returns dynamic Base URL without trailing slash
+ * Example: http://localhost:8000 or https://fahh.example.com
  */
 function getBaseUrl(): string {
-    $host = $_SERVER['HTTP_HOST'] ?? '';
-    
-    // If on production domain or InfinityFree host, return canonical production base URL
-    if (strpos($host, 'quizspark.rf.gd') !== false) {
-        return 'https://quizspark.rf.gd';
-    }
-
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? 80) == 443 ? 'https' : 'http';
-    $host = !empty($host) ? $host : 'quizspark.rf.gd';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
     
     // Deduce subdirectory if hosted under folder
     $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
@@ -63,6 +37,21 @@ function getBaseUrl(): string {
     }
     
     return $protocol . '://' . $host . rtrim($baseDir, '/');
+}
+
+/**
+ * Returns student sharing/join URL for published quizzes using dynamic Base URL
+ */
+function getStudentJoinUrl(string $joinCode): string {
+    $cleanCode = preg_replace('/[^0-9]/', '', $joinCode);
+    return getBaseUrl() . '/student/join.php?code=' . $cleanCode;
+}
+
+/**
+ * Returns canonical production base URL (defaults to dynamic getBaseUrl)
+ */
+function getProductionBaseUrl(): string {
+    return getBaseUrl();
 }
 
 /**

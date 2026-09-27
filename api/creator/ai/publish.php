@@ -89,7 +89,7 @@ try {
         $joinCode = $candidateCode;
     }
 
-    $joinUrl = getStudentJoinUrl($joinCode);
+    $joinUrl = getBaseUrl() . '/student/join.php?code=' . $joinCode;
 
     // 8. Update Quiz Status from 'draft' to 'published'
     $updateStmt = $pdo->prepare("

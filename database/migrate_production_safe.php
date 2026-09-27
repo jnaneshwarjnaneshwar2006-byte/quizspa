@@ -129,14 +129,6 @@ function ensureProductionSchema(PDO $pdo, bool $verbose = false): array
             $changes[] = "Added column `published_at` to `quizzes`";
         }
 
-        // Normalize any legacy dev join_urls to canonical production domain https://quizspark.rf.gd
-        $pdo->exec("
-            UPDATE `quizzes` 
-            SET `join_url` = CONCAT('https://quizspark.rf.gd/student/join.php?code=', `join_code`) 
-            WHERE `join_code` IS NOT NULL 
-              AND `join_code` != '' 
-              AND (`join_url` IS NULL OR `join_url` LIKE '%localhost%' OR `join_url` LIKE '%127.0.0.1%')
-        ");
 
         // 1n. quizzes.started_at
         if (!$hasColumn('quizzes', 'started_at')) {
