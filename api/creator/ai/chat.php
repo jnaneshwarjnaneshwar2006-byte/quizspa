@@ -130,8 +130,59 @@ if ($topic === '') {
 $topic = mb_substr($topic, 0, 100);
 
 if ($action === 'generate' && !$quizId) {
-    // Generate new draft
-    $title = "{$subject} - {$topic} Quiz";
+    // Generate new draft using real AI
+    $combinedTopic = ($subject && strcasecmp($subject, 'General Knowledge') !== 0 && stripos($topic, $subject) === false) 
+        ? "{$subject} - {$topic}" 
+        : $topic;
+
+    $systemPrompt = <<<PROMPT
+You are an expert educational quiz generator.
+Generate high-quality, factually accurate multiple-choice questions based specifically on the requested topic.
+Return ONLY valid JSON matching the schema.
+PROMPT;
+
+    $userPromptData = [
+        'title'      => "{$combinedTopic} Quiz",
+        'topic'      => $combinedTopic,
+        'difficulty' => $difficulty,
+        'questions'  => [
+            [
+                'question_text'  => 'Question text testing ' . $combinedTopic,
+                'option_a'       => 'Option A text',
+                'option_b'       => 'Option B text',
+                'option_c'       => 'Option C text',
+                'option_d'       => 'Option D text',
+                'correct_option' => 'A',
+                'explanation'    => 'Educational explanation',
+                'difficulty'     => $difficulty,
+                'points'         => 100
+            ]
+        ]
+    ];
+
+    $userPrompt = "Generate exactly {$count} multiple-choice quiz questions on topic '{$combinedTopic}' with difficulty '{$difficulty}'.\n"
+        . "Required JSON Schema:\n" . json_encode($userPromptData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+    $aiRes = callAiService($systemPrompt, $userPrompt, 35);
+    if (!$aiRes['success']) {
+        sendAiResponse(true, 'Chat response generated.', [
+            'message' => "I was unable to generate questions for '{$topic}': " . $aiRes['message'],
+            'action'  => 'error',
+            'quiz_id' => null
+        ], 200);
+    }
+
+    $val = validateGeneratedQuiz($aiRes['data'], $combinedTopic, $count, $difficulty, 100, 'mcq');
+    if (!$val['valid']) {
+        sendAiResponse(true, 'Chat response generated.', [
+            'message' => "AI generated an invalid quiz response. Please try again.",
+            'action'  => 'error',
+            'quiz_id' => null
+        ], 200);
+    }
+
+    $title = $val['title'] ?? "{$combinedTopic} Quiz";
+
     try {
         $pdo->beginTransaction();
 
@@ -149,20 +200,17 @@ if ($action === 'generate' && !$quizId) {
         ]);
         $newQuizId = (int)$pdo->lastInsertId();
 
-        // Generate questions using mock or service
-        $mock = generateMockAiResponse("topic: {$topic}, question_count: {$count}, difficulty: {$difficulty}, question_type: mcq");
         $qStmt = $pdo->prepare("
             INSERT INTO `questions` 
             (`quiz_id`, `question_number`, `question_type`, `question_text`, `option_a`, `option_b`, `option_c`, `option_d`, `correct_option`, `explanation`, `points`, `difficulty`, `time_limit`)
-            VALUES (:quiz_id, :q_num, 'multiple_choice', :q_text, :opt_a, :opt_b, :opt_c, :opt_d, :correct, :explanation, 100, :diff, 10)
+            VALUES (:quiz_id, :q_num, :q_type, :q_text, :opt_a, :opt_b, :opt_c, :opt_d, :correct, :explanation, :points, :diff, 10)
         ");
 
-        foreach ($mock['data']['questions'] as $idx => $q) {
-            $val = validateQuestionStructure($q, $idx + 1);
-            $s = $val['sanitized'];
+        foreach ($val['questions'] as $s) {
             $qStmt->execute([
                 'quiz_id'     => $newQuizId,
                 'q_num'       => $s['question_number'],
+                'q_type'      => $s['question_type'],
                 'q_text'      => $s['question_text'],
                 'opt_a'       => $s['option_a'],
                 'opt_b'       => $s['option_b'],
@@ -170,6 +218,7 @@ if ($action === 'generate' && !$quizId) {
                 'opt_d'       => $s['option_d'],
                 'correct'     => $s['correct_option'],
                 'explanation' => $s['explanation'],
+                'points'      => $s['points'],
                 'diff'        => $s['difficulty']
             ]);
         }
@@ -179,7 +228,7 @@ if ($action === 'generate' && !$quizId) {
         logAiEvent($teacherId, 'chat_generate_success', ['quiz_id' => $newQuizId, 'count' => $count]);
 
         sendAiResponse(true, 'Chat action completed.', [
-            'message' => "I have created a new draft quiz for you on '{$topic}' with {$count} {$difficulty} questions.",
+            'message' => "I have created a new draft quiz for you on '{$topic}' with " . count($val['questions']) . " {$difficulty} questions.",
             'action'  => 'generate',
             'quiz_id' => $newQuizId
         ], 200);

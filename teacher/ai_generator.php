@@ -320,7 +320,7 @@ $csrfToken = generateCsrfToken();
 
                 <div style="margin-top: 20px;">
                   <button type="submit" id="btnSubmitGenerate" class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; padding: 16px; font-size: 1.15rem; box-shadow: 0 8px 24px rgba(108, 92, 231, 0.35);">
-                    <span>✨ Generate AI Quiz</span>
+                    <span id="btnGenText">✨ Generate Quiz Draft</span>
                   </button>
                 </div>
               </div>
@@ -529,11 +529,30 @@ $csrfToken = generateCsrfToken();
     if (aiTopicEl) aiTopicEl.addEventListener('input', updateAiTargetBadges);
 
     // 1. Submit Quick Generator Form
+    let isGenerating = false;
     document.getElementById('aiGenerateForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (isGenerating) return;
+      isGenerating = true;
+
       const btn = document.getElementById('btnSubmitGenerate');
+      const btnText = document.getElementById('btnGenText') || btn;
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Generating AI Quiz...</span>';
+
+      // Progressive Loading Experience sequence
+      btnText.textContent = "⏳ Generating your quiz with AI...";
+      
+      const timer1 = setTimeout(() => {
+        if (isGenerating) btnText.textContent = "⏳ Creating questions...";
+      }, 1500);
+
+      const timer2 = setTimeout(() => {
+        if (isGenerating) btnText.textContent = "⏳ Validating questions...";
+      }, 3500);
+
+      const timer3 = setTimeout(() => {
+        if (isGenerating) btnText.textContent = "⏳ Saving quiz draft...";
+      }, 5500);
 
       const subjectVal = document.getElementById('aiSubject').value.trim();
       const topicVal = document.getElementById('aiTopic').value.trim();
@@ -577,21 +596,32 @@ $csrfToken = generateCsrfToken();
           throw new Error('Server returned an invalid response.');
         }
 
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+
         if (data && data.success && data.data) {
+          btnText.textContent = "✅ Quiz draft created successfully.";
           activeQuizId = data.data.quiz.id;
           activeQuizData = data.data;
           renderDraftQuiz(data.data.quiz, data.data.questions);
-          showAlert('success', 'AI Quiz generated successfully!');
+          showAlert('success', 'Quiz draft created successfully.');
           document.getElementById('draftReviewSection').scrollIntoView({ behavior: 'smooth' });
         } else {
           const errMsg = (data && data.error && data.error.message) || (data && data.message) || 'Unable to save generated quiz draft. Please try again.';
           showAlert('error', errMsg);
         }
       } catch (err) {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
         showAlert('error', err.message || 'Network error. Please try again.');
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span>✨ Generate AI Quiz</span>';
+        setTimeout(() => {
+          isGenerating = false;
+          btn.disabled = false;
+          btnText.textContent = "✨ Generate Quiz Draft";
+        }, 1200);
       }
     });
 

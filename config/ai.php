@@ -1,6 +1,7 @@
 <?php
 /**
- * QuizSpark AI Quiz Generator - Configuration, Security, Validation & Provider Integration
+ * QuizSpark AI Quiz Generator - Real LLM Configuration, Provider Integration & Strict Validation
+ * Stack: PHP + MySQL + JavaScript
  */
 
 require_once __DIR__ . '/database.php';
@@ -8,9 +9,9 @@ require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/security.php';
 
 // Rate Limits (per hour per creator)
-define('AI_RATE_LIMIT_GENERATE', 10);
-define('AI_RATE_LIMIT_REGENERATE', 30);
-define('AI_RATE_LIMIT_CHAT', 60);
+if (!defined('AI_RATE_LIMIT_GENERATE')) define('AI_RATE_LIMIT_GENERATE', 15);
+if (!defined('AI_RATE_LIMIT_REGENERATE')) define('AI_RATE_LIMIT_REGENERATE', 30);
+if (!defined('AI_RATE_LIMIT_CHAT')) define('AI_RATE_LIMIT_CHAT', 60);
 
 /**
  * Standard AI JSON Success Response
@@ -27,7 +28,7 @@ function sendAiResponse(bool $success, string $message, array $data = [], int $s
 }
 
 /**
- * Standard AI JSON Error Response conforming to prompt Section 2 & 24
+ * Standard AI JSON Error Response
  */
 function sendAiError(string $code, string $message, array $fields = [], int $statusCode = 400): void {
     http_response_code($statusCode);
@@ -66,7 +67,6 @@ function requireCreatorAuth(): int {
  * CSRF Validation for state-changing requests
  */
 function verifyAiCsrf(): void {
-    // Read CSRF from Header or Body
     $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
     if (!$token) {
         $raw = file_get_contents('php://input');
@@ -80,8 +80,7 @@ function verifyAiCsrf(): void {
     }
 
     if (!validateCsrfToken($token)) {
-        // If session csrf_token is present but mismatch or missing
-        sendAiError('CSRF_ERROR', 'Invalid or missing CSRF token.', [], 403);
+        sendAiError('CSRF_ERROR', 'Invalid or missing session CSRF token. Please refresh the page.', [], 403);
     }
 }
 
@@ -94,15 +93,13 @@ function enforceRateLimit(PDO $pdo, int $teacherId, string $action): void {
         'regenerate' => AI_RATE_LIMIT_REGENERATE,
         'chat'       => AI_RATE_LIMIT_CHAT
     ];
-    $maxPerHour = $limits[$action] ?? 30;
+    $maxPerHour = $limits[$action] ?? 20;
 
     try {
-        // Clean up old entries older than 24h occasionally (1 in 50 requests)
         if (mt_rand(1, 50) === 1) {
             $pdo->exec("DELETE FROM `ai_rate_limits` WHERE `created_at` < NOW() - INTERVAL 24 HOUR");
         }
 
-        // Count requests in last 1 hour
         $stmt = $pdo->prepare("
             SELECT COUNT(*) FROM `ai_rate_limits` 
             WHERE `teacher_id` = :t_id AND `action` = :act AND `created_at` >= NOW() - INTERVAL 1 HOUR
@@ -112,16 +109,14 @@ function enforceRateLimit(PDO $pdo, int $teacherId, string $action): void {
 
         if ($count >= $maxPerHour) {
             logAiEvent($teacherId, 'rate_limit_exceeded', ['action' => $action, 'count' => $count]);
-            sendAiError('RATE_LIMITED', "Too many AI requests for {$action}. Please try again later.", [], 429);
+            sendAiError('RATE_LIMITED', 'AI generation limit reached. Please try again later.', [], 429);
         }
 
-        // Record this request
         $ins = $pdo->prepare("INSERT INTO `ai_rate_limits` (`teacher_id`, `action`, `created_at`) VALUES (:t_id, :act, NOW())");
         $ins->execute(['t_id' => $teacherId, 'act' => $action]);
 
     } catch (Exception $e) {
-        error_log("[QuizSpark AI RateLimit Error] " . $e->getMessage());
-        // Do not block creator if rate limit table has a transient issue
+        error_log("[QuizSpark AI RateLimit Warning] " . $e->getMessage());
     }
 }
 
@@ -184,6 +179,10 @@ function formatQuestionResponse(array $q): array {
         'question_text'   => $q['question_text'] ?? '',
         'question_type'   => $qType,
         'options'         => $options,
+        'option_a'        => $q['option_a'] ?? ($options[0] ?? ''),
+        'option_b'        => $q['option_b'] ?? ($options[1] ?? ''),
+        'option_c'        => $q['option_c'] ?? ($options[2] ?? null),
+        'option_d'        => $q['option_d'] ?? ($options[3] ?? null),
         'correct_answer'  => $correctAnswer,
         'correct_option'  => $correctOption,
         'explanation'     => $q['explanation'] ?? '',
@@ -194,15 +193,303 @@ function formatQuestionResponse(array $q): array {
 }
 
 /**
- * Validate a Question against strict business rules
+ * Get configured AI API Key from environment or local config
+ */
+function getAiApiKey(): ?string {
+    $keys = ['OPENAI_API_KEY', 'AI_API_KEY', 'GEMINI_API_KEY'];
+    foreach ($keys as $k) {
+        if (!empty($_ENV[$k])) return trim($_ENV[$k]);
+        if (!empty($_SERVER[$k])) return trim($_SERVER[$k]);
+        $val = getenv($k);
+        if (!empty($val)) return trim($val);
+    }
+
+    $localConfigFile = __DIR__ . '/ai.local.php';
+    if (file_exists($localConfigFile)) {
+        $conf = require $localConfigFile;
+        if (is_array($conf)) {
+            if (!empty($conf['openai_api_key'])) return trim($conf['openai_api_key']);
+            if (!empty($conf['api_key'])) return trim($conf['api_key']);
+        } elseif (is_string($conf) && !empty($conf)) {
+            return trim($conf);
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Get configured AI Model Name
+ */
+function getAiModel(): string {
+    $keys = ['AI_MODEL', 'OPENAI_MODEL'];
+    foreach ($keys as $k) {
+        if (!empty($_ENV[$k])) return trim($_ENV[$k]);
+        if (!empty($_SERVER[$k])) return trim($_SERVER[$k]);
+        $val = getenv($k);
+        if (!empty($val)) return trim($val);
+    }
+
+    $localConfigFile = __DIR__ . '/ai.local.php';
+    if (file_exists($localConfigFile)) {
+        $conf = require $localConfigFile;
+        if (is_array($conf) && !empty($conf['model'])) {
+            return trim($conf['model']);
+        }
+    }
+
+    return 'gpt-4o-mini';
+}
+
+/**
+ * Execute Real LLM API Call (OpenAI API / Gemini fallback)
+ *
+ * @param string $systemPrompt
+ * @param string $userPrompt
+ * @param int $timeout
+ * @return array ['success' => bool, 'data' => array, 'code' => string, 'message' => string]
+ */
+function callAiService(string $systemPrompt, string $userPrompt, int $timeout = 40): array {
+    $apiKey = getAiApiKey();
+
+    if (empty($apiKey)) {
+        error_log("[QuizSpark AI Config Error] Server AI API key is not configured.");
+        return [
+            'success' => false,
+            'code'    => 'AI_NOT_CONFIGURED',
+            'message' => 'AI service is not configured. Please configure the server AI API key.'
+        ];
+    }
+
+    // Determine provider based on key format or prefix
+    $isGeminiKey = (str_starts_with($apiKey, 'AIzaSy') || strlen($apiKey) === 39);
+
+    if ($isGeminiKey) {
+        return callGeminiApi($apiKey, $systemPrompt, $userPrompt, $timeout);
+    }
+
+    return callOpenAiApi($apiKey, $systemPrompt, $userPrompt, $timeout);
+}
+
+/**
+ * Real OpenAI API Integration (Chat Completions JSON mode)
+ */
+function callOpenAiApi(string $apiKey, string $systemPrompt, string $userPrompt, int $timeout = 40): array {
+    $model = getAiModel();
+    $endpoint = "https://api.openai.com/v1/chat/completions";
+
+    $payload = [
+        'model'           => $model,
+        'temperature'     => 0.3,
+        'response_format' => ['type' => 'json_object'],
+        'messages'        => [
+            [
+                'role'    => 'system',
+                'content' => $systemPrompt
+            ],
+            [
+                'role'    => 'user',
+                'content' => $userPrompt
+            ]
+        ]
+    ];
+
+    $ch = curl_init($endpoint);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json'
+        ],
+        CURLOPT_TIMEOUT        => $timeout,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true
+    ]);
+
+    $response = curl_exec($ch);
+    $curlErr = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($curlErr) {
+        error_log("[QuizSpark OpenAI Network Error] " . $curlErr);
+        if (strpos($curlErr, 'timed out') !== false || strpos($curlErr, 'timeout') !== false) {
+            return [
+                'success' => false,
+                'code'    => 'AI_TIMEOUT',
+                'message' => 'AI generation timed out. Please try again with fewer questions.'
+            ];
+        }
+        return [
+            'success' => false,
+            'code'    => 'AI_SERVICE_UNAVAILABLE',
+            'message' => 'AI service is temporarily unavailable. Please try again.'
+        ];
+    }
+
+    if ($httpCode === 401) {
+        error_log("[QuizSpark OpenAI Auth Error 401] Invalid or expired OpenAI API key.");
+        return [
+            'success' => false,
+            'code'    => 'AI_AUTH_ERROR',
+            'message' => 'AI service authentication failed. Please check the server configuration.'
+        ];
+    }
+
+    if ($httpCode === 429) {
+        error_log("[QuizSpark OpenAI Rate Limit 429] OpenAI upstream quota/rate limit reached.");
+        return [
+            'success' => false,
+            'code'    => 'AI_RATE_LIMITED',
+            'message' => 'AI generation limit reached. Please try again later.'
+        ];
+    }
+
+    if ($httpCode >= 400) {
+        error_log("[QuizSpark OpenAI HTTP {$httpCode}] Upstream error: " . substr((string)$response, 0, 500));
+        return [
+            'success' => false,
+            'code'    => 'AI_SERVICE_UNAVAILABLE',
+            'message' => 'AI service is temporarily unavailable. Please try again.'
+        ];
+    }
+
+    $decoded = json_decode((string)$response, true);
+    if (!isset($decoded['choices'][0]['message']['content'])) {
+        error_log("[QuizSpark OpenAI Invalid Format] " . substr((string)$response, 0, 500));
+        return [
+            'success' => false,
+            'code'    => 'INVALID_AI_OUTPUT',
+            'message' => 'AI generated an invalid quiz response. Please try again.'
+        ];
+    }
+
+    $rawContent = trim($decoded['choices'][0]['message']['content']);
+    $structured = json_decode($rawContent, true);
+    if (!$structured || !is_array($structured)) {
+        $clean = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $rawContent);
+        $structured = json_decode($clean, true);
+    }
+
+    if (!$structured || !is_array($structured)) {
+        error_log("[QuizSpark OpenAI JSON Parse Error] " . substr($rawContent, 0, 400));
+        return [
+            'success' => false,
+            'code'    => 'INVALID_AI_OUTPUT',
+            'message' => 'AI generated an invalid quiz response. Please try again.'
+        ];
+    }
+
+    return ['success' => true, 'data' => $structured];
+}
+
+/**
+ * Google Gemini Provider Integration
+ */
+function callGeminiApi(string $apiKey, string $systemPrompt, string $userPrompt, int $timeout = 40): array {
+    $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . urlencode($apiKey);
+
+    $payload = [
+        'systemInstruction' => [
+            'parts' => [['text' => $systemPrompt]]
+        ],
+        'contents' => [
+            ['role' => 'user', 'parts' => [['text' => $userPrompt]]]
+        ],
+        'generationConfig' => [
+            'temperature'      => 0.2,
+            'responseMimeType' => 'application/json'
+        ]
+    ];
+
+    $ch = curl_init($endpoint);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_TIMEOUT        => $timeout,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true
+    ]);
+
+    $response = curl_exec($ch);
+    $curlErr = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($curlErr) {
+        error_log("[QuizSpark Gemini Network Error] " . $curlErr);
+        return [
+            'success' => false,
+            'code'    => 'AI_SERVICE_UNAVAILABLE',
+            'message' => 'AI service is temporarily unavailable. Please try again.'
+        ];
+    }
+
+    if ($httpCode === 401 || $httpCode === 403) {
+        return [
+            'success' => false,
+            'code'    => 'AI_AUTH_ERROR',
+            'message' => 'AI service authentication failed. Please check the server configuration.'
+        ];
+    }
+
+    if ($httpCode === 429) {
+        return [
+            'success' => false,
+            'code'    => 'AI_RATE_LIMITED',
+            'message' => 'AI generation limit reached. Please try again later.'
+        ];
+    }
+
+    if ($httpCode >= 400) {
+        return [
+            'success' => false,
+            'code'    => 'AI_SERVICE_UNAVAILABLE',
+            'message' => 'AI service is temporarily unavailable. Please try again.'
+        ];
+    }
+
+    $decoded = json_decode((string)$response, true);
+    if (!isset($decoded['candidates'][0]['content']['parts'][0]['text'])) {
+        return [
+            'success' => false,
+            'code'    => 'INVALID_AI_OUTPUT',
+            'message' => 'AI generated an invalid quiz response. Please try again.'
+        ];
+    }
+
+    $rawText = trim($decoded['candidates'][0]['content']['parts'][0]['text']);
+    $structured = json_decode($rawText, true);
+    if (!$structured || !is_array($structured)) {
+        $clean = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $rawText);
+        $structured = json_decode($clean, true);
+    }
+
+    if (!$structured || !is_array($structured)) {
+        return [
+            'success' => false,
+            'code'    => 'INVALID_AI_OUTPUT',
+            'message' => 'AI generated an invalid quiz response. Please try again.'
+        ];
+    }
+
+    return ['success' => true, 'data' => $structured];
+}
+
+/**
+ * Validate Question Structure & Sanitize
  */
 function validateQuestionStructure(array $q, int $questionNum = 1): array {
     $errors = [];
-    $text = trim((string)($q['question_text'] ?? ''));
+    $text = trim((string)($q['question_text'] ?? ($q['text'] ?? '')));
     if ($text === '') {
         $errors['question_text'] = "Question #{$questionNum}: Question text cannot be empty.";
-    } elseif (mb_strlen($text) > 1000) {
-        $errors['question_text'] = "Question #{$questionNum}: Question text exceeds 1000 characters.";
+    } elseif (mb_strlen($text) > 1500) {
+        $errors['question_text'] = "Question #{$questionNum}: Question text exceeds limit.";
     }
 
     $type = strtolower(trim((string)($q['question_type'] ?? 'mcq')));
@@ -211,83 +498,76 @@ function validateQuestionStructure(array $q, int $questionNum = 1): array {
     }
     $normType = ($type === 'true_false') ? 'true_false' : 'mcq';
 
-    $options = $q['options'] ?? [];
-    if (!is_array($options)) {
-        $options = [];
-    }
-
     $optA = ''; $optB = ''; $optC = null; $optD = null;
     $correctLetter = 'A';
 
     if ($normType === 'true_false') {
         $optA = 'True';
         $optB = 'False';
-        $rawCorrect = trim((string)($q['correct_answer'] ?? ($q['correct_option'] ?? 'True')));
-        if (strcasecmp($rawCorrect, 'true') === 0 || strtoupper($rawCorrect) === 'A') {
+        $rawCorrect = trim((string)($q['correct_option'] ?? ($q['correct_answer'] ?? 'A')));
+        if (strtoupper($rawCorrect) === 'A' || strcasecmp($rawCorrect, 'true') === 0) {
             $correctLetter = 'A';
-        } elseif (strcasecmp($rawCorrect, 'false') === 0 || strtoupper($rawCorrect) === 'B') {
+        } elseif (strtoupper($rawCorrect) === 'B' || strcasecmp($rawCorrect, 'false') === 0) {
             $correctLetter = 'B';
         } else {
-            $errors['correct_answer'] = "Question #{$questionNum}: True/False question correct answer must be 'True' or 'False'.";
+            $errors['correct_option'] = "Question #{$questionNum}: True/False correct answer must be 'A' (True) or 'B' (False).";
         }
     } else {
-        // MCQ validation: exactly 4 options
-        if (count($options) !== 4) {
-            $errors['options'] = "Question #{$questionNum}: MCQ must have exactly 4 options.";
+        // Extract 4 options from either explicit keys or options array
+        if (isset($q['option_a'], $q['option_b'], $q['option_c'], $q['option_d'])) {
+            $optA = trim((string)$q['option_a']);
+            $optB = trim((string)$q['option_b']);
+            $optC = trim((string)$q['option_c']);
+            $optD = trim((string)$q['option_d']);
+        } elseif (isset($q['options']) && is_array($q['options']) && count($q['options']) === 4) {
+            $optA = trim((string)$q['options'][0]);
+            $optB = trim((string)$q['options'][1]);
+            $optC = trim((string)$q['options'][2]);
+            $optD = trim((string)$q['options'][3]);
+        }
+
+        if ($optA === '' || $optB === '' || $optC === '' || $optD === '') {
+            $errors['options'] = "Question #{$questionNum}: All four MCQ options must be non-empty.";
         } else {
-            $trimmedOpts = [];
-            $seen = [];
-            foreach ($options as $oi => $opt) {
-                $trimmed = trim((string)$opt);
-                if ($trimmed === '') {
-                    $errors['options'] = "Question #{$questionNum}: Option " . chr(65 + $oi) . " cannot be empty.";
-                    break;
-                }
-                $lower = mb_strtolower($trimmed);
-                if (isset($seen[$lower])) {
-                    $errors['options'] = "Question #{$questionNum}: Duplicate options detected ('{$trimmed}').";
-                    break;
-                }
-                $seen[$lower] = true;
-                $trimmedOpts[] = $trimmed;
+            // Check duplicate options within question
+            $optsLower = [mb_strtolower($optA), mb_strtolower($optB), mb_strtolower($optC), mb_strtolower($optD)];
+            if (count(array_unique($optsLower)) < 4) {
+                $errors['options'] = "Question #{$questionNum}: Options must be unique.";
             }
 
-            if (empty($errors['options']) && count($trimmedOpts) === 4) {
-                $optA = $trimmedOpts[0];
-                $optB = $trimmedOpts[1];
-                $optC = $trimmedOpts[2];
-                $optD = $trimmedOpts[3];
+            // Determine correct_option letter A, B, C, or D
+            $rawCorrect = trim((string)($q['correct_option'] ?? ($q['correct_answer'] ?? '')));
+            $rawUpper = strtoupper($rawCorrect);
 
-                $rawCorrect = trim((string)($q['correct_answer'] ?? ($q['correct_option'] ?? '')));
-                // Match exact text or letter
-                if (strtoupper($rawCorrect) === 'A' || $rawCorrect === $optA) {
-                    $correctLetter = 'A';
-                } elseif (strtoupper($rawCorrect) === 'B' || $rawCorrect === $optB) {
-                    $correctLetter = 'B';
-                } elseif (strtoupper($rawCorrect) === 'C' || $rawCorrect === $optC) {
-                    $correctLetter = 'C';
-                } elseif (strtoupper($rawCorrect) === 'D' || $rawCorrect === $optD) {
-                    $correctLetter = 'D';
-                } else {
-                    $errors['correct_answer'] = "Question #{$questionNum}: Correct answer ('{$rawCorrect}') does not match any of the 4 options.";
-                }
+            if (in_array($rawUpper, ['A', 'B', 'C', 'D'], true)) {
+                $correctLetter = $rawUpper;
+            } elseif ($rawCorrect === $optA) {
+                $correctLetter = 'A';
+            } elseif ($rawCorrect === $optB) {
+                $correctLetter = 'B';
+            } elseif ($rawCorrect === $optC) {
+                $correctLetter = 'C';
+            } elseif ($rawCorrect === $optD) {
+                $correctLetter = 'D';
+            } else {
+                $errors['correct_option'] = "Question #{$questionNum}: Correct option must be A, B, C, or D.";
             }
         }
+    }
+
+    $explanation = trim((string)($q['explanation'] ?? ''));
+    if ($explanation === '') {
+        $explanation = "Educational explanation for Question #{$questionNum}.";
+    }
+
+    $points = (int)($q['points'] ?? 100);
+    if ($points < 1 || $points > 10000) {
+        $points = 100;
     }
 
     $difficulty = strtolower(trim((string)($q['difficulty'] ?? 'medium')));
     if (!in_array($difficulty, ['easy', 'medium', 'hard'], true)) {
         $difficulty = 'medium';
-    }
-
-    $points = (int)($q['points'] ?? 100);
-    if ($points < 1 || $points > 10000) {
-        $errors['points'] = "Question #{$questionNum}: Points must be between 1 and 10000.";
-    }
-
-    $explanation = trim((string)($q['explanation'] ?? ''));
-    if (mb_strlen($explanation) > 2000) {
-        $explanation = mb_substr($explanation, 0, 2000);
     }
 
     return [
@@ -311,213 +591,110 @@ function validateQuestionStructure(array $q, int $questionNum = 1): array {
 }
 
 /**
- * Get configured AI API Key
+ * Validates the entire AI-generated Quiz payload (count, duplicates, topic relevance)
  */
-function getAiApiKey(): ?string {
-    if (!empty($_SERVER['AI_API_KEY'])) return $_SERVER['AI_API_KEY'];
-    if (!empty($_ENV['AI_API_KEY'])) return $_ENV['AI_API_KEY'];
-    $envVal = getenv('AI_API_KEY');
-    if (!empty($envVal)) return $envVal;
+function validateGeneratedQuiz(array $aiData, string $topic, int $expectedCount, string $difficulty, int $pointsPerQ, string $questionType): array {
+    $questionsRaw = $aiData['questions'] ?? [];
+    if (!is_array($questionsRaw) || empty($questionsRaw)) {
+        return ['valid' => false, 'message' => 'AI generated an invalid quiz response. Please try again.'];
+    }
 
-    $localConfigFile = __DIR__ . '/ai.local.php';
-    if (file_exists($localConfigFile)) {
-        $conf = require $localConfigFile;
-        if (is_array($conf) && !empty($conf['api_key'])) {
-            return $conf['api_key'];
-        } elseif (is_string($conf) && !empty($conf)) {
-            return $conf;
+    if (count($questionsRaw) !== $expectedCount) {
+        error_log(sprintf("[QuizSpark AI Validation] Question count mismatch: expected %d, got %d", $expectedCount, count($questionsRaw)));
+        return ['valid' => false, 'message' => 'AI generated an invalid quiz response. Please try again.'];
+    }
+
+    $sanitizedList = [];
+    $seenQuestions = [];
+    $allGeneratedText = mb_strtolower((string)($aiData['title'] ?? ''));
+
+    foreach ($questionsRaw as $idx => $q) {
+        $qNum = $idx + 1;
+        $q['question_type'] = $questionType;
+        $q['points'] = $pointsPerQ;
+        $q['difficulty'] = $difficulty;
+
+        $val = validateQuestionStructure($q, $qNum);
+        if (!$val['valid']) {
+            error_log("[QuizSpark AI Question Validation Failed] " . json_encode($val['errors']));
+            return ['valid' => false, 'message' => 'AI generated an invalid quiz response. Please try again.'];
         }
-    }
 
-    return null;
-}
+        $s = $val['sanitized'];
 
-/**
- * Secure Server-side AI Provider Integration
- */
-function callAiService(string $systemPrompt, string $userPrompt, int $timeout = 30): array {
-    $apiKey = getAiApiKey();
-
-    // If no external key or in mock test mode, generate high quality structured mock
-    if (empty($apiKey) || $apiKey === 'mock' || getenv('AI_MOCK_MODE') === 'true') {
-        return generateMockAiResponse($userPrompt);
-    }
-
-    // Call Google Gemini API
-    $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . urlencode($apiKey);
-
-    $payload = [
-        'systemInstruction' => [
-            'parts' => [
-                ['text' => $systemPrompt]
-            ]
-        ],
-        'contents' => [
-            [
-                'role' => 'user',
-                'parts' => [
-                    ['text' => $userPrompt]
-                ]
-            ]
-        ],
-        'generationConfig' => [
-            'temperature' => 0.2,
-            'responseMimeType' => 'application/json'
-        ]
-    ];
-
-    $ch = curl_init($endpoint);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode($payload),
-        CURLOPT_HTTPHEADER     => [
-            'Content-Type: application/json'
-        ],
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => true
-    ]);
-
-    $response = curl_exec($ch);
-    $curlErr = curl_error($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($curlErr) {
-        error_log("[QuizSpark AI Provider Network Error] " . $curlErr);
-        if (strpos($curlErr, 'timed out') !== false || strpos($curlErr, 'timeout') !== false) {
-            return ['success' => false, 'code' => 'AI_TIMEOUT', 'message' => 'AI generation timed out. Please try again with fewer questions.'];
+        // Duplicate question check across quiz
+        $normQ = preg_replace('/[^a-z0-9]/', '', mb_strtolower($s['question_text']));
+        if (isset($seenQuestions[$normQ])) {
+            error_log("[QuizSpark AI Duplicate Question Detected] " . $s['question_text']);
+            return ['valid' => false, 'message' => 'AI generated an invalid quiz response. Please try again.'];
         }
-        return ['success' => false, 'code' => 'AI_SERVICE_UNAVAILABLE', 'message' => 'AI generation is temporarily unavailable. Please try again.'];
+        $seenQuestions[$normQ] = true;
+
+        $allGeneratedText .= ' ' . mb_strtolower($s['question_text'] . ' ' . $s['option_a'] . ' ' . $s['option_b'] . ' ' . $s['option_c'] . ' ' . $s['option_d'] . ' ' . $s['explanation']);
+        $sanitizedList[] = $s;
     }
 
-    if ($httpCode === 429) {
-        error_log("[QuizSpark AI Provider HTTP 429] Rate limited by upstream AI provider.");
-        return ['success' => false, 'code' => 'AI_RATE_LIMITED', 'message' => 'AI provider rate limit reached. Please wait a moment and try again.'];
+    // Basic topic relevance check
+    if (!checkTopicRelevance($topic, $allGeneratedText)) {
+        error_log("[QuizSpark AI Relevance Check Failed] Generated content failed topic relevance for: {$topic}");
+        return ['valid' => false, 'message' => 'AI generated an invalid quiz response. Please try again.'];
     }
 
-    if ($httpCode >= 400) {
-        error_log("[QuizSpark AI Provider HTTP {$httpCode}] Upstream error.");
-        return ['success' => false, 'code' => 'AI_SERVICE_UNAVAILABLE', 'message' => 'AI generation service error. Please try again.'];
-    }
-
-    $decoded = json_decode($response, true);
-    if (!isset($decoded['candidates'][0]['content']['parts'][0]['text'])) {
-        error_log("[QuizSpark AI Provider Invalid Schema] " . substr($response, 0, 500));
-        return ['success' => false, 'code' => 'INVALID_AI_OUTPUT', 'message' => 'Received unexpected format from AI service.'];
-    }
-
-    $rawText = trim($decoded['candidates'][0]['content']['parts'][0]['text']);
-    $structured = json_decode($rawText, true);
-    if (!$structured || !is_array($structured)) {
-        // Strip markdown backticks if present
-        $clean = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $rawText);
-        $structured = json_decode($clean, true);
-    }
-
-    if (!$structured || !is_array($structured)) {
-        error_log("[QuizSpark AI JSON Parse Error] " . substr($rawText, 0, 300));
-        return ['success' => false, 'code' => 'INVALID_AI_OUTPUT', 'message' => 'AI returned malformed JSON output.'];
-    }
-
-    return ['success' => true, 'data' => $structured];
-}
-
-/**
- * Intelligent Mock Generator for development, local testing, and fallback
- */
-function generateMockAiResponse(string $userPrompt): array {
-    $subject = 'General Knowledge';
-    if (preg_match('/"subject":\s*"([^"]+)"/i', $userPrompt, $m) || preg_match('/subject:\s*["\']?([^"\',\n]+)/i', $userPrompt, $m)) {
-        $subject = trim($m[1]);
-    }
-
-    $topic = 'Core Principles';
-    if (preg_match('/"topic":\s*"([^"]+)"/i', $userPrompt, $m) || preg_match('/topic:\s*["\']?([^"\',\n]+)/i', $userPrompt, $m)) {
-        $topic = trim($m[1]);
-    }
-
-    $count = 5;
-    if (preg_match('/"question_count":\s*(\d+)/i', $userPrompt, $m) || preg_match('/question_count:\s*(\d+)/i', $userPrompt, $m)) {
-        $count = (int)$m[1];
-    }
-    $count = max(1, min(50, $count));
-
-    $diff = 'medium';
-    if (preg_match('/"difficulty":\s*"([^"]+)"/i', $userPrompt, $m) || preg_match('/difficulty:\s*["\']?(easy|medium|hard)/i', $userPrompt, $m)) {
-        $diff = strtolower($m[1]);
-    }
-
-    $qType = 'mcq';
-    if (preg_match('/"question_type":\s*"([^"]+)"/i', $userPrompt, $m) || preg_match('/question_type:\s*["\']?(true_false|mcq)/i', $userPrompt, $m)) {
-        $qType = strtolower($m[1]);
-    }
-
-    $points = 100;
-    if (preg_match('/"(?:points|points_per_question)":\s*(\d+)/i', $userPrompt, $m) || preg_match('/(?:points|points_per_question):\s*(\d+)/i', $userPrompt, $m)) {
-        $points = (int)$m[1];
-    }
-
-    $questions = [];
-    for ($i = 1; $i <= $count; $i++) {
-        if ($qType === 'true_false') {
-            $isTrue = ($i % 2 === 1);
-            $questions[] = [
-                'question_text'  => "Regarding {$subject} - {$topic} (Part {$i}): This concept is a core foundational principle.",
-                'question_type'  => 'true_false',
-                'options'        => ['True', 'False'],
-                'correct_answer' => $isTrue ? 'True' : 'False',
-                'explanation'    => "In {$subject}, {$topic} plays a fundamental role in standard implementations.",
-                'difficulty'     => $diff,
-                'points'         => $points
-            ];
-        } else {
-            $correctOpt = "Key Concept {$i}: {$topic} in {$subject}";
-            $distractor1 = "Alternative pattern {$i}A (Unrelated to {$topic})";
-            $distractor2 = "Deprecated syntax {$i}B in {$subject}";
-            $distractor3 = "Invalid declaration {$i}C";
-
-            // Permute options based on $i
-            $opts = [$correctOpt, $distractor1, $distractor2, $distractor3];
-            $shift = ($i - 1) % 4;
-            $rotated = array_merge(array_slice($opts, $shift), array_slice($opts, 0, $shift));
-
-            $questions[] = [
-                'question_text'  => "Which statement accurately describes {$topic} in {$subject} (Question #{$i})?",
-                'question_type'  => 'mcq',
-                'options'        => $rotated,
-                'correct_answer' => $correctOpt,
-                'explanation'    => "In {$subject}, {$correctOpt} correctly addresses the principles of {$topic}.",
-                'difficulty'     => $diff,
-                'points'         => $points
-            ];
-        }
+    $title = trim((string)($aiData['title'] ?? "{$topic} Quiz"));
+    if (mb_strlen($title) > 150) {
+        $title = mb_substr($title, 0, 150);
     }
 
     return [
-        'success' => true,
-        'data' => [
-            'title'     => "{$subject} - {$topic} Quiz",
-            'questions' => $questions
-        ]
+        'valid'     => true,
+        'title'     => $title,
+        'questions' => $sanitizedList
     ];
 }
 
 /**
- * Server-Side Structured Logging conforming to prompt Section 25
+ * Basic topic relevance check (ensures questions pertain to creator topic)
+ */
+function checkTopicRelevance(string $topic, string $combinedText): bool {
+    // Extract keywords of length >= 3, excluding common stop words
+    $stopWords = ['the','and','for','with','about','from','that','this','what','which','when','where','how','why','are','is','was','were','have','has','had','you','your'];
+    $words = preg_split('/[\s,\-\.\:\;\(\)\/]+/', mb_strtolower($topic), -1, PREG_SPLIT_NO_EMPTY);
+    $keywords = [];
+
+    foreach ($words as $w) {
+        $w = trim($w);
+        if (mb_strlen($w) >= 3 && !in_array($w, $stopWords, true)) {
+            $keywords[] = $w;
+        }
+    }
+
+    if (empty($keywords)) {
+        return true;
+    }
+
+    // Check if at least one meaningful keyword is present in the quiz text
+    foreach ($keywords as $kw) {
+        if (strpos($combinedText, $kw) !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Structured Logging
  */
 function logAiEvent(int $creatorId, string $action, array $context = []): void {
     $timestamp = date('Y-m-d H:i:s');
     $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
     $entry = [
-        'timestamp'   => $timestamp,
-        'creator_id'  => $creatorId,
-        'action'      => $action,
-        'ip'          => $ip,
-        'context'     => $context
+        'timestamp'  => $timestamp,
+        'creator_id' => $creatorId,
+        'action'     => $action,
+        'ip'         => $ip,
+        'context'    => $context
     ];
-    // Strip sensitive fields if present
     unset($entry['context']['api_key'], $entry['context']['password'], $entry['context']['csrf_token']);
     error_log("[QuizSpark AI Event] " . json_encode($entry, JSON_UNESCAPED_SLASHES));
 }
