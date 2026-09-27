@@ -48,7 +48,11 @@ try {
 
         if ($question) {
             $startTime = (float)($quiz['question_start_time'] ?? 0);
-            $timeLimit = (int)$question['time_limit'];
+            $timeLimit = (int)($question['time_limit'] ?? 10);
+            if ($timeLimit <= 0) {
+                $timeLimit = 10;
+            }
+            $endTime = ($startTime > 0) ? ($startTime + (float)$timeLimit) : ($now + (float)$timeLimit);
             $elapsed = $startTime > 0 ? max(0, $now - $startTime) : 0;
             $timeRemaining = max(0, round($timeLimit - $elapsed, 2));
 
@@ -130,6 +134,7 @@ try {
             'total_questions'         => $totalQuestions,
             'participant_count'       => $participantCount,
             'server_time'             => $now,
+            'question_start_time'     => (float)($quiz['question_start_time'] ?? 0),
             'leaderboard_started_at'  => $leaderboardStartedAt,
             'next_question_at'        => $nextQuestionAt,
             'leaderboard_remaining'   => $leaderboardRemaining
@@ -146,7 +151,10 @@ try {
             'image_url'       => $question['image_url'] ?? null,
             'audio_url'       => $question['audio_url'] ?? null,
             'correct_option'  => $question['correct_option'],
-            'time_limit'      => (int)$question['time_limit'],
+            'time_limit'      => (int)$timeLimit,
+            'duration'        => (int)$timeLimit,
+            'start_time'      => $startTime,
+            'end_time'        => $endTime,
             'time_remaining'  => $timeRemaining
         ] : null,
         'stats'       => $stats,

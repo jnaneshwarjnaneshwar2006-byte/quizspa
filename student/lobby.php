@@ -39,8 +39,23 @@ $qzStmt = $pdo->prepare("SELECT id, title, status, join_code FROM `quizzes` WHER
 $qzStmt->execute(['id' => $quizId]);
 $quiz = $qzStmt->fetch();
 
+if (!$quiz) {
+    header('Location: join.php');
+    exit;
+}
+
 if (!$student) {
-    header('Location: join.php' . ($quiz ? '?code=' . urlencode($quiz['join_code']) : ''));
+    header('Location: join.php?code=' . urlencode($quiz['join_code'] ?? ''));
+    exit;
+}
+
+if ($quiz['status'] === 'completed') {
+    header('Location: leaderboard.php?quiz_id=' . $quizId);
+    exit;
+}
+
+if ($quiz['status'] === 'running') {
+    header('Location: play.php?quiz_id=' . $quizId . ($token ? '&token=' . urlencode($token) : ''));
     exit;
 }
 
@@ -51,7 +66,7 @@ $studentAvatar = getParticipantAvatarData($student);
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Waiting Lobby - QuizSpark</title>
+  <title>Waiting Lobby - <?= htmlspecialchars($quiz['title'] ?? 'Live Quiz') ?> - QuizSpark</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/lobby.css">
   <link rel="stylesheet" href="../assets/css/avatar.css">
@@ -78,7 +93,7 @@ $studentAvatar = getParticipantAvatarData($student);
     <div class="card">
       <div class="players-counter">
         <span>👥 LIVE PLAYERS:</span>
-        <span id="playerCountDisplay" style="color: var(--accent-yellow);">1</span>
+        <span id="playerCountDisplay" style="color: var(--accent-yellow);">0</span>
       </div>
 
       <div id="playersGrid" class="players-grid">
@@ -105,6 +120,7 @@ $studentAvatar = getParticipantAvatarData($student);
       const lobbyEngine = new LobbyEngine({
         quizId: quizId,
         role: 'student_lobby',
+        token: <?= json_encode($token) ?>,
         pollIntervalMs: 1000,
         onStateUpdate: (data) => {
           renderStudentLobby(data);
@@ -125,7 +141,7 @@ $studentAvatar = getParticipantAvatarData($student);
           return;
         }
 
-        const count = data.player_count || (data.participants ? data.participants.length : 1);
+        const count = (typeof data.player_count !== 'undefined') ? data.player_count : (data.participants ? data.participants.length : 0);
         document.getElementById('playerCountDisplay').textContent = count;
         
         const participants = data.participants || [];
@@ -134,8 +150,13 @@ $studentAvatar = getParticipantAvatarData($student);
         lastGridData = sig;
 
         const grid = document.getElementById('playersGrid');
+        if (participants.length === 0) {
+          grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 24px;">Waiting for players to join...</div>';
+          return;
+        }
+
         grid.innerHTML = participants.map(p => `
-          <div class="player-card animate-pop">
+          <div class="player-card animate-pop" id="p_card_${p.id}">
             <div class="avatar-badge-wrapper badge-lg" id="p_badge_${p.id}"></div>
             <span class="player-name">${escapeHtml(p.name)}</span>
           </div>

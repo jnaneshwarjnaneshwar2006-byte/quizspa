@@ -77,9 +77,15 @@ if ($quizId) {
           <h1>Quiz Results & Leaderboard</h1>
           <p style="color: var(--text-muted);">View detailed student accuracy, speed, and export report files.</p>
         </div>
-        <button type="button" id="exportCsvBtn" class="btn btn-primary" <?= empty($results) ? 'disabled' : '' ?>>
-          📥 Export CSV Report
-        </button>
+        <?php if (!empty($quizId) && !empty($results)): ?>
+          <a href="../api/quiz/export_csv.php?quiz_id=<?= $quizId ?>" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+            📥 Export CSV Report
+          </a>
+        <?php else: ?>
+          <button type="button" class="btn btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;">
+            📥 Export CSV Report
+          </button>
+        <?php endif; ?>
       </div>
 
       <!-- Quiz Selector Header -->

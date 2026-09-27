@@ -60,7 +60,11 @@ try {
 
         if ($question) {
             $startTime = (float)($quiz['question_start_time'] ?? 0);
-            $timeLimit = (int)$question['time_limit'];
+            $timeLimit = (int)($question['time_limit'] ?? 10);
+            if ($timeLimit <= 0) {
+                $timeLimit = 10;
+            }
+            $endTime = ($startTime > 0) ? ($startTime + (float)$timeLimit) : ($now + (float)$timeLimit);
             $elapsed = $startTime > 0 ? max(0, $now - $startTime) : 0;
             $timeRemaining = max(0, round($timeLimit - $elapsed, 2));
         }
@@ -163,6 +167,7 @@ try {
             'current_question_status' => $quiz['current_question_status'],
             'total_questions'         => $totalQuestions,
             'server_time'             => $now,
+            'question_start_time'     => (float)($quiz['question_start_time'] ?? 0),
             'leaderboard_started_at'  => $leaderboardStartedAt,
             'next_question_at'        => $nextQuestionAt,
             'leaderboard_remaining'   => $leaderboardRemaining
@@ -181,8 +186,11 @@ try {
             'option_d'        => $question['option_d'],
             'image_url'       => $question['image_url'] ?? null,
             'audio_url'       => $question['audio_url'] ?? null,
-            'correct_option'  => ($currentQStatus === 'ended' || $currentQStatus === 'leaderboard') ? $question['correct_option'] : null,
-            'time_limit'      => (int)$question['time_limit'],
+            'correct_option'  => ($currentQStatus === 'ended' || $currentQStatus === 'leaderboard' || $quiz['status'] === 'completed') ? $question['correct_option'] : null,
+            'time_limit'      => (int)$timeLimit,
+            'duration'        => (int)$timeLimit,
+            'start_time'      => $startTime,
+            'end_time'        => $endTime,
             'time_remaining'  => $timeRemaining,
             'points'          => (int)($question['points'] ?? 1000),
             'max_points'      => (int)($question['points'] ?? 1000)

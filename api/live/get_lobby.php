@@ -55,13 +55,14 @@ try {
     // Ensure join_code and join_url exist
     if (empty($quiz['join_code'])) {
         $newPin = generateJoinCode();
-        $joinUrl = getBaseUrl() . '/student/join.php?code=' . $newPin;
+        $joinUrl = getStudentJoinUrl($newPin);
         $pdo->prepare("UPDATE `quizzes` SET `join_code` = :code, `join_url` = :url WHERE `id` = :id")
             ->execute(['code' => $newPin, 'url' => $joinUrl, 'id' => $quizId]);
         $quiz['join_code'] = $newPin;
         $quiz['join_url'] = $joinUrl;
-    } elseif (empty($quiz['join_url'])) {
-        $quiz['join_url'] = getBaseUrl() . '/student/join.php?code=' . $quiz['join_code'];
+    } else {
+        $joinUrl = getStudentJoinUrl($quiz['join_code']);
+        $quiz['join_url'] = $joinUrl;
     }
 
     // Fetch Joined Participants
@@ -107,6 +108,7 @@ try {
         ],
         'player_count' => $playerCount,
         'participants' => $participants,
+        'players'      => $participants,
         'player_names' => $playerNames,
         'is_started'   => $isStarted,
         'is_completed' => $isCompleted
@@ -120,6 +122,7 @@ try {
         'quiz'         => $responseData['quiz'],
         'player_count' => $playerCount,
         'participants' => $participants,
+        'players'      => $participants,
         'player_names' => $playerNames,
         'is_started'   => $isStarted,
         'is_completed' => $isCompleted

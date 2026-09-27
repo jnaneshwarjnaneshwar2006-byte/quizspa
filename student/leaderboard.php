@@ -82,9 +82,6 @@ try {
       <a href="../index.php" class="btn btn-primary" style="padding: 12px 28px; font-weight: 800; font-size: 1.05rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
         🏠 Back to Home
       </a>
-      <button id="exportCsvBtn" class="btn btn-secondary" style="padding: 12px 24px; font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; gap: 8px;">
-        📥 Export Results
-      </button>
     </div>
   </main>
 

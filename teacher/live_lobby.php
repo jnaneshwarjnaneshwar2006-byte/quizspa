@@ -37,7 +37,7 @@ if (in_array($quiz['status'], ['published', 'draft'], true)) {
     $quiz['status'] = 'lobby';
 }
 
-$joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $quiz['join_code']);
+$joinUrl = getStudentJoinUrl($quiz['join_code']);
 ?>
 <!DOCTYPE html>
 <html lang="en">

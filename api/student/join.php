@@ -21,7 +21,7 @@ if (!is_array($input)) {
     $input = $_POST;
 }
 
-$joinCode = preg_replace('/[^0-9]/', '', (string)($input['join_code'] ?? $input['pin'] ?? $input['code'] ?? ''));
+$joinCode = preg_replace('/[^0-9]/', '', (string)($input['join_code'] ?? $input['pin'] ?? $input['code'] ?? $input['quiz_code'] ?? ''));
 $name = sanitizeString($input['name'] ?? $input['player_name'] ?? $input['display_name'] ?? '');
 $rawAvatar = $input['avatar_data'] ?? null;
 
@@ -73,10 +73,15 @@ try {
         $checkStmt = $pdo->prepare("SELECT * FROM `participants` WHERE `session_token` = :token AND `quiz_id` = :quiz_id LIMIT 1");
         $checkStmt->execute(['token' => $existingToken, 'quiz_id' => $quizId]);
         $participant = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        // If the existing token belongs to a different student name, do NOT overwrite it; create a separate participant
+        if ($participant && mb_strtolower(trim($participant['name'])) !== mb_strtolower(trim($name))) {
+            $participant = null;
+        }
     }
 
-    // If not found by token, check if participant exists in session for this quiz
-    if (!$participant && !empty($_SESSION['student_name']) && strtolower($_SESSION['student_name']) === strtolower($name) && !empty($_SESSION['student_quiz_id']) && (int)$_SESSION['student_quiz_id'] === $quizId) {
+    // If not found by token, check if participant exists in session for this quiz with the same name
+    if (!$participant && !empty($_SESSION['student_name']) && mb_strtolower(trim($_SESSION['student_name'])) === mb_strtolower(trim($name)) && !empty($_SESSION['student_quiz_id']) && (int)$_SESSION['student_quiz_id'] === $quizId) {
         $checkNameStmt = $pdo->prepare("SELECT * FROM `participants` WHERE `quiz_id` = :quiz_id AND `name` = :name LIMIT 1");
         $checkNameStmt->execute(['quiz_id' => $quizId, 'name' => $name]);
         $participant = $checkNameStmt->fetch(PDO::FETCH_ASSOC);

@@ -181,6 +181,8 @@ $studentAvatar = getParticipantAvatarData($student);
       let activeQuestionNum = 0;
       let targetAdvanceTimestamp = null;
       let countdownTickerId = null;
+      let questionTickerId = null;
+      let currentQuestionTargetEndMs = null;
       let leaderboardSignature = '';
       let localScore = <?= (int)$student['total_score'] ?>;
       let isAnimatingScore = false;
@@ -215,7 +217,8 @@ $studentAvatar = getParticipantAvatarData($student);
         // 1. If Quiz Finished, redirect to final leaderboard
         if (qz.status === 'completed' || qz.state === 'QUIZ_FINISHED') {
           quizEngine.stop();
-          if (countdownTickerId) clearInterval(countdownTickerId);
+          if (countdownTickerId) { clearInterval(countdownTickerId); countdownTickerId = null; }
+          if (questionTickerId) { clearInterval(questionTickerId); questionTickerId = null; }
           window.location.href = `leaderboard.php?quiz_id=${quizId}`;
           return;
         }
@@ -243,17 +246,23 @@ $studentAvatar = getParticipantAvatarData($student);
 
         // 2. Handle State Transitions: LEADERBOARD vs ACTIVE QUESTION
         if (qz.current_question_status === 'leaderboard' || qz.state === 'LEADERBOARD') {
+          // Stop Question Timer
+          if (questionTickerId) {
+            clearInterval(questionTickerId);
+            questionTickerId = null;
+          }
+
           // Switch to In-Page Leaderboard
           activeQuestionView.style.display = 'none';
           leaderboardView.style.display = 'block';
 
           // Synchronize countdown deadline based strictly on server timestamps
           const serverTime = Number(qz.server_time || (Date.now() / 1000));
+          const clockSkew = (Date.now() / 1000) - serverTime;
           const nextAt = Number(qz.next_question_at || 0);
 
           if (nextAt > 0) {
-            const secondsLeft = Math.max(0, nextAt - serverTime);
-            targetAdvanceTimestamp = Date.now() + (secondsLeft * 1000);
+            targetAdvanceTimestamp = (nextAt + clockSkew) * 1000;
           } else {
             const fallbackLeft = Number(qz.leaderboard_remaining || 5);
             targetAdvanceTimestamp = Date.now() + (fallbackLeft * 1000);
@@ -282,6 +291,10 @@ $studentAvatar = getParticipantAvatarData($student);
         if (serverQNum !== activeQuestionNum) {
           activeQuestionNum = serverQNum;
           hasAnsweredCurrent = false;
+          if (questionTickerId) {
+            clearInterval(questionTickerId);
+            questionTickerId = null;
+          }
           resetAnswerButtons();
           feedbackBanner.style.display = 'none';
           feedbackBanner.className = 'submitted-banner animate-pop';
@@ -292,7 +305,7 @@ $studentAvatar = getParticipantAvatarData($student);
           }
         }
 
-        // Render Current Question Details
+        // Render Current Question Details & Synchronize Question Countdown
         if (q) {
           document.getElementById('qTextDisplay').textContent = q.question_text;
 
@@ -359,17 +372,20 @@ $studentAvatar = getParticipantAvatarData($student);
             document.getElementById('textOptD').textContent = q.option_d;
           }
 
-          const timerElem = document.getElementById('timerDisplay');
-          const tRem = Math.ceil(q.time_remaining || 0);
-          timerElem.textContent = tRem;
-
-          if (tRem <= 3) {
-            timerElem.className = 'timer-circle danger';
-          } else if (tRem <= 5) {
-            timerElem.className = 'timer-circle warning';
-          } else {
-            timerElem.className = 'timer-circle';
+          // Authoritative Question Timer Synchronization
+          const serverNow = Number(qz.server_time || q.server_time || (Date.now() / 1000));
+          const clockSkew = (Date.now() / 1000) - serverNow;
+          const duration = Number(q.duration || q.time_limit || 10);
+          let qEndTime = Number(q.end_time || 0);
+          if (!qEndTime && q.start_time) {
+            qEndTime = Number(q.start_time) + duration;
           }
+          if (!qEndTime) {
+            qEndTime = serverNow + Number(q.time_remaining || duration);
+          }
+          currentQuestionTargetEndMs = (qEndTime + clockSkew) * 1000;
+
+          startQuestionCountdownTicker();
         }
 
         // Restore answered state if participant already answered on server
@@ -386,6 +402,43 @@ $studentAvatar = getParticipantAvatarData($student);
             feedbackBanner.innerHTML = `❌ Answer submitted (+0 pts). Waiting for next question...`;
           }
         }
+      }
+
+      function startQuestionCountdownTicker() {
+        if (questionTickerId) return;
+
+        function tick() {
+          const timerElem = document.getElementById('timerDisplay');
+          if (!timerElem || !currentQuestionTargetEndMs) return;
+
+          const now = Date.now();
+          const msLeft = Math.max(0, currentQuestionTargetEndMs - now);
+          const secsLeft = Math.ceil(msLeft / 1000);
+
+          timerElem.textContent = secsLeft;
+
+          if (secsLeft <= 3) {
+            timerElem.className = 'timer-circle danger';
+          } else if (secsLeft <= 5) {
+            timerElem.className = 'timer-circle warning';
+          } else {
+            timerElem.className = 'timer-circle';
+          }
+
+          if (msLeft <= 0) {
+            if (!hasAnsweredCurrent) {
+              disableAllAnswerButtons();
+              feedbackBanner.style.display = 'block';
+              feedbackBanner.className = 'submitted-banner animate-pop';
+              feedbackBanner.innerHTML = '⏰ Time is up! Waiting for question result...';
+              feedbackBanner.style.borderColor = '#f39c12';
+              feedbackBanner.style.color = '#f39c12';
+            }
+          }
+        }
+
+        tick();
+        questionTickerId = setInterval(tick, 100);
       }
 
       // Handle Answer Button Clicks

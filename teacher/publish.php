@@ -27,7 +27,7 @@ if (!$quiz) {
 // Auto-publish if draft
 if (empty($quiz['join_code']) || $quiz['status'] === 'draft') {
     $joinCode = generateJoinCode();
-    $joinUrl = getBaseUrl() . '/student/join.php?code=' . $joinCode;
+    $joinUrl = getStudentJoinUrl($joinCode);
 
     $upd = $pdo->prepare("UPDATE `quizzes` SET `status` = 'published', `join_code` = :code, `join_url` = :url, `published_at` = NOW() WHERE `id` = :id");
     $upd->execute(['code' => $joinCode, 'url' => $joinUrl, 'id' => $quizId]);
@@ -37,7 +37,7 @@ if (empty($quiz['join_code']) || $quiz['status'] === 'draft') {
     $quiz['join_url'] = $joinUrl;
 }
 
-$joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $quiz['join_code']);
+$joinUrl = getStudentJoinUrl($quiz['join_code']);
 ?>
 <!DOCTYPE html>
 <html lang="en">

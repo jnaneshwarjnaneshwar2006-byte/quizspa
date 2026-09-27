@@ -76,8 +76,11 @@ try {
 
     // 4. Server-Side Timer Validation
     $now = getMicroTime();
-    $startTime = (float)$quiz['question_start_time'];
-    $timeLimit = (int)$question['time_limit'];
+    $startTime = (float)($quiz['question_start_time'] ?? 0);
+    $timeLimit = (int)($question['time_limit'] ?? 10);
+    if ($timeLimit <= 0) {
+        $timeLimit = 10;
+    }
 
     $actualTimeTaken = max(0.1, round($now - $startTime, 2));
 

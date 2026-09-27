@@ -155,11 +155,15 @@ const QuizLeaderboard = (() => {
           <p class="final-lb-subtitle">Quiz Complete!</p>
         </div>
 
-        <!-- Top 3 Winner Cards (2nd Left - 1st Center - 3rd Right) -->
+        <!-- Top 3 Winner Cards -->
         <div class="final-winners-cards">
-          ${buildWinnerCard(p2, 2, 'card-2nd', 'rank-badge-2nd', 'rank-label-2nd', '2ND PLACE')}
-          ${buildWinnerCard(p1, 1, 'card-1st', 'rank-badge-1st', 'rank-label-1st', '1ST PLACE')}
-          ${buildWinnerCard(p3, 3, 'card-3rd', 'rank-badge-3rd', 'rank-label-3rd', '3RD PLACE')}
+          ${list.length === 1
+            ? buildWinnerCard(p1, 1, 'card-1st', 'rank-badge-1st', 'rank-label-1st', '1ST PLACE')
+            : (list.length === 2
+                ? buildWinnerCard(p2, 2, 'card-2nd', 'rank-badge-2nd', 'rank-label-2nd', '2ND PLACE') + buildWinnerCard(p1, 1, 'card-1st', 'rank-badge-1st', 'rank-label-1st', '1ST PLACE')
+                : buildWinnerCard(p2, 2, 'card-2nd', 'rank-badge-2nd', 'rank-label-2nd', '2ND PLACE') + buildWinnerCard(p1, 1, 'card-1st', 'rank-badge-1st', 'rank-label-1st', '1ST PLACE') + buildWinnerCard(p3, 3, 'card-3rd', 'rank-badge-3rd', 'rank-label-3rd', '3RD PLACE')
+              )
+          }
         </div>
     `;
 
@@ -270,17 +274,7 @@ const QuizLeaderboard = (() => {
 
     function buildPillar(p, rankNum, posClass, pedClass, crownIcon) {
       if (!p) {
-        return `
-          <div class="podium-pillar ${posClass}" style="opacity: 0.3;">
-            <div class="podium-pedestal-wrapper">
-              <div class="pedestal-block ${pedClass}">
-                <div class="pedestal-rank-emblem">
-                  <span class="pedestal-rank-number">${rankNum}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
+        return '';
       }
       const isCurrent = (currentToken && p.session_token === currentToken) || !!p.is_me;
       const avatarId = `pod_av_${posClass}_${p.id}_${Date.now()}`;
@@ -306,12 +300,19 @@ const QuizLeaderboard = (() => {
       `;
     }
 
+    let pillarsHtml = '';
+    if (list.length === 1) {
+      pillarsHtml = buildPillar(p1, 1, 'pos-1st', 'pedestal-1st', '👑');
+    } else if (list.length === 2) {
+      pillarsHtml = buildPillar(p2, 2, 'pos-2nd', 'pedestal-2nd', '🥈') + buildPillar(p1, 1, 'pos-1st', 'pedestal-1st', '👑');
+    } else {
+      pillarsHtml = buildPillar(p2, 2, 'pos-2nd', 'pedestal-2nd', '🥈') + buildPillar(p1, 1, 'pos-1st', 'pedestal-1st', '👑') + buildPillar(p3, 3, 'pos-3rd', 'pedestal-3rd', '🥉');
+    }
+
     let html = `
       <div class="podium-arena">
         <div class="podium-grid">
-          ${buildPillar(p2, 2, 'pos-2nd', 'pedestal-2nd', '🥈')}
-          ${buildPillar(p1, 1, 'pos-1st', 'pedestal-1st', '👑')}
-          ${buildPillar(p3, 3, 'pos-3rd', 'pedestal-3rd', '🥉')}
+          ${pillarsHtml}
         </div>
     `;
 
@@ -386,68 +387,3 @@ const QuizLeaderboard = (() => {
 
 // Attach to window
 window.QuizLeaderboard = QuizLeaderboard;
-
-// CSV Export Support
-document.addEventListener('DOMContentLoaded', () => {
-  const exportCsvBtn = document.getElementById('exportCsvBtn');
-  if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', () => {
-      // 1. Check if table exists
-      const table = document.querySelector('.data-table');
-      if (table) {
-        let csv = [];
-        const rows = table.querySelectorAll('tr');
-        for (let i = 0; i < rows.length; i++) {
-          let row = [], cols = rows[i].querySelectorAll('td, th');
-          for (let j = 0; j < cols.length; j++) {
-            let text = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, ' ').replace(/"/g, '""').trim();
-            row.push('"' + text + '"');
-          }
-          csv.push(row.join(','));
-        }
-        downloadCsvFile(csv.join('\n'));
-        return;
-      }
-
-      // 2. Export from Final Leaderboard DOM if table doesn't exist
-      const winnerCards = document.querySelectorAll('.winner-card');
-      const otherRows = document.querySelectorAll('.other-player-row');
-      if (winnerCards.length > 0 || otherRows.length > 0) {
-        let csv = ['"Rank","Player","Points"'];
-        
-        // Collect winners
-        winnerCards.forEach(c => {
-          const rank = c.querySelector('.card-rank-badge')?.innerText.trim() || '';
-          const name = c.querySelector('.card-player-name')?.innerText.trim() || '';
-          const score = c.querySelector('.card-player-score')?.innerText.trim() || '';
-          if (name && name !== '---') {
-            csv.push(`"${rank}","${name.replace(/"/g, '""')}","${score.replace(/"/g, '""')}"`);
-          }
-        });
-
-        // Collect other players
-        otherRows.forEach(r => {
-          const rank = r.querySelector('.other-player-rank')?.innerText.replace('#', '').trim() || '';
-          const name = r.querySelector('.other-player-name')?.innerText.replace('YOU', '').trim() || '';
-          const score = r.querySelector('.other-player-pts')?.innerText.trim() || '';
-          if (name) {
-            csv.push(`"${rank}","${name.replace(/"/g, '""')}","${score.replace(/"/g, '""')}"`);
-          }
-        });
-
-        downloadCsvFile(csv.join('\n'));
-      }
-    });
-  }
-
-  function downloadCsvFile(content) {
-    const csvFile = new Blob([content], { type: 'text/csv' });
-    const downloadLink = document.createElement('a');
-    downloadLink.download = `quizspark_final_leaderboard_${Date.now()}.csv`;
-    downloadLink.href = window.URL.createObjectURL(csvFile);
-    downloadLink.style.display = 'none';
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    downloadLink.remove();
-  }
-});

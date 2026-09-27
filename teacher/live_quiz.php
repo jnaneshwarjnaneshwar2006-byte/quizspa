@@ -147,6 +147,11 @@ if (!$quiz) {
 
       engine.start();
       let leaderboardSignature = '';
+      let activeQNum = 0;
+      let questionTickerId = null;
+      let currentQuestionTargetEndMs = null;
+      let lbTickerId = null;
+      let currentLbTargetEndMs = null;
 
       function renderTeacherState(data) {
         const q = data.question;
@@ -155,9 +160,18 @@ if (!$quiz) {
         const statusBadge = document.getElementById('quizStatusBadge');
         const endQuestionBtn = document.getElementById('endQuestionBtn');
 
-        document.getElementById('qNumDisplay').textContent = qz.current_question || 1;
+        const serverQNum = Number(qz.current_question || 1);
+        document.getElementById('qNumDisplay').textContent = serverQNum;
         document.getElementById('totalQDisplay').textContent = qz.total_questions || 10;
         document.getElementById('totalPlayersDisplay').textContent = qz.participant_count || 0;
+
+        if (serverQNum !== activeQNum) {
+          activeQNum = serverQNum;
+          if (questionTickerId) {
+            clearInterval(questionTickerId);
+            questionTickerId = null;
+          }
+        }
 
         if (q) {
           document.getElementById('qTextDisplay').textContent = q.question_text;
@@ -206,17 +220,20 @@ if (!$quiz) {
             shapeB.textContent = '◆';
           }
 
-          const timerElem = document.getElementById('timerDisplay');
-          const tRem = Math.ceil(q.time_remaining || 0);
-          timerElem.textContent = tRem;
-
-          if (tRem <= 3) {
-            timerElem.className = 'timer-circle danger';
-          } else if (tRem <= 5) {
-            timerElem.className = 'timer-circle warning';
-          } else {
-            timerElem.className = 'timer-circle';
+          // Server-Authoritative Question Timer Calculation
+          const serverNow = Number(qz.server_time || q.server_time || (Date.now() / 1000));
+          const clockSkew = (Date.now() / 1000) - serverNow;
+          const duration = Number(q.duration || q.time_limit || 10);
+          let qEndTime = Number(q.end_time || 0);
+          if (!qEndTime && q.start_time) {
+            qEndTime = Number(q.start_time) + duration;
           }
+          if (!qEndTime) {
+            qEndTime = serverNow + Number(q.time_remaining || duration);
+          }
+          currentQuestionTargetEndMs = (qEndTime + clockSkew) * 1000;
+
+          startTeacherQuestionTicker();
 
           // Stats Bar Calculations
           const totalAnswers = stats.total || 0;
@@ -239,6 +256,10 @@ if (!$quiz) {
         const lbView = document.getElementById('leaderboardView');
 
         if (qz.current_question_status === 'leaderboard') {
+          if (questionTickerId) {
+            clearInterval(questionTickerId);
+            questionTickerId = null;
+          }
           activeView.style.display = 'none';
           lbView.style.display = 'block';
           statusBadge.textContent = 'LEADERBOARD';
@@ -246,13 +267,28 @@ if (!$quiz) {
           endQuestionBtn.disabled = true;
           endQuestionBtn.style.opacity = '0.5';
 
-          updateLeaderboardCountdown(qz.leaderboard_remaining);
+          const serverNow = Number(qz.server_time || (Date.now() / 1000));
+          const clockSkew = (Date.now() / 1000) - serverNow;
+          const nextAt = Number(qz.next_question_at || 0);
+
+          if (nextAt > 0) {
+            currentLbTargetEndMs = (nextAt + clockSkew) * 1000;
+          } else {
+            currentLbTargetEndMs = Date.now() + (Number(qz.leaderboard_remaining || 5) * 1000);
+          }
+
+          startTeacherLbTicker();
+
           if (data.leaderboard) {
             renderLeaderboardList(data.leaderboard);
           } else {
             fetchAndRenderLeaderboard();
           }
         } else {
+          if (lbTickerId) {
+            clearInterval(lbTickerId);
+            lbTickerId = null;
+          }
           activeView.style.display = 'block';
           lbView.style.display = 'none';
           statusBadge.textContent = 'QUESTION ACTIVE';
@@ -264,8 +300,54 @@ if (!$quiz) {
 
         if (qz.status === 'completed') {
           engine.stop();
+          if (questionTickerId) { clearInterval(questionTickerId); questionTickerId = null; }
+          if (lbTickerId) { clearInterval(lbTickerId); lbTickerId = null; }
           window.location.href = `results.php?id=${quizId}`;
         }
+      }
+
+      function startTeacherQuestionTicker() {
+        if (questionTickerId) return;
+
+        function tick() {
+          const timerElem = document.getElementById('timerDisplay');
+          if (!timerElem || !currentQuestionTargetEndMs) return;
+
+          const now = Date.now();
+          const msLeft = Math.max(0, currentQuestionTargetEndMs - now);
+          const secsLeft = Math.ceil(msLeft / 1000);
+
+          timerElem.textContent = secsLeft;
+
+          if (secsLeft <= 3) {
+            timerElem.className = 'timer-circle danger';
+          } else if (secsLeft <= 5) {
+            timerElem.className = 'timer-circle warning';
+          } else {
+            timerElem.className = 'timer-circle';
+          }
+        }
+
+        tick();
+        questionTickerId = setInterval(tick, 100);
+      }
+
+      function startTeacherLbTicker() {
+        if (lbTickerId) return;
+
+        function tick() {
+          const elem = document.getElementById('leaderboardCountdown');
+          if (!elem || !currentLbTargetEndMs) return;
+
+          const now = Date.now();
+          const msLeft = Math.max(0, currentLbTargetEndMs - now);
+          const secsLeft = Math.ceil(msLeft / 1000);
+
+          elem.textContent = secsLeft;
+        }
+
+        tick();
+        lbTickerId = setInterval(tick, 100);
       }
 
       function renderLeaderboardList(list) {
@@ -283,14 +365,6 @@ if (!$quiz) {
             renderLeaderboardList(data.data.leaderboard);
           }
         } catch(e) {}
-      }
-
-      function updateLeaderboardCountdown(secondsRemaining) {
-        const seconds = Math.max(0, Number(secondsRemaining) || 0);
-        const elem = document.getElementById('leaderboardCountdown');
-        if (elem) {
-          elem.textContent = seconds;
-        }
       }
 
       // Bind Controller Action Buttons (No Next Question button)

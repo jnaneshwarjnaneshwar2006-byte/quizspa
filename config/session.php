@@ -16,20 +16,46 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+if (!defined('QUIZSPARK_PRODUCTION_BASE_URL')) {
+    define('QUIZSPARK_PRODUCTION_BASE_URL', 'https://quizspark.rf.gd');
+}
+
+/**
+ * Returns canonical production base URL (without trailing slash)
+ */
+function getProductionBaseUrl(): string {
+    return 'https://quizspark.rf.gd';
+}
+
+/**
+ * Generates authoritative student sharing/join URL for published quizzes
+ * Format: https://quizspark.rf.gd/student/join.php?code=XXXXXX
+ */
+function getStudentJoinUrl(string $joinCode): string {
+    $cleanCode = preg_replace('/[^0-9]/', '', $joinCode);
+    return 'https://quizspark.rf.gd/student/join.php?code=' . $cleanCode;
+}
+
 /**
  * Returns dynamic Base URL without trailing slash
- * Example: http://localhost:8000 or https://fahh.example.com
  */
 function getBaseUrl(): string {
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    
+    // If on production domain or InfinityFree host, return canonical production base URL
+    if (strpos($host, 'quizspark.rf.gd') !== false) {
+        return 'https://quizspark.rf.gd';
+    }
+
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? 80) == 443 ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+    $host = !empty($host) ? $host : 'quizspark.rf.gd';
     
     // Deduce subdirectory if hosted under folder
     $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
     $baseDir = rtrim($scriptDir, '/');
     
     // Trim known subfolders if present in SCRIPT_NAME
-    $subfolders = ['/teacher', '/student', '/api/auth', '/api/quiz', '/api/live', '/api/student', '/api/upload', '/api'];
+    $subfolders = ['/teacher', '/student', '/api/auth', '/api/quiz', '/api/live', '/api/student', '/api/upload', '/api', '/api/creator/ai'];
     foreach ($subfolders as $sf) {
         if (substr($baseDir, -strlen($sf)) === $sf) {
             $baseDir = substr($baseDir, 0, -strlen($sf));
