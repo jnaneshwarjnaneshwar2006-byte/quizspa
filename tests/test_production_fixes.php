@@ -137,19 +137,20 @@ if ($joinUrlA !== $expectedUrl) {
 }
 echo "  ✓ TEST A (Part 1) PASSED: Published URL is strictly '{$expectedUrl}'.\n\n";
 
-// Check Student Join Page with code parameter
-echo "[TEST A - Part 2] Verifying Student Join page pre-fills PIN and opens without teacher auth...\n";
+// Check Student Join Page with code parameter - Must NOT prefill (forced manual entry)
+echo "[TEST A - Part 2] Verifying Student Join page FORCES manual PIN entry (never pre-filled from URL)...\n";
 $joinPageRes = requestHttp("{$baseUrl}/student/join.php?code={$joinCodeA}", 'GET');
 if ($joinPageRes['status'] !== 200) {
     die("FAILED TEST A: Student join page returned status {$joinPageRes['status']}\n");
 }
-if (strpos($joinPageRes['body'], $joinCodeA) === false) {
-    die("FAILED TEST A: Student join page does not contain pre-filled join code {$joinCodeA}\n");
+if (strpos($joinPageRes['body'], "value=\"{$joinCodeA}\"") !== false) {
+    die("FAILED TEST A: Student join page still pre-filled join code {$joinCodeA}! Manual entry must be forced.\n");
 }
-if (strpos($joinPageRes['body'], 'Alice Physics Challenge') === false) {
-    die("FAILED TEST A: Student join page does not display quiz title 'Alice Physics Challenge'\n");
+if (strpos($joinPageRes['body'], 'id="joinCode" class="form-control" placeholder="e.g. 240877" value=""') === false &&
+    strpos($joinPageRes['body'], 'value=""') === false) {
+    die("FAILED TEST A: Join code input value is not empty!\n");
 }
-echo "  ✓ TEST A (Part 2) PASSED: Student join page opens anonymously and pre-fills join code {$joinCodeA}.\n\n";
+echo "  ✓ TEST A (Part 2) PASSED: Student join page strictly enforces manual entry and keeps code input empty on load.\n\n";
 
 // -------------------------------------------------------------
 // TEST B: STUDENT JOINS AND VERIFY NO EXPORT BUTTON & NO CSV ACCESS
@@ -255,6 +256,45 @@ if (strpos($teacherAExport['body'], 'Student Name') === false || strpos($teacher
     die("FAILED TEST E: CSV does not contain expected student results for Ajit!\n");
 }
 echo "  ✓ TEST E PASSED: Teacher A successfully downloaded clean RFC-compliant CSV results.\n\n";
+
+// -------------------------------------------------------------
+// TEST F: VERIFY FINAL LEADERBOARD RESPONSIVENESS & CSS INTEGRITY
+// -------------------------------------------------------------
+echo "[TEST F] Verifying Final Leaderboard responsive CSS rules & mobile safety...\n";
+
+$cssContent = file_get_contents(__DIR__ . '/../assets/css/leaderboard.css');
+
+// 1. Check container and body safety
+if (strpos($cssContent, 'body.leaderboard-page') === false || strpos($cssContent, 'overflow-x: hidden') === false) {
+    die("FAILED TEST F: leaderboard.css lacks body.leaderboard-page overflow-x protection!\n");
+}
+if (strpos($cssContent, '.leaderboard-main-wrapper') === false) {
+    die("FAILED TEST F: leaderboard.css lacks .leaderboard-main-wrapper responsive definition!\n");
+}
+
+// 2. Check title fluid clamp typography
+if (strpos($cssContent, 'clamp(1.4rem, 6vw, 2.8rem)') === false) {
+    die("FAILED TEST F: .final-lb-title lacks responsive clamp typography!\n");
+}
+
+// 3. Check mobile breakpoints
+if (strpos($cssContent, '@media (max-width: 768px)') === false || 
+    strpos($cssContent, '@media (max-width: 480px)') === false || 
+    strpos($cssContent, '@media (max-width: 360px)') === false) {
+    die("FAILED TEST F: leaderboard.css is missing mobile media query breakpoints (768px, 480px, 360px)!\n");
+}
+
+// 4. Check avatar box scaling in 360px
+if (strpos($cssContent, 'width: 46px;') === false || strpos($cssContent, 'height: 62px;') === false) {
+    die("FAILED TEST F: 360px mobile breakpoint is missing proportional avatar box scaling!\n");
+}
+
+// 5. Check non-horizontal mobile animations (to prevent left-side clipping)
+if (strpos($cssContent, 'cardEnter2ndMobile') === false || strpos($cssContent, 'cardEnter3rdMobile') === false) {
+    die("FAILED TEST F: leaderboard.css is missing vertical-only mobile card entrance animations!\n");
+}
+
+echo "  ✓ TEST F PASSED: Final Leaderboard CSS includes complete responsive constraints, fluid typography, and mobile-safe animations.\n\n";
 
 echo "======================================================\n";
 echo "=== ALL REGRESSION & SECURITY TESTS PASSED (100%) ===\n";

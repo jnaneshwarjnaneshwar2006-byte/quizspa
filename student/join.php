@@ -2,21 +2,6 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/security.php';
-
-$codeFromUrl = trim($_GET['code'] ?? '');
-$quizTitle = '';
-
-if (!empty($codeFromUrl) && preg_match('/^\d{6}$/', $codeFromUrl)) {
-    try {
-        $pdo = getDBConnection();
-        $stmt = $pdo->prepare("SELECT title, status FROM `quizzes` WHERE `join_code` = :code LIMIT 1");
-        $stmt->execute(['code' => $codeFromUrl]);
-        $quiz = $stmt->fetch();
-        if ($quiz) {
-            $quizTitle = $quiz['title'];
-        }
-    } catch(Exception $e) {}
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,13 +20,7 @@ if (!empty($codeFromUrl) && preg_match('/^\d{6}$/', $codeFromUrl)) {
       <div class="auth-header" style="margin-bottom: 20px;">
         <a href="../index.php" class="brand-logo" style="margin-bottom: 8px;">QuizSpark <span class="brand-badge">LIVE</span></a>
         <h1>Join Live Quiz</h1>
-        <?php if ($quizTitle): ?>
-          <p style="color: var(--accent-yellow); font-weight: 700; font-size: 1.15rem; margin-top: 6px;">
-            <?= htmlspecialchars($quizTitle) ?>
-          </p>
-        <?php else: ?>
-          <p>Customize your 3D avatar and enter your game PIN to play!</p>
-        <?php endif; ?>
+        <p>Customize your 3D avatar and enter your 6-digit game PIN to play!</p>
       </div>
 
       <div id="alertContainer"></div>
@@ -50,7 +29,7 @@ if (!empty($codeFromUrl) && preg_match('/^\d{6}$/', $codeFromUrl)) {
         <div class="form-group">
           <label class="form-label" for="joinCode">6-Digit Join Code *</label>
           <input type="text" id="joinCode" class="form-control" placeholder="e.g. 240877" 
-                 value="<?= htmlspecialchars($codeFromUrl) ?>" 
+                 value="" 
                  maxlength="6" inputmode="numeric" required pattern="[0-9]{6}"
                  style="font-size: 1.6rem; text-align: center; letter-spacing: 6px; font-weight: 900;" autofocus>
         </div>

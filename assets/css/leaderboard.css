@@ -2,6 +2,27 @@
    QuizSpark - Game-Show Podium Leaderboard & Question Score Bar Styles
    ========================================================================== */
 
+/* --- Global Leaderboard Page & Wrapper Setup --- */
+body.leaderboard-page {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.leaderboard-main-wrapper {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 12px 16px 40px 16px;
+  box-sizing: border-box;
+}
+
+#leaderboardContentMount {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* --- Student Question Score Bar --- */
 .student-score-bar {
   display: flex;
@@ -731,9 +752,11 @@
    ========================================================================== */
 
 .final-leaderboard-container {
+  width: 100%;
   max-width: 960px;
-  margin: 16px auto;
+  margin: 0 auto;
   padding: 16px;
+  box-sizing: border-box;
   position: relative;
   animation: finalFadeIn 0.6s ease-out both;
 }
@@ -745,29 +768,35 @@
 
 .final-lb-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 28px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .final-lb-title {
-  font-size: 2.8rem;
+  font-size: clamp(1.4rem, 6vw, 2.8rem);
   font-weight: 900;
   font-family: 'Outfit', sans-serif;
   background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 40%, #e17055 80%, #d63031 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
-  letter-spacing: 1.5px;
+  letter-spacing: clamp(0.5px, 1.5vw, 1.5px);
   margin-bottom: 6px;
   filter: drop-shadow(0 4px 15px rgba(253, 203, 110, 0.4));
+  line-height: 1.15;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .final-lb-subtitle {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.3rem;
+  font-size: clamp(0.9rem, 3.5vw, 1.3rem);
   font-weight: 800;
   color: #fdcb6e;
   letter-spacing: 1px;
   text-transform: uppercase;
+  margin: 0;
 }
 
 /* --- Winner Cards Flexbox Layout (2nd - 1st - 3rd) --- */
@@ -779,6 +808,8 @@
   margin-bottom: 36px;
   position: relative;
   z-index: 2;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Individual Winner Card Base */
@@ -786,6 +817,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
   text-align: center;
   border-radius: var(--radius-xl);
   padding: 24px 16px 20px 16px;
@@ -794,6 +826,8 @@
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .winner-card:hover {
@@ -868,6 +902,7 @@
   font-size: 1.5rem;
   margin-bottom: 4px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
 
 .rank-badge-1st {
@@ -901,6 +936,7 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
   margin-bottom: 14px;
+  white-space: nowrap;
 }
 
 .rank-label-1st { color: #f9ca24; text-shadow: 0 0 10px rgba(249, 202, 36, 0.5); }
@@ -917,6 +953,8 @@
   margin-bottom: 12px;
   position: relative;
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.6));
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .card-1st .card-avatar-box {
@@ -927,7 +965,8 @@
 .card-avatar-box svg {
   width: 100%;
   height: 100%;
-  overflow: visible;
+  display: block;
+  object-fit: contain;
 }
 
 /* Card Player Name & Points */
@@ -955,6 +994,7 @@
   font-weight: 900;
   font-size: 1.28rem;
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .card-1st .card-player-score {
@@ -994,6 +1034,8 @@
 /* --- OTHER PLAYERS (Positions 4+) --- */
 .other-players-wrapper {
   margin-top: 30px;
+  width: 100%;
+  box-sizing: border-box;
   animation: finalFadeIn 0.8s ease-out both;
   animation-delay: 0.6s;
 }
@@ -1004,6 +1046,8 @@
   justify-content: space-between;
   margin-bottom: 14px;
   padding: 0 6px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .other-players-title {
@@ -1025,6 +1069,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Custom Scrollbar for Other Players */
@@ -1128,19 +1174,24 @@
 
 /* --- Mobile Responsive Rules for Final Leaderboard --- */
 @media (max-width: 768px) {
-  .final-lb-title {
-    font-size: 2.1rem;
+  .leaderboard-main-wrapper {
+    padding: 10px 10px 32px 10px;
   }
 
-  .final-lb-subtitle {
-    font-size: 1.1rem;
+  .final-leaderboard-container {
+    padding: 10px 6px;
+  }
+
+  .final-lb-header {
+    margin-bottom: 20px;
   }
 
   .final-winners-cards {
     gap: 8px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     width: 100%;
     box-sizing: border-box;
+    justify-content: center;
   }
 
   .winner-card {
@@ -1152,30 +1203,38 @@
   }
 
   .winner-card.card-1st {
-    min-height: 360px;
+    min-height: 320px;
     max-width: none;
+    animation: cardEnter1stMobile 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    animation-delay: 0.1s;
   }
 
   .winner-card.card-2nd {
-    min-height: 310px;
+    min-height: 280px;
     max-width: none;
+    animation: cardEnter2ndMobile 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    animation-delay: 0.2s;
   }
 
   .winner-card.card-3rd {
-    min-height: 290px;
+    min-height: 265px;
     max-width: none;
+    animation: cardEnter3rdMobile 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    animation-delay: 0.3s;
   }
 
   .card-avatar-box {
-    width: 85px;
-    height: 115px;
+    width: 78px;
+    height: 108px;
     max-width: 100%;
+    margin-bottom: 8px;
   }
 
   .card-1st .card-avatar-box {
-    width: 105px;
-    height: 140px;
+    width: 92px;
+    height: 126px;
     max-width: 100%;
+    margin-bottom: 8px;
   }
 
   .card-rank-badge {
@@ -1191,7 +1250,7 @@
   }
 
   .card-rank-label {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     letter-spacing: 0.6px;
     margin-bottom: 6px;
   }
@@ -1199,18 +1258,26 @@
   .card-player-name {
     font-size: 0.9rem;
     max-width: 100%;
+    margin-bottom: 2px;
   }
 
   .card-1st .card-player-name {
-    font-size: 1.05rem;
+    font-size: 1.02rem;
   }
 
   .card-player-score {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
 
   .card-1st .card-player-score {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+  }
+
+  .winner-card.is-current-user::after {
+    top: 8px;
+    right: 8px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
   }
 
   .other-player-row {
@@ -1228,14 +1295,41 @@
   }
 
   .other-player-pts {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 }
 
+@keyframes cardEnter1stMobile {
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes cardEnter2ndMobile {
+  0% { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardEnter3rdMobile {
+  0% { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 @media (max-width: 480px) {
+  .leaderboard-main-wrapper {
+    padding: 8px 6px 24px 6px;
+  }
+
+  .final-leaderboard-container {
+    padding: 6px 2px;
+  }
+
+  .final-lb-header {
+    margin-bottom: 14px;
+  }
+
   .final-winners-cards {
     gap: 6px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .winner-card {
@@ -1244,60 +1338,71 @@
   }
 
   .winner-card.card-1st {
-    min-height: 320px;
-  }
-
-  .winner-card.card-2nd {
-    min-height: 275px;
-  }
-
-  .winner-card.card-3rd {
     min-height: 260px;
   }
 
+  .winner-card.card-2nd {
+    min-height: 230px;
+  }
+
+  .winner-card.card-3rd {
+    min-height: 215px;
+  }
+
   .card-avatar-box {
-    width: 70px;
-    height: 95px;
+    width: 58px;
+    height: 80px;
+    margin-bottom: 6px;
   }
 
   .card-1st .card-avatar-box {
-    width: 85px;
-    height: 115px;
+    width: 70px;
+    height: 95px;
+    margin-bottom: 6px;
   }
 
   .card-rank-badge {
-    width: 30px;
-    height: 30px;
-    font-size: 1rem;
+    width: 28px;
+    height: 28px;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
   }
 
   .rank-badge-1st {
-    width: 36px;
-    height: 36px;
-    font-size: 1.2rem;
+    width: 34px;
+    height: 34px;
+    font-size: 1.15rem;
   }
 
   .card-rank-label {
-    font-size: 0.62rem;
+    font-size: 0.58rem;
     letter-spacing: 0.3px;
     margin-bottom: 4px;
   }
 
   .card-player-name {
-    font-size: 0.82rem;
-    max-width: 95%;
+    font-size: 0.78rem;
+    max-width: 100%;
+    margin-bottom: 2px;
   }
 
   .card-1st .card-player-name {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
   }
 
   .card-player-score {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
   }
 
   .card-1st .card-player-score {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+  }
+
+  .winner-card.is-current-user::after {
+    top: 6px;
+    right: 6px;
+    font-size: 0.55rem;
+    padding: 2px 5px;
   }
 
   .other-player-row {
@@ -1305,84 +1410,129 @@
   }
 
   .other-player-left {
-    gap: 8px;
-  }
-
-  .other-player-info {
     gap: 6px;
   }
 
-  .other-player-name {
+  .other-player-rank {
     font-size: 0.88rem;
+    width: 22px;
+  }
+
+  .other-player-name {
+    font-size: 0.85rem;
   }
 
   .other-player-pts {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
   }
 }
 
 @media (max-width: 360px) {
+  .leaderboard-main-wrapper {
+    padding: 6px 4px 20px 4px;
+  }
+
+  .final-leaderboard-container {
+    padding: 4px 0;
+  }
+
+  .final-lb-header {
+    margin-bottom: 12px;
+  }
+
   .final-winners-cards {
     gap: 4px;
+    margin-bottom: 12px;
   }
 
   .winner-card {
-    padding: 10px 2px 8px 2px;
+    padding: 8px 2px 6px 2px;
+    border-radius: var(--radius-sm);
   }
 
   .winner-card.card-1st {
-    min-height: 290px;
+    min-height: 215px;
   }
 
   .winner-card.card-2nd {
-    min-height: 250px;
+    min-height: 195px;
   }
 
   .winner-card.card-3rd {
-    min-height: 240px;
+    min-height: 185px;
   }
 
   .card-avatar-box {
-    width: 60px;
-    height: 80px;
+    width: 46px;
+    height: 62px;
+    margin-bottom: 4px;
   }
 
   .card-1st .card-avatar-box {
-    width: 72px;
-    height: 98px;
+    width: 56px;
+    height: 75px;
+    margin-bottom: 4px;
   }
 
   .card-rank-badge {
-    width: 26px;
-    height: 26px;
-    font-size: 0.9rem;
+    width: 24px;
+    height: 24px;
+    font-size: 0.82rem;
+    margin-bottom: 1px;
   }
 
   .rank-badge-1st {
-    width: 32px;
-    height: 32px;
-    font-size: 1.05rem;
+    width: 28px;
+    height: 28px;
+    font-size: 0.95rem;
   }
 
   .card-rank-label {
-    font-size: 0.55rem;
-    letter-spacing: 0.2px;
+    font-size: 0.5rem;
+    letter-spacing: 0px;
+    margin-bottom: 2px;
   }
 
   .card-player-name {
-    font-size: 0.75rem;
+    font-size: 0.68rem;
+    margin-bottom: 1px;
   }
 
   .card-1st .card-player-name {
-    font-size: 0.82rem;
+    font-size: 0.74rem;
   }
 
   .card-player-score {
-    font-size: 0.75rem;
+    font-size: 0.68rem;
   }
 
   .card-1st .card-player-score {
-    font-size: 0.85rem;
+    font-size: 0.76rem;
+  }
+
+  .winner-card.is-current-user::after {
+    top: 4px;
+    right: 4px;
+    font-size: 0.48rem;
+    padding: 1px 4px;
+  }
+
+  .other-player-row {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .other-player-rank {
+    font-size: 0.8rem;
+    width: 18px;
+  }
+
+  .other-player-name {
+    font-size: 0.78rem;
+  }
+
+  .other-player-pts {
+    font-size: 0.8rem;
   }
 }
 
