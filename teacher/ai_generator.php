@@ -159,6 +159,38 @@ $csrfToken = generateCsrfToken();
       padding: 28px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
     }
+    .ai-generator-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 840px) {
+      .ai-generator-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+    .ai-generator-left, .ai-generator-right {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .ai-target-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(108, 92, 231, 0.4);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-top: 6px;
+    }
+    .ai-target-badge {
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--primary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
@@ -206,51 +238,92 @@ $csrfToken = generateCsrfToken();
       <!-- Tab 1: Form Generator -->
       <div id="tabGeneratorSection">
         <div class="card" style="margin-bottom: 24px;">
-          <h2 style="font-size: 1.3rem; margin-bottom: 16px;">Quiz Parameters</h2>
+          <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 14px;">
+            <h2 style="font-size: 1.35rem; margin-bottom: 4px;">⚡ AI Quiz Generation Settings</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Select your target Subject on the left and enter your specific Topic on the right.</p>
+          </div>
+
           <form id="aiGenerateForm">
-            <div class="form-group">
-              <label class="form-label" for="aiTopic">Topic / Subject *</label>
-              <input type="text" id="aiTopic" class="form-control" placeholder="e.g., Java OOP Basics, Cell Biology, World History" required value="Java OOP Basics">
-            </div>
+            <div class="ai-generator-grid">
+              <!-- LEFT SIDE: Subject, Questions Count, Difficulty, Question Type, Points -->
+              <div class="ai-generator-left">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" for="aiSubject">Subject *</label>
+                  <select id="aiSubject" class="form-control" required style="font-size: 1rem;">
+                    <option value="Java" selected>Java</option>
+                    <option value="Python">Python</option>
+                    <option value="JavaScript">JavaScript</option>
+                    <option value="C++">C++</option>
+                    <option value="Web Development">Web Development</option>
+                    <option value="Data Structures & Algorithms">Data Structures & Algorithms</option>
+                    <option value="Database Systems & SQL">Database Systems & SQL</option>
+                    <option value="Operating Systems">Operating Systems</option>
+                    <option value="Computer Networks">Computer Networks</option>
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="General Science">General Science</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Biology">Biology</option>
+                    <option value="World History">World History</option>
+                    <option value="General Knowledge">General Knowledge</option>
+                    <option value="Custom / Other">Custom / Other</option>
+                  </select>
+                </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-              <div class="form-group">
-                <label class="form-label" for="aiQuestionCount">Number of Questions *</label>
-                <input type="number" id="aiQuestionCount" class="form-control" min="1" max="50" value="5" required>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" for="aiQuestionCount">Number of Questions *</label>
+                  <input type="number" id="aiQuestionCount" class="form-control" min="1" max="50" value="5" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" for="aiDifficulty">Difficulty Level *</label>
+                  <select id="aiDifficulty" class="form-control">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" for="aiQuestionType">Question Type *</label>
+                  <select id="aiQuestionType" class="form-control">
+                    <option value="mcq" selected>Multiple Choice (4 options)</option>
+                    <option value="true_false">True / False</option>
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" for="aiPoints">Points per Question</label>
+                  <input type="number" id="aiPoints" class="form-control" min="1" max="1000" value="100">
+                </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label" for="aiDifficulty">Difficulty Level *</label>
-                <select id="aiDifficulty" class="form-control">
-                  <option value="easy">Easy</option>
-                  <option value="medium" selected>Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
+              <!-- RIGHT SIDE: Topic input, Live Preview, and Generate Button -->
+              <div class="ai-generator-right">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" for="aiTopic">Topic *</label>
+                  <input type="text" id="aiTopic" class="form-control" placeholder="e.g. Abstraction, Polymorphism, Overriding" required value="Abstraction, Polymorphism, Overriding" style="font-size: 1rem; padding: 12px 14px;">
+                  <small style="color: var(--text-muted); font-size: 0.85rem; margin-top: 6px; display: block;">
+                    Specify the exact sub-topic or syllabus concept to be tested.
+                  </small>
+                </div>
+
+                <!-- Dynamic Target AI Generation Summary -->
+                <div class="ai-target-card">
+                  <div class="ai-target-badge">🎯 TARGET AI GENERATION</div>
+                  <div style="font-size: 0.95rem; line-height: 1.6; color: var(--text-light);">
+                    Generating questions for Subject: <strong id="previewSubjectBadge" style="color: #a29bfe;">Java</strong><br>
+                    Focusing specifically on Topic: <strong id="previewTopicBadge" style="color: #55efc4;">Abstraction, Polymorphism, Overriding</strong>
+                  </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                  <button type="submit" id="btnSubmitGenerate" class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; padding: 16px; font-size: 1.15rem; box-shadow: 0 8px 24px rgba(108, 92, 231, 0.35);">
+                    <span>✨ Generate AI Quiz</span>
+                  </button>
+                </div>
               </div>
-
-              <div class="form-group">
-                <label class="form-label" for="aiQuestionType">Question Type *</label>
-                <select id="aiQuestionType" class="form-control">
-                  <option value="mcq" selected>Multiple Choice (4 options)</option>
-                  <option value="true_false">True / False</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="aiPoints">Points per Question</label>
-                <input type="number" id="aiPoints" class="form-control" min="1" max="1000" value="100">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="aiInstructions">Custom Instructions (Optional)</label>
-              <textarea id="aiInstructions" class="form-control" rows="2" placeholder="e.g. Focus on inheritance, polymorphism, and encapsulation concepts..."></textarea>
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-              <button type="submit" id="btnSubmitGenerate" class="btn btn-primary btn-lg" style="display: inline-flex; align-items: center; gap: 8px;">
-                <span>✨ Generate Quiz Draft</span>
-              </button>
             </div>
           </form>
         </div>
@@ -283,7 +356,7 @@ $csrfToken = generateCsrfToken();
                 <span class="badge badge-published" id="draftSourceBadge">AI</span>
               </div>
               <h2 id="draftQuizTitle" style="font-size: 1.6rem; margin-top: 8px; margin-bottom: 4px;">Quiz Title</h2>
-              <p style="color: var(--text-muted); font-size: 0.95rem;">Topic: <strong id="draftQuizTopic">Topic</strong> &bull; <span id="draftQCount">5</span> Questions</p>
+              <p style="color: var(--text-muted); font-size: 0.95rem;">Subject: <strong id="draftQuizSubject" style="color: #a29bfe;">Java</strong> &bull; Topic: <strong id="draftQuizTopic" style="color: #55efc4;">Topic</strong> &bull; <span id="draftQCount">5</span> Questions</p>
             </div>
 
             <!-- Draft Global Action Controls -->
@@ -438,24 +511,46 @@ $csrfToken = generateCsrfToken();
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // Live update preview badges when Subject or Topic changes
+    const aiSubjectEl = document.getElementById('aiSubject');
+    const aiTopicEl = document.getElementById('aiTopic');
+    const previewSubjectBadge = document.getElementById('previewSubjectBadge');
+    const previewTopicBadge = document.getElementById('previewTopicBadge');
+
+    function updateAiTargetBadges() {
+      if (previewSubjectBadge && aiSubjectEl) {
+        previewSubjectBadge.textContent = aiSubjectEl.value || 'Java';
+      }
+      if (previewTopicBadge && aiTopicEl) {
+        previewTopicBadge.textContent = aiTopicEl.value.trim() || 'Inheritance and Polymorphism';
+      }
+    }
+    if (aiSubjectEl) aiSubjectEl.addEventListener('change', updateAiTargetBadges);
+    if (aiTopicEl) aiTopicEl.addEventListener('input', updateAiTargetBadges);
+
     // 1. Submit Quick Generator Form
     document.getElementById('aiGenerateForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btnSubmitGenerate');
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Generating Quiz Draft...</span>';
+      btn.innerHTML = '<span>⏳ Generating AI Quiz...</span>';
+
+      const subjectVal = document.getElementById('aiSubject').value.trim();
+      const topicVal = document.getElementById('aiTopic').value.trim();
 
       const payload = {
-        topic: document.getElementById('aiTopic').value.trim(),
+        subject: subjectVal,
+        topic: topicVal,
         question_count: parseInt(document.getElementById('aiQuestionCount').value, 10),
         difficulty: document.getElementById('aiDifficulty').value,
         question_type: document.getElementById('aiQuestionType').value,
-        points_per_question: parseInt(document.getElementById('aiPoints').value, 10),
-        instructions: document.getElementById('aiInstructions').value.trim()
+        points: parseInt(document.getElementById('aiPoints').value, 10),
+        points_per_question: parseInt(document.getElementById('aiPoints').value, 10)
       };
 
       try {
-        const res = await fetch('../api/creator/ai/generate.php', {
+        const baseUrl = <?= json_encode(getBaseUrl()) ?>;
+        let res = await fetch(`${baseUrl}/api/creator/ai/generate.php`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -463,22 +558,40 @@ $csrfToken = generateCsrfToken();
           },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
 
-        if (data.success && data.data) {
+        if (res.status === 404) {
+          res = await fetch('../api/creator/ai/generate.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        let data = null;
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          throw new Error('Server returned an invalid response.');
+        }
+
+        if (data && data.success && data.data) {
           activeQuizId = data.data.quiz.id;
           activeQuizData = data.data;
           renderDraftQuiz(data.data.quiz, data.data.questions);
-          showAlert('success', 'Quiz draft generated successfully!');
+          showAlert('success', 'AI Quiz generated successfully!');
           document.getElementById('draftReviewSection').scrollIntoView({ behavior: 'smooth' });
         } else {
-          showAlert('error', data.error ? data.error.message : 'Generation failed. Please try again.');
+          const errMsg = (data && data.error && data.error.message) || (data && data.message) || 'Unable to save generated quiz draft. Please try again.';
+          showAlert('error', errMsg);
         }
       } catch (err) {
-        showAlert('error', 'Network error. Please try again.');
+        showAlert('error', err.message || 'Network error. Please try again.');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>✨ Generate Quiz Draft</span>';
+        btn.innerHTML = '<span>✨ Generate AI Quiz</span>';
       }
     });
 
@@ -535,6 +648,8 @@ $csrfToken = generateCsrfToken();
     function renderDraftQuiz(quiz, questions) {
       document.getElementById('draftReviewSection').style.display = 'block';
       document.getElementById('draftQuizTitle').textContent = quiz.title;
+      const subjEl = document.getElementById('draftQuizSubject');
+      if (subjEl) subjEl.textContent = quiz.subject || quiz.category || 'General';
       document.getElementById('draftQuizTopic').textContent = quiz.topic || 'General';
       document.getElementById('draftQCount').textContent = questions.length;
       document.getElementById('draftStatusBadge').textContent = (quiz.status || 'draft').toUpperCase();

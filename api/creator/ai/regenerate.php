@@ -68,6 +68,7 @@ if (!$existingQ) {
 }
 
 // 7. Build AI Prompt for Single Question Regeneration
+$subject = $quiz['category'] ?? 'General';
 $topic = $quiz['topic'] ?? $quiz['title'] ?? 'General';
 $qType = ($existingQ['question_type'] === 'true_false') ? 'true_false' : 'mcq';
 $currentPoints = (int)($existingQ['points'] ?? 100);
@@ -75,12 +76,13 @@ $currentDifficulty = $existingQ['difficulty'] ?? ($quiz['difficulty'] ?? 'medium
 
 $systemPrompt = <<<PROMPT
 You are QuizSpark's expert educational AI.
-Your objective is to regenerate a single quiz question based on teacher instructions while preserving educational rigor.
+Your objective is to regenerate a single quiz question for the selected SUBJECT and specifically for the requested TOPIC while preserving educational rigor.
 Return pure JSON only. Do not wrap in markdown or include extra text.
 PROMPT;
 
 $userPromptData = [
     'task'               => 'regenerate_single_question',
+    'subject'            => $subject,
     'topic'              => $topic,
     'current_question'   => [
         'question_text'  => $existingQ['question_text'],
@@ -88,7 +90,7 @@ $userPromptData = [
         'difficulty'     => $currentDifficulty,
         'points'         => $currentPoints
     ],
-    'teacher_request'    => $instructions ?: 'Please regenerate a fresh, higher quality version of this question.',
+    'teacher_request'    => "Regenerate a fresh, high quality question for subject '{$subject}' on topic '{$topic}'.",
     'required_schema'    => [
         'question_text'  => 'string',
         'question_type'  => $qType,

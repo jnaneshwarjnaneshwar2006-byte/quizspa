@@ -66,6 +66,20 @@ try {
         echo "  [*] Column 'source' already exists in 'quizzes'\n";
     }
 
+    if (!columnExists($pdo, 'quizzes', 'leaderboard_start_time')) {
+        $pdo->exec("ALTER TABLE `quizzes` ADD COLUMN `leaderboard_start_time` DOUBLE NULL AFTER `question_start_time`");
+        echo "  [+] Added column 'leaderboard_start_time' to 'quizzes'\n";
+    } else {
+        echo "  [*] Column 'leaderboard_start_time' already exists in 'quizzes'\n";
+    }
+
+    if (!columnExists($pdo, 'quizzes', 'next_question_at')) {
+        $pdo->exec("ALTER TABLE `quizzes` ADD COLUMN `next_question_at` DOUBLE NULL AFTER `leaderboard_start_time`");
+        echo "  [+] Added column 'next_question_at' to 'quizzes'\n";
+    } else {
+        echo "  [*] Column 'next_question_at' already exists in 'quizzes'\n";
+    }
+
     // 2. Update questions table
     echo "\n[2] Checking 'questions' table...\n";
     if (!columnExists($pdo, 'questions', 'explanation')) {
@@ -104,6 +118,15 @@ try {
         echo "  [+] Created table 'ai_rate_limits'\n";
     } else {
         echo "  [*] Table 'ai_rate_limits' already exists\n";
+    }
+
+    // 4. Check participants table
+    echo "\n[4] Checking 'participants' table...\n";
+    if (!columnExists($pdo, 'participants', 'avatar_data')) {
+        $pdo->exec("ALTER TABLE `participants` ADD COLUMN `avatar_data` LONGTEXT NULL AFTER `emoji`");
+        echo "  [+] Added column 'avatar_data' to 'participants'\n";
+    } else {
+        echo "  [*] Column 'avatar_data' already exists in 'participants'\n";
     }
 
     echo "\n====================================================\n";

@@ -40,8 +40,10 @@ function sendAiError(string $code, string $message, array $fields = [], int $sta
         $error['fields'] = $fields;
     }
     echo json_encode([
-        'success' => false,
-        'error'   => $error
+        'success'    => false,
+        'message'    => $message,
+        'error_code' => $code,
+        'error'      => $error
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -426,29 +428,34 @@ function callAiService(string $systemPrompt, string $userPrompt, int $timeout = 
  * Intelligent Mock Generator for development, local testing, and fallback
  */
 function generateMockAiResponse(string $userPrompt): array {
-    $topic = 'General Knowledge';
-    if (preg_match('/topic:\s*["\']?([^"\',\n]+)/i', $userPrompt, $m)) {
+    $subject = 'General Knowledge';
+    if (preg_match('/"subject":\s*"([^"]+)"/i', $userPrompt, $m) || preg_match('/subject:\s*["\']?([^"\',\n]+)/i', $userPrompt, $m)) {
+        $subject = trim($m[1]);
+    }
+
+    $topic = 'Core Principles';
+    if (preg_match('/"topic":\s*"([^"]+)"/i', $userPrompt, $m) || preg_match('/topic:\s*["\']?([^"\',\n]+)/i', $userPrompt, $m)) {
         $topic = trim($m[1]);
     }
 
     $count = 5;
-    if (preg_match('/question_count:\s*(\d+)/i', $userPrompt, $m)) {
+    if (preg_match('/"question_count":\s*(\d+)/i', $userPrompt, $m) || preg_match('/question_count:\s*(\d+)/i', $userPrompt, $m)) {
         $count = (int)$m[1];
     }
     $count = max(1, min(50, $count));
 
     $diff = 'medium';
-    if (preg_match('/difficulty:\s*["\']?(easy|medium|hard)/i', $userPrompt, $m)) {
+    if (preg_match('/"difficulty":\s*"([^"]+)"/i', $userPrompt, $m) || preg_match('/difficulty:\s*["\']?(easy|medium|hard)/i', $userPrompt, $m)) {
         $diff = strtolower($m[1]);
     }
 
     $qType = 'mcq';
-    if (preg_match('/question_type:\s*["\']?(true_false|mcq)/i', $userPrompt, $m)) {
+    if (preg_match('/"question_type":\s*"([^"]+)"/i', $userPrompt, $m) || preg_match('/question_type:\s*["\']?(true_false|mcq)/i', $userPrompt, $m)) {
         $qType = strtolower($m[1]);
     }
 
     $points = 100;
-    if (preg_match('/points_per_question:\s*(\d+)/i', $userPrompt, $m)) {
+    if (preg_match('/"(?:points|points_per_question)":\s*(\d+)/i', $userPrompt, $m) || preg_match('/(?:points|points_per_question):\s*(\d+)/i', $userPrompt, $m)) {
         $points = (int)$m[1];
     }
 
@@ -457,19 +464,19 @@ function generateMockAiResponse(string $userPrompt): array {
         if ($qType === 'true_false') {
             $isTrue = ($i % 2 === 1);
             $questions[] = [
-                'question_text'  => "Regarding {$topic} (Part {$i}): This concept is a core foundational principle.",
+                'question_text'  => "Regarding {$subject} - {$topic} (Part {$i}): This concept is a core foundational principle.",
                 'question_type'  => 'true_false',
                 'options'        => ['True', 'False'],
                 'correct_answer' => $isTrue ? 'True' : 'False',
-                'explanation'    => "In {$topic}, this principle plays a fundamental role in standard implementations.",
+                'explanation'    => "In {$subject}, {$topic} plays a fundamental role in standard implementations.",
                 'difficulty'     => $diff,
                 'points'         => $points
             ];
         } else {
-            $correctOpt = "Key Concept {$i}: Principle of {$topic}";
-            $distractor1 = "Alternative pattern {$i}A (Unrelated)";
-            $distractor2 = "Deprecated method {$i}B";
-            $distractor3 = "Syntax variation {$i}C";
+            $correctOpt = "Key Concept {$i}: {$topic} in {$subject}";
+            $distractor1 = "Alternative pattern {$i}A (Unrelated to {$topic})";
+            $distractor2 = "Deprecated syntax {$i}B in {$subject}";
+            $distractor3 = "Invalid declaration {$i}C";
 
             // Permute options based on $i
             $opts = [$correctOpt, $distractor1, $distractor2, $distractor3];
@@ -477,11 +484,11 @@ function generateMockAiResponse(string $userPrompt): array {
             $rotated = array_merge(array_slice($opts, $shift), array_slice($opts, 0, $shift));
 
             $questions[] = [
-                'question_text'  => "Which statement accurately describes element #{$i} in {$topic}?",
+                'question_text'  => "Which statement accurately describes {$topic} in {$subject} (Question #{$i})?",
                 'question_type'  => 'mcq',
                 'options'        => $rotated,
                 'correct_answer' => $correctOpt,
-                'explanation'    => "{$correctOpt} correctly addresses the core requirement of {$topic}.",
+                'explanation'    => "In {$subject}, {$correctOpt} correctly addresses the principles of {$topic}.",
                 'difficulty'     => $diff,
                 'points'         => $points
             ];
@@ -491,7 +498,7 @@ function generateMockAiResponse(string $userPrompt): array {
     return [
         'success' => true,
         'data' => [
-            'title'     => ucwords($topic) . " Quiz",
+            'title'     => "{$subject} - {$topic} Quiz",
             'questions' => $questions
         ]
     ];

@@ -60,6 +60,8 @@ sendAiResponse(true, 'Preview data retrieved.', [
     'quiz' => [
         'id'             => (int)$quiz['id'],
         'title'          => $quiz['title'],
+        'subject'        => $quiz['category'] ?? '',
+        'category'       => $quiz['category'] ?? '',
         'topic'          => $quiz['topic'] ?? '',
         'difficulty'     => $quiz['difficulty'] ?? 'medium',
         'status'         => $quiz['status'],

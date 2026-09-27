@@ -108,6 +108,15 @@ if (preg_match('/\b(easy|medium|hard)\b/i', $message, $m)) {
     $difficulty = strtolower($m[1]);
 }
 
+$subject = 'General Knowledge';
+if (preg_match('/(?:subject:?|course:?|in)\s+([a-zA-Z0-9\s,\-\._]+)/i', $message, $sm)) {
+    $subject = trim($sm[1]);
+}
+if ($quiz && !empty($quiz['category'])) {
+    $subject = $quiz['category'];
+}
+$subject = mb_substr($subject, 0, 100);
+
 $topic = '';
 if (preg_match('/(?:about|on|regarding|topic:?)\s+([a-zA-Z0-9\s,\-\._]+)/i', $message, $m)) {
     $topic = trim($m[1]);
@@ -122,20 +131,21 @@ $topic = mb_substr($topic, 0, 100);
 
 if ($action === 'generate' && !$quizId) {
     // Generate new draft
-    $title = ucwords($topic) . " Quiz";
+    $title = "{$subject} - {$topic} Quiz";
     try {
         $pdo->beginTransaction();
 
         $quizStmt = $pdo->prepare("
             INSERT INTO `quizzes` 
             (`teacher_id`, `title`, `topic`, `difficulty`, `source`, `category`, `status`, `created_at`) 
-            VALUES (:t_id, :title, :topic, :diff, 'ai', 'General', 'draft', NOW())
+            VALUES (:t_id, :title, :topic, :diff, 'ai', :category, 'draft', NOW())
         ");
         $quizStmt->execute([
-            't_id'  => $teacherId,
-            'title' => $title,
-            'topic' => $topic,
-            'diff'  => $difficulty
+            't_id'     => $teacherId,
+            'title'    => $title,
+            'topic'    => $topic,
+            'diff'     => $difficulty,
+            'category' => $subject
         ]);
         $newQuizId = (int)$pdo->lastInsertId();
 

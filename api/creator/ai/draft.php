@@ -44,6 +44,8 @@ sendAiResponse(true, 'Draft quiz retrieved successfully.', [
     'quiz' => [
         'id'             => (int)$quiz['id'],
         'title'          => $quiz['title'],
+        'subject'        => $quiz['category'] ?? '',
+        'category'       => $quiz['category'] ?? '',
         'topic'          => $quiz['topic'] ?? '',
         'difficulty'     => $quiz['difficulty'] ?? 'medium',
         'status'         => $quiz['status'],

@@ -5,7 +5,7 @@ require_once __DIR__ . '/../config/security.php';
 
 requireTeacherAuth();
 
-$quizId = (int)($_GET['id'] ?? 0);
+$quizId = (int)($_GET['id'] ?? $_GET['quiz_id'] ?? 0);
 if (!$quizId) {
     header('Location: dashboard.php');
     exit;
@@ -384,27 +384,59 @@ $joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $qui
       const startBtn = document.getElementById('startQuizBtn');
       startBtn.addEventListener('click', async () => {
         startBtn.disabled = true;
-        startBtn.textContent = 'Starting Quiz...';
+        startBtn.innerHTML = '⏳ Starting Quiz...';
+
+        const baseUrl = <?= json_encode(getBaseUrl()) ?>;
+        const apiUrl = `${baseUrl}/api/live/start_quiz.php`;
+        const csrfToken = <?= json_encode(generateCsrfToken()) ?>;
 
         try {
-          const res = await fetch('../api/live/start_quiz.php', {
+          let res = await fetch(apiUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quiz_id: quizId })
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({ quiz_id: quizId, csrf_token: csrfToken })
           });
 
-          const resData = await res.json();
-          if (resData.success) {
+          // Fallback to relative path if absolute returned 404
+          if (res.status === 404) {
+            console.warn('Absolute start_quiz URL returned 404, attempting relative fallback');
+            res = await fetch('../api/live/start_quiz.php', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+              },
+              body: JSON.stringify({ quiz_id: quizId, csrf_token: csrfToken })
+            });
+          }
+
+          let resData = null;
+          const rawText = await res.text();
+          try {
+            resData = JSON.parse(rawText);
+          } catch (jsonErr) {
+            console.error('Non-JSON response from start_quiz:', rawText);
+            throw new Error(res.status === 404 ? 'Start Quiz endpoint not found on server.' : 'Unable to start quiz. Please try again.');
+          }
+
+          if (resData && resData.success) {
             lobbyEngine.stop();
             if (earthLobby) earthLobby.destroy();
             window.location.href = `live_quiz.php?id=${quizId}`;
           } else {
-            alert(resData.message || 'Failed to start quiz.');
+            const errorMsg = (resData && resData.message) ? resData.message : 'Unable to start quiz. Please try again.';
+            alert(errorMsg);
             startBtn.disabled = false;
+            startBtn.innerHTML = '🚀 START QUIZ';
           }
         } catch (err) {
-          alert('Network error starting quiz.');
+          console.error('[StartQuiz Error]', err);
+          alert(err.message || 'Unable to start quiz. Please try again.');
           startBtn.disabled = false;
+          startBtn.innerHTML = '🚀 START QUIZ';
         }
       });
     });
