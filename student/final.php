@@ -21,162 +21,68 @@ $quiz = $qzStmt->fetch();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Final Podium - QuizSpark</title>
+  <title>Final Leaderboard - <?= htmlspecialchars($quiz['title'] ?? 'Quiz Complete') ?> - QuizSpark</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/leaderboard.css">
   <link rel="stylesheet" href="../assets/css/avatar.css">
 </head>
-<body>
-  <div class="leaderboard-container">
-    <div class="leaderboard-header animate-pop">
-      <div style="font-size: 3.5rem; margin-bottom: 10px;">👑</div>
-      <h1 class="leaderboard-title">FINAL PODIUM</h1>
-      <p style="color: var(--accent-yellow); font-weight: 700; font-size: 1.2rem; margin-top: 8px;">
-        <?= htmlspecialchars($quiz['title'] ?? 'Quiz Completed') ?>
-      </p>
-    </div>
-
-    <!-- 🥇🥈🥉 Podium Block -->
-    <div class="podium" id="podiumContainer">
-      <!-- 2nd Place -->
-      <div class="podium-step" id="step2nd" style="visibility: hidden;">
-        <div class="podium-avatar" id="avatar2nd"></div>
-        <div class="podium-name" id="name2nd">Player 2</div>
-        <div class="podium-score" id="score2nd">0 pts</div>
-        <div class="podium-block podium-2nd">2</div>
-      </div>
-
-      <!-- 1st Place -->
-      <div class="podium-step" id="step1st" style="visibility: hidden;">
-        <div class="podium-avatar podium-1st-avatar" id="avatar1st"></div>
-        <div class="podium-name" id="name1st">Player 1</div>
-        <div class="podium-score" id="score1st">0 pts</div>
-        <div class="podium-block podium-1st">1</div>
-      </div>
-
-      <!-- 3rd Place -->
-      <div class="podium-step" id="step3rd" style="visibility: hidden;">
-        <div class="podium-avatar" id="avatar3rd"></div>
-        <div class="podium-name" id="name3rd">Player 3</div>
-        <div class="podium-score" id="score3rd">0 pts</div>
-        <div class="podium-block podium-3rd">3</div>
-      </div>
-    </div>
-
+<body class="leaderboard-page">
+  <main class="leaderboard-main-wrapper" id="mainWrapper">
     <!-- Personal Result Box -->
-    <div id="personalResultCard" class="personal-rank-card animate-pop" style="display: none; margin-bottom: 30px;">
-      <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
-        <div id="personalAvatarBadge" class="avatar-badge-wrapper badge-lg"></div>
-        <div>
-          <h2 style="font-size: 1.6rem; color: #ffffff;" id="personalRankText">You finished #1!</h2>
-          <div style="display: flex; justify-content: center; gap: 30px; margin-top: 10px; font-weight: 800; font-size: 1.1rem;">
-            <span>Final Score: <strong id="personalScore" style="color: #55efc4;">0</strong> pts</span>
-            <span>Accuracy: <strong id="personalCorrect" style="color: var(--accent-cyan);">0</strong> Correct</span>
-          </div>
+    <div id="personalResultCard" class="personal-rank-card animate-pop" style="display: none; max-width: 500px; margin: 16px auto;">
+      <h2 style="font-size: 1.4rem; color: #ffffff;" id="personalRankText">You finished #1!</h2>
+      <div style="display: flex; justify-content: center; gap: 24px; margin-top: 6px; font-weight: 800;">
+        <span>Score: <strong id="personalScore" style="color: #55efc4;">0</strong> pts</span>
+        <span>Accuracy: <strong id="personalCorrect" style="color: var(--accent-cyan);">0</strong> Correct</span>
+      </div>
+    </div>
+
+    <!-- Main Container where Final Leaderboard is rendered -->
+    <div id="leaderboardContentMount">
+      <div class="final-leaderboard-container">
+        <div style="text-align: center; padding: 48px 20px; color: var(--text-muted); font-size: 1.1rem; font-weight: 700;">
+          Loading official scores...
         </div>
       </div>
     </div>
 
-    <!-- Full Final Standings List -->
-    <div class="card">
-      <h3 style="margin-bottom: 16px;">Complete Final Standings</h3>
-      <div id="leaderboardList" class="leaderboard-list">
-        <!-- Rendered via JS -->
-      </div>
+    <div style="text-align: center; margin-top: 36px; margin-bottom: 48px;">
+      <a href="join.php" class="btn btn-primary" style="padding: 12px 28px; font-weight: 800; font-size: 1.05rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+        🏠 Back to Home
+      </a>
     </div>
-
-    <div style="text-align: center; margin-top: 30px;">
-      <a href="join.php" class="btn btn-primary btn-lg">🎮 Join Another Quiz</a>
-    </div>
-  </div>
+  </main>
 
   <script src="../assets/js/avatar-engine.js"></script>
+  <script src="../assets/js/leaderboard.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const quizId = <?= $quizId ?>;
+      const studentToken = <?= json_encode($token) ?>;
+      const mount = document.getElementById('leaderboardContentMount');
 
       try {
-        const res = await fetch(`../api/student/leaderboard.php?quiz_id=${quizId}`);
+        const res = await fetch(`../api/student/leaderboard.php?quiz_id=${quizId}${studentToken ? `&token=${encodeURIComponent(studentToken)}` : ''}`);
         const data = await res.json();
 
         if (data.success && data.data) {
-          renderPodium(data.data.leaderboard, data.data.my_rank);
-        }
-      } catch(e) {}
+          const list = data.data.leaderboard || [];
+          const myRank = data.data.my_rank || null;
 
-      function renderPodium(list, myRank) {
-        // Render 1st, 2nd, 3rd place podium elements
-        if (list[0]) {
-          document.getElementById('step1st').style.visibility = 'visible';
-          const el1 = document.getElementById('avatar1st');
-          if (el1) {
-            AvatarEngine.mount(el1, list[0].avatar_data, { mode: 'full', animated: true });
+          if (myRank) {
+            const card = document.getElementById('personalResultCard');
+            if (card) {
+              card.style.display = 'block';
+              document.getElementById('personalRankText').textContent = `🎉 You finished #${myRank.rank}! (${myRank.name})`;
+              document.getElementById('personalScore').textContent = (myRank.total_score || 0).toLocaleString();
+              document.getElementById('personalCorrect').textContent = myRank.correct_answers || 0;
+            }
           }
-          document.getElementById('name1st').textContent = list[0].name;
-          document.getElementById('score1st').textContent = `${list[0].total_score} pts`;
-        }
-        if (list[1]) {
-          document.getElementById('step2nd').style.visibility = 'visible';
-          const el2 = document.getElementById('avatar2nd');
-          if (el2) {
-            AvatarEngine.mount(el2, list[1].avatar_data, { mode: 'full', animated: true });
-          }
-          document.getElementById('name2nd').textContent = list[1].name;
-          document.getElementById('score2nd').textContent = `${list[1].total_score} pts`;
-        }
-        if (list[2]) {
-          document.getElementById('step3rd').style.visibility = 'visible';
-          const el3 = document.getElementById('avatar3rd');
-          if (el3) {
-            AvatarEngine.mount(el3, list[2].avatar_data, { mode: 'full', animated: true });
-          }
-          document.getElementById('name3rd').textContent = list[2].name;
-          document.getElementById('score3rd').textContent = `${list[2].total_score} pts`;
-        }
 
-        // Render Personal Summary
-        if (myRank) {
-          const card = document.getElementById('personalResultCard');
-          card.style.display = 'block';
-          document.getElementById('personalRankText').textContent = `🎉 You finished #${myRank.rank}! (${myRank.name})`;
-          document.getElementById('personalScore').textContent = myRank.total_score;
-          document.getElementById('personalCorrect').textContent = myRank.correct_answers;
-          const pBadge = document.getElementById('personalAvatarBadge');
-          if (pBadge) {
-            AvatarEngine.mount(pBadge, myRank.avatar_data, { mode: 'badge', animated: false });
-          }
+          QuizLeaderboard.renderFinalLeaderboard(mount, list, studentToken);
         }
-
-        // Render Standings List
-        const container = document.getElementById('leaderboardList');
-        container.innerHTML = list.map(p => `
-          <div class="rank-row ${p.is_me ? 'current-player' : ''}">
-            <div class="rank-left">
-              <span class="rank-num">#${p.rank}</span>
-              <div class="rank-player-info">
-                <div class="avatar-badge-wrapper badge-sm" id="final_badge_${p.id}"></div>
-                <span class="rank-player-name">${escapeHtml(p.name)} ${p.is_me ? '<span class="badge badge-published" style="margin-left:8px;">YOU</span>' : ''}</span>
-              </div>
-            </div>
-            <div class="rank-right">
-              <span class="rank-pts">${p.total_score} pts</span>
-              <span class="rank-time">${p.total_time}s</span>
-            </div>
-          </div>
-        `).join('');
-
-        // Mount Avatar badges for all list items
-        list.forEach(p => {
-          const badgeEl = document.getElementById(`final_badge_${p.id}`);
-          if (badgeEl) {
-            AvatarEngine.mount(badgeEl, p.avatar_data, { mode: 'badge', animated: false });
-          }
-        });
-      }
-
-      function escapeHtml(text) {
-        if (!text) return '';
-        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      } catch(e) {
+        console.error("Leaderboard fetch error:", e);
       }
     });
   </script>

@@ -953,7 +953,7 @@ body.leaderboard-page {
   margin-bottom: 12px;
   position: relative;
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.6));
-  overflow: hidden;
+  overflow: visible;
   max-width: 100%;
 }
 
@@ -966,7 +966,7 @@ body.leaderboard-page {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  overflow: visible;
 }
 
 /* Card Player Name & Points */
@@ -1199,7 +1199,7 @@ body.leaderboard-page {
     border-radius: var(--radius-lg);
     min-width: 0;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .winner-card.card-1st {

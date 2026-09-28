@@ -102,16 +102,13 @@ if (!$quiz) {
     </div>
 
     <!-- Live Leaderboard Container (Toggled during leaderboard status) -->
-    <div id="leaderboardView" style="display: none; margin-top: 20px;">
-      <div class="leaderboard-header">
-        <h2 class="leaderboard-title">🏆 CURRENT LEADERBOARD</h2>
-        <div style="margin-top: 10px; padding: 12px 20px; background: rgba(241, 196, 15, 0.15); border: 1px solid var(--accent-yellow); border-radius: var(--radius-md); display: inline-block;">
-          <span style="font-weight: 800; font-size: 1.1rem; color: var(--accent-yellow);">
-            ⚡ Status: Leaderboard &mdash; Auto-advancing in <span id="leaderboardCountdown">5</span> seconds
-          </span>
+    <div id="leaderboardView" style="display: none; margin-top: 10px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div class="leaderboard-countdown-pill" id="leaderboardCountdownPill">
+          ⏳ <span id="leaderboardCountdown">Next question in 5 seconds</span>
         </div>
       </div>
-      <!-- 3D Game-Show Podium & Standings -->
+      <!-- Clean Top 3 Winner Cards & Ranked Player List matching Student Final Leaderboard -->
       <div id="teacherPodiumContainer"></div>
     </div>
 
@@ -342,8 +339,9 @@ if (!$quiz) {
           const now = Date.now();
           const msLeft = Math.max(0, currentLbTargetEndMs - now);
           const secsLeft = Math.ceil(msLeft / 1000);
+          const suffix = secsLeft === 1 ? 'second' : 'seconds';
 
-          elem.textContent = secsLeft;
+          elem.textContent = `Next question in ${secsLeft} ${suffix}`;
         }
 
         tick();
@@ -353,7 +351,7 @@ if (!$quiz) {
       function renderLeaderboardList(list) {
         const container = document.getElementById('teacherPodiumContainer');
         if (container && typeof QuizLeaderboard !== 'undefined') {
-          QuizLeaderboard.renderPodium(container, list, null);
+          QuizLeaderboard.renderFinalLeaderboard(container, list, null, { showHeader: false });
         }
       }
 

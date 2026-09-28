@@ -9,7 +9,7 @@ require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/security.php';
 
 // Rate Limits (per hour per creator)
-if (!defined('AI_RATE_LIMIT_GENERATE')) define('AI_RATE_LIMIT_GENERATE', 15);
+if (!defined('AI_RATE_LIMIT_GENERATE')) define('AI_RATE_LIMIT_GENERATE', 30);
 if (!defined('AI_RATE_LIMIT_REGENERATE')) define('AI_RATE_LIMIT_REGENERATE', 30);
 if (!defined('AI_RATE_LIMIT_CHAT')) define('AI_RATE_LIMIT_CHAT', 60);
 
@@ -193,10 +193,40 @@ function formatQuestionResponse(array $q): array {
 }
 
 /**
- * Get configured AI API Key from environment or local config
+ * Get configured Google Gemini API Key (Primary Provider)
  */
-function getAiApiKey(): ?string {
-    $keys = ['OPENAI_API_KEY', 'AI_API_KEY', 'GEMINI_API_KEY'];
+function getGeminiApiKey(): ?string {
+    $keys = ['GEMINI_API_KEY', 'GOOGLE_API_KEY'];
+    foreach ($keys as $k) {
+        if (!empty($_ENV[$k])) return trim($_ENV[$k]);
+        if (!empty($_SERVER[$k])) return trim($_SERVER[$k]);
+        $val = getenv($k);
+        if (!empty($val)) return trim($val);
+    }
+
+    $localConfigFile = __DIR__ . '/ai.local.php';
+    if (file_exists($localConfigFile)) {
+        $conf = require $localConfigFile;
+        if (is_array($conf)) {
+            if (!empty($conf['gemini_api_key'])) return trim($conf['gemini_api_key']);
+            if (!empty($conf['GEMINI_API_KEY'])) return trim($conf['GEMINI_API_KEY']);
+            if (!empty($conf['google_api_key'])) return trim($conf['google_api_key']);
+            if (!empty($conf['api_key']) && (str_starts_with($conf['api_key'], 'AIzaSy') || strlen($conf['api_key']) === 39)) {
+                return trim($conf['api_key']);
+            }
+        } elseif (is_string($conf) && !empty($conf) && (str_starts_with($conf, 'AIzaSy') || strlen($conf) === 39)) {
+            return trim($conf);
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Get configured OpenAI API Key (Fallback Provider)
+ */
+function getOpenAiApiKey(): ?string {
+    $keys = ['OPENAI_API_KEY', 'AI_API_KEY'];
     foreach ($keys as $k) {
         if (!empty($_ENV[$k])) return trim($_ENV[$k]);
         if (!empty($_SERVER[$k])) return trim($_SERVER[$k]);
@@ -209,8 +239,11 @@ function getAiApiKey(): ?string {
         $conf = require $localConfigFile;
         if (is_array($conf)) {
             if (!empty($conf['openai_api_key'])) return trim($conf['openai_api_key']);
-            if (!empty($conf['api_key'])) return trim($conf['api_key']);
-        } elseif (is_string($conf) && !empty($conf)) {
+            if (!empty($conf['OPENAI_API_KEY'])) return trim($conf['OPENAI_API_KEY']);
+            if (!empty($conf['api_key']) && str_starts_with($conf['api_key'], 'sk-')) {
+                return trim($conf['api_key']);
+            }
+        } elseif (is_string($conf) && !empty($conf) && str_starts_with($conf, 'sk-')) {
             return trim($conf);
         }
     }
@@ -219,7 +252,63 @@ function getAiApiKey(): ?string {
 }
 
 /**
- * Get configured AI Model Name
+ * Get Active AI API Key (Gemini primary -> OpenAI fallback)
+ */
+function getAiApiKey(): ?string {
+    return getGeminiApiKey() ?: getOpenAiApiKey();
+}
+
+/**
+ * Get configured Gemini Model Name (Free Tier Supported)
+ */
+function getGeminiModel(): string {
+    $model = null;
+    $keys = ['GEMINI_MODEL', 'AI_MODEL'];
+    foreach ($keys as $k) {
+        if (!empty($_ENV[$k])) { $model = trim($_ENV[$k]); break; }
+        if (!empty($_SERVER[$k])) { $model = trim($_SERVER[$k]); break; }
+        $val = getenv($k);
+        if (!empty($val)) { $model = trim($val); break; }
+    }
+
+    if (empty($model)) {
+        $localConfigFile = __DIR__ . '/ai.local.php';
+        if (file_exists($localConfigFile)) {
+            $conf = require $localConfigFile;
+            if (is_array($conf)) {
+                if (!empty($conf['gemini_model'])) {
+                    $model = trim($conf['gemini_model']);
+                } elseif (!empty($conf['model']) && str_starts_with($conf['model'], 'gemini-')) {
+                    $model = trim($conf['model']);
+                }
+            }
+        }
+    }
+
+    if (empty($model)) {
+        $model = 'gemini-3.1-flash-lite';
+    }
+
+    // Map deprecated / sunset model identifiers to active Google AI Studio equivalents
+    $aliasMap = [
+        'gemini-1.5-flash'    => 'gemini-3.1-flash-lite',
+        'gemini-1.5-flash-8b' => 'gemini-3.1-flash-lite',
+        'gemini-1.5-pro'      => 'gemini-3.1-flash-lite',
+        'gemini-2.5-flash'    => 'gemini-3.1-flash-lite',
+        'gemini-2.5-flash-lite' => 'gemini-3.1-flash-lite',
+        'gemini-2.5-pro'      => 'gemini-3.1-flash-lite',
+        'gemini-1.0-pro'      => 'gemini-3.1-flash-lite',
+    ];
+
+    if (isset($aliasMap[$model])) {
+        return $aliasMap[$model];
+    }
+
+    return $model;
+}
+
+/**
+ * Get configured OpenAI Model Name
  */
 function getAiModel(): string {
     $keys = ['AI_MODEL', 'OPENAI_MODEL'];
@@ -233,7 +322,10 @@ function getAiModel(): string {
     $localConfigFile = __DIR__ . '/ai.local.php';
     if (file_exists($localConfigFile)) {
         $conf = require $localConfigFile;
-        if (is_array($conf) && !empty($conf['model'])) {
+        if (is_array($conf) && !empty($conf['openai_model'])) {
+            return trim($conf['openai_model']);
+        }
+        if (is_array($conf) && !empty($conf['model']) && !str_starts_with($conf['model'], 'gemini-')) {
             return trim($conf['model']);
         }
     }
@@ -242,7 +334,7 @@ function getAiModel(): string {
 }
 
 /**
- * Execute Real LLM API Call (OpenAI API / Gemini fallback)
+ * Execute Real LLM API Call with Gemini Primary (Free Tier) and OpenAI Fallback
  *
  * @param string $systemPrompt
  * @param string $userPrompt
@@ -250,25 +342,49 @@ function getAiModel(): string {
  * @return array ['success' => bool, 'data' => array, 'code' => string, 'message' => string]
  */
 function callAiService(string $systemPrompt, string $userPrompt, int $timeout = 40): array {
-    $apiKey = getAiApiKey();
+    $geminiKey = getGeminiApiKey();
+    $openAiKey = getOpenAiApiKey();
 
-    if (empty($apiKey)) {
-        error_log("[QuizSpark AI Config Error] Server AI API key is not configured.");
+    if (empty($geminiKey) && empty($openAiKey)) {
+        error_log("[QuizSpark AI Config Error] Neither Gemini nor OpenAI API key is configured.");
         return [
             'success' => false,
             'code'    => 'AI_NOT_CONFIGURED',
-            'message' => 'AI service is not configured. Please configure the server AI API key.'
+            'message' => 'AI service is not configured. Please configure your Gemini API key in config/ai.local.php.'
         ];
     }
 
-    // Determine provider based on key format or prefix
-    $isGeminiKey = (str_starts_with($apiKey, 'AIzaSy') || strlen($apiKey) === 39);
+    // 1. Primary: Google Gemini API (Free Tier)
+    if (!empty($geminiKey)) {
+        $geminiRes = callGeminiApi($geminiKey, $systemPrompt, $userPrompt, $timeout);
+        if (!empty($geminiRes['success'])) {
+            return $geminiRes;
+        }
 
-    if ($isGeminiKey) {
-        return callGeminiApi($apiKey, $systemPrompt, $userPrompt, $timeout);
+        error_log("[QuizSpark Gemini Warning] Gemini generation failed (" . ($geminiRes['code'] ?? 'ERR') . "): " . ($geminiRes['message'] ?? ''));
+
+        // If Gemini failed and OpenAI key exists, fallback to OpenAI
+        if (!empty($openAiKey)) {
+            error_log("[QuizSpark AI Fallback] Falling back to OpenAI provider...");
+            $openAiRes = callOpenAiApi($openAiKey, $systemPrompt, $userPrompt, $timeout);
+            if (!empty($openAiRes['success'])) {
+                return $openAiRes;
+            }
+        }
+
+        return $geminiRes;
     }
 
-    return callOpenAiApi($apiKey, $systemPrompt, $userPrompt, $timeout);
+    // 2. Fallback: OpenAI API (if only OpenAI key is present)
+    if (!empty($openAiKey)) {
+        return callOpenAiApi($openAiKey, $systemPrompt, $userPrompt, $timeout);
+    }
+
+    return [
+        'success' => false,
+        'code'    => 'AI_NOT_CONFIGURED',
+        'message' => 'AI service is not configured.'
+    ];
 }
 
 /**
@@ -386,10 +502,11 @@ function callOpenAiApi(string $apiKey, string $systemPrompt, string $userPrompt,
 }
 
 /**
- * Google Gemini Provider Integration
+ * Google Gemini Provider Integration (Free Tier Supported)
  */
-function callGeminiApi(string $apiKey, string $systemPrompt, string $userPrompt, int $timeout = 40): array {
-    $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . urlencode($apiKey);
+function callGeminiApi(string $apiKey, string $systemPrompt, string $userPrompt, int $timeout = 35): array {
+    $model = getGeminiModel();
+    $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
 
     $payload = [
         'systemInstruction' => [
@@ -404,81 +521,143 @@ function callGeminiApi(string $apiKey, string $systemPrompt, string $userPrompt,
         ]
     ];
 
-    $ch = curl_init($endpoint);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode($payload),
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => true
-    ]);
+    $maxAttempts = 2; // Strict limit: 1 initial attempt + at most 1 safe backoff retry
+    $lastError = null;
 
-    $response = curl_exec($ch);
-    $curlErr = curl_error($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+        if ($attempt > 1) {
+            sleep(2); // Safe 2-second backoff before single retry
+        }
 
-    if ($curlErr) {
-        error_log("[QuizSpark Gemini Network Error] " . $curlErr);
-        return [
-            'success' => false,
-            'code'    => 'AI_SERVICE_UNAVAILABLE',
-            'message' => 'AI service is temporarily unavailable. Please try again.'
-        ];
+        $ch = curl_init($endpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_TIMEOUT        => $timeout,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true
+        ]);
+
+        $response = curl_exec($ch);
+        $curlErr = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($curlErr) {
+            error_log("[QuizSpark Gemini Network Error] attempt {$attempt}, error: " . $curlErr);
+            if (strpos($curlErr, 'timed out') !== false || strpos($curlErr, 'timeout') !== false) {
+                return [
+                    'success' => false,
+                    'code'    => 'AI_TIMEOUT',
+                    'message' => 'AI generation timed out. Please try again with fewer questions.'
+                ];
+            }
+            $lastError = [
+                'success' => false,
+                'code'    => 'AI_SERVICE_UNAVAILABLE',
+                'message' => 'AI service is temporarily unavailable. Please try again.'
+            ];
+            continue;
+        }
+
+        if ($httpCode === 401 || $httpCode === 403) {
+            error_log("[QuizSpark Gemini Auth Error {$httpCode}] Invalid or unauthorized Gemini API key.");
+            return [
+                'success' => false,
+                'code'    => 'AI_AUTH_ERROR',
+                'message' => 'Gemini AI service authentication failed. Please check the server configuration.'
+            ];
+        }
+
+        if ($httpCode === 429) {
+            $decodedErr = json_decode((string)$response, true);
+            $upstreamMsg = $decodedErr['error']['message'] ?? 'Quota or rate limit reached.';
+            error_log("[QuizSpark Gemini Rate Limit 429] attempt {$attempt}: " . $upstreamMsg);
+            $lastError = [
+                'success' => false,
+                'code'    => 'AI_RATE_LIMITED',
+                'message' => 'AI generation limit reached. Please try again later.'
+            ];
+            if ($attempt < $maxAttempts) {
+                continue; // Retry once with 2s backoff
+            }
+            return $lastError;
+        }
+
+        if ($httpCode === 503) {
+            error_log("[QuizSpark Gemini HTTP 503] Model {$model} temporary high demand on attempt {$attempt}.");
+            $lastError = [
+                'success' => false,
+                'code'    => 'AI_SERVICE_UNAVAILABLE',
+                'message' => 'AI service is temporarily unavailable due to upstream demand. Please try again in a few seconds.'
+            ];
+            if ($attempt < $maxAttempts) {
+                continue; // Retry once with 2s backoff
+            }
+            return $lastError;
+        }
+
+        if ($httpCode === 404) {
+            error_log("[QuizSpark Gemini HTTP 404] Model {$model} not found. Defaulting to gemini-3.1-flash-lite.");
+            if ($model !== 'gemini-3.1-flash-lite') {
+                $model = 'gemini-3.1-flash-lite';
+                $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
+                continue;
+            }
+            return [
+                'success' => false,
+                'code'    => 'AI_SERVICE_UNAVAILABLE',
+                'message' => 'Selected Gemini AI model is unavailable.'
+            ];
+        }
+
+        if ($httpCode >= 400) {
+            error_log("[QuizSpark Gemini HTTP {$httpCode}] Upstream error: " . substr((string)$response, 0, 400));
+            return [
+                'success' => false,
+                'code'    => 'AI_SERVICE_UNAVAILABLE',
+                'message' => 'AI service is temporarily unavailable. Please try again.'
+            ];
+        }
+
+        $decoded = json_decode((string)$response, true);
+        if (!isset($decoded['candidates'][0]['content']['parts'][0]['text'])) {
+            error_log("[QuizSpark Gemini Format Warning] Unexpected response: " . substr((string)$response, 0, 400));
+            return [
+                'success' => false,
+                'code'    => 'INVALID_AI_OUTPUT',
+                'message' => 'AI generated an invalid quiz response. Please try again.'
+            ];
+        }
+
+        $rawText = trim($decoded['candidates'][0]['content']['parts'][0]['text']);
+        $structured = json_decode($rawText, true);
+        if (!$structured || !is_array($structured)) {
+            $clean = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $rawText);
+            $structured = json_decode($clean, true);
+        }
+
+        if (!$structured || !is_array($structured)) {
+            error_log("[QuizSpark Gemini JSON Parse Error] " . substr($rawText, 0, 400));
+            return [
+                'success' => false,
+                'code'    => 'INVALID_AI_OUTPUT',
+                'message' => 'AI generated an invalid quiz response. Please try again.'
+            ];
+        }
+
+        return ['success' => true, 'data' => $structured, 'model_used' => $model];
     }
 
-    if ($httpCode === 401 || $httpCode === 403) {
-        return [
-            'success' => false,
-            'code'    => 'AI_AUTH_ERROR',
-            'message' => 'AI service authentication failed. Please check the server configuration.'
-        ];
-    }
-
-    if ($httpCode === 429) {
-        return [
-            'success' => false,
-            'code'    => 'AI_RATE_LIMITED',
-            'message' => 'AI generation limit reached. Please try again later.'
-        ];
-    }
-
-    if ($httpCode >= 400) {
-        return [
-            'success' => false,
-            'code'    => 'AI_SERVICE_UNAVAILABLE',
-            'message' => 'AI service is temporarily unavailable. Please try again.'
-        ];
-    }
-
-    $decoded = json_decode((string)$response, true);
-    if (!isset($decoded['candidates'][0]['content']['parts'][0]['text'])) {
-        return [
-            'success' => false,
-            'code'    => 'INVALID_AI_OUTPUT',
-            'message' => 'AI generated an invalid quiz response. Please try again.'
-        ];
-    }
-
-    $rawText = trim($decoded['candidates'][0]['content']['parts'][0]['text']);
-    $structured = json_decode($rawText, true);
-    if (!$structured || !is_array($structured)) {
-        $clean = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $rawText);
-        $structured = json_decode($clean, true);
-    }
-
-    if (!$structured || !is_array($structured)) {
-        return [
-            'success' => false,
-            'code'    => 'INVALID_AI_OUTPUT',
-            'message' => 'AI generated an invalid quiz response. Please try again.'
-        ];
-    }
-
-    return ['success' => true, 'data' => $structured];
+    return $lastError ?: [
+        'success' => false,
+        'code'    => 'AI_SERVICE_UNAVAILABLE',
+        'message' => 'AI service is temporarily unavailable. Please try again.'
+    ];
 }
+
 
 /**
  * Validate Question Structure & Sanitize

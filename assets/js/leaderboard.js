@@ -147,14 +147,19 @@ const QuizLeaderboard = (() => {
       `;
     }
 
-    let html = `
-      <div class="final-leaderboard-container">
-        <!-- Header -->
-        <div class="final-lb-header">
-          <h1 class="final-lb-title">🏆 FINAL LEADERBOARD</h1>
-          <p class="final-lb-subtitle">Quiz Complete!</p>
-        </div>
+    let html = `<div class="final-leaderboard-container">`;
 
+    // Optional Header (Suppressed by default to keep clean cards without repetitive titles)
+    if (options.showHeader) {
+      html += `
+        <div class="final-lb-header">
+          <h1 class="final-lb-title">${escapeHtml(options.title || '🏆 FINAL LEADERBOARD')}</h1>
+          <p class="final-lb-subtitle">${escapeHtml(options.subtitle || 'Quiz Complete!')}</p>
+        </div>
+      `;
+    }
+
+    html += `
         <!-- Top 3 Winner Cards -->
         <div class="final-winners-cards">
           ${list.length === 1
@@ -167,16 +172,10 @@ const QuizLeaderboard = (() => {
         </div>
     `;
 
-    // Positions 4+ (OTHER PLAYERS)
+    // Positions 4+ (Ranked player cards list without redundant section title)
     if (otherPlayers.length > 0) {
       html += `
         <div class="other-players-wrapper">
-          <div class="other-players-header">
-            <h3 class="other-players-title">
-              <span>📊</span> OTHER PLAYERS
-            </h3>
-            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">${otherPlayers.length} Participants</span>
-          </div>
           <div class="other-players-scroll">
             ${otherPlayers.map(p => {
               const isCurrent = (currentToken && p.session_token === currentToken) || !!p.is_me;

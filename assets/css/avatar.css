@@ -102,6 +102,7 @@
   justify-content: center;
   margin: 12px 0 16px;
   position: relative;
+  overflow: visible;
 }
 
 .style-selector-group {
@@ -197,11 +198,13 @@
 }
 
 /* --- Avatar Customizer Modal Interface --- */
+/* --- Avatar Customizer Modal Interface --- */
 .avatar-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 8, 20, 0.85);
-  backdrop-filter: blur(10px);
+  background: rgba(10, 8, 20, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -209,7 +212,7 @@
   padding: 20px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s ease;
 }
 
 .avatar-modal-backdrop.open {
@@ -222,11 +225,12 @@
   border: 1px solid var(--border-light);
   border-radius: var(--radius-xl);
   width: 100%;
-  max-width: 960px;
-  max-height: 90vh;
+  max-width: 980px;
+  height: 88vh;
+  max-height: 760px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.1);
   overflow: hidden;
   animation: modalPopIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -246,18 +250,42 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 24px;
+  padding: 14px 22px;
   background: rgba(255, 255, 255, 0.03);
   border-bottom: 1px solid var(--border-light);
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.avatar-modal-header h2 {
-  font-size: 1.35rem;
+/* Gender Toggle Pills */
+.avatar-gender-pill-group {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 3px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+}
+
+.avatar-gender-pill {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
   font-weight: 800;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.avatar-gender-pill:hover {
   color: #ffffff;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+}
+
+.avatar-gender-pill.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent-pink) 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.4);
 }
 
 .avatar-modal-close {
@@ -280,13 +308,14 @@
   display: grid;
   grid-template-columns: 320px 1fr;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 .avatar-modal-preview-panel {
-  background: rgba(10, 8, 20, 0.45);
+  background: radial-gradient(circle at 50% 35%, rgba(108, 92, 231, 0.18) 0%, rgba(10, 8, 20, 0.6) 80%);
   border-right: 1px solid var(--border-light);
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -300,6 +329,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
+}
+
+.avatar-preview-tag {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pulse-dot {
+  color: #20bf6b;
+  font-size: 0.9rem;
+  animation: pulse 1.5s infinite;
 }
 
 .avatar-modal-edit-panel {
@@ -307,27 +357,71 @@
   flex-direction: column;
   overflow: hidden;
   background: #18142b;
+  min-height: 0;
 }
 
-/* 18 Categories Horizontal Tabs Strip */
-.avatar-category-nav {
+/* 6 Main Category Tabs Bar */
+.avatar-main-category-nav {
   display: flex;
   overflow-x: auto;
-  padding: 12px 16px;
+  padding: 10px 16px;
   gap: 8px;
   border-bottom: 1px solid var(--border-light);
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.25);
   scrollbar-width: thin;
 }
 
-.avatar-cat-tab {
+.avatar-main-cat-btn {
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-muted);
   padding: 8px 14px;
   border-radius: var(--radius-md);
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.avatar-main-cat-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.avatar-main-cat-btn.active {
+  background: rgba(108, 92, 231, 0.25);
+  color: var(--accent-cyan);
+  border-color: rgba(0, 206, 201, 0.4);
+  box-shadow: 0 0 14px rgba(0, 206, 201, 0.25);
+}
+
+.avatar-main-cat-btn .cat-icon {
+  font-size: 1.15rem;
+}
+
+/* Sub-Category Feature Chips */
+.avatar-subtab-nav {
+  display: flex;
+  overflow-x: auto;
+  padding: 10px 16px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  scrollbar-width: thin;
+}
+
+.avatar-subtab-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   display: inline-flex;
@@ -336,24 +430,25 @@
   transition: all 0.2s ease;
 }
 
-.avatar-cat-tab:hover {
-  background: rgba(255, 255, 255, 0.06);
+.avatar-subtab-chip:hover {
+  background: rgba(255, 255, 255, 0.09);
   color: #ffffff;
 }
 
-.avatar-cat-tab.active {
-  background: rgba(108, 92, 231, 0.25);
-  color: var(--accent-cyan);
-  border-color: rgba(0, 206, 201, 0.4);
-  box-shadow: 0 0 12px rgba(0, 206, 201, 0.2);
+.avatar-subtab-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.4);
 }
 
-/* Options Grid Container */
+/* Options Grid Area */
 .avatar-options-area {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 18px 20px;
   scrollbar-width: thin;
+  min-height: 0;
 }
 
 .avatar-options-grid {
@@ -453,7 +548,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: 14px 22px;
   background: rgba(10, 8, 20, 0.6);
   border-top: 1px solid var(--border-light);
   gap: 12px;
@@ -464,7 +559,32 @@
   gap: 10px;
 }
 
-/* --- Responsive Layout for Mobile & Tablets --- */
+/* Toast Feedback */
+.avatar-editor-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(30px);
+  background: rgba(24, 20, 42, 0.95);
+  border: 1px solid var(--accent-cyan);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 206, 201, 0.4);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 10px 22px;
+  border-radius: var(--radius-full);
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.avatar-editor-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* --- Responsive Layout for Mobile & Tablets (360px - 768px) --- */
 @media (max-width: 768px) {
   .avatar-modal-backdrop {
     padding: 0;
@@ -473,42 +593,76 @@
 
   .avatar-modal-window {
     max-width: 100%;
+    height: 94vh;
     max-height: 94vh;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 
   .avatar-modal-body {
     grid-template-columns: 1fr;
-    grid-template-rows: 180px 1fr;
+    grid-template-rows: 185px 1fr;
   }
 
   .avatar-modal-preview-panel {
     border-right: none;
     border-bottom: 1px solid var(--border-light);
-    padding: 10px;
+    padding: 6px 12px;
   }
 
   .avatar-modal-preview-stage {
-    height: 160px;
+    height: 150px;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .avatar-preview-tag {
+    margin-top: 4px;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+  }
+
+  .avatar-main-category-nav {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .avatar-main-cat-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .avatar-subtab-nav {
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .avatar-subtab-chip {
+    padding: 4px 10px;
+    font-size: 0.74rem;
+  }
+
+  .avatar-options-area {
+    padding: 12px 14px;
   }
 
   .avatar-options-grid {
-    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
     gap: 8px;
   }
 
   .avatar-opt-card {
-    min-height: 72px;
+    min-height: 70px;
     padding: 6px 4px;
   }
 
   .avatar-opt-preview {
     width: 32px;
     height: 32px;
+    font-size: 1.3rem;
   }
 
   .avatar-modal-footer {
-    padding: 12px 16px;
+    padding: 10px 14px;
   }
 
   .avatar-stage {
