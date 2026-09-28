@@ -47,10 +47,13 @@ $csrfToken = generateCsrfToken();
     }
     .tab-nav {
       display: flex;
-      gap: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
       margin-bottom: 20px;
       border-bottom: 1px solid var(--border-light);
       padding-bottom: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
     .tab-btn {
       background: transparent;

@@ -78,7 +78,7 @@ $joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $qui
         <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; display: block;">GAME PIN</span>
-            <div class="join-code-badge" style="margin: 0; font-size: 2.2rem; padding: 4px 18px; letter-spacing: 8px;">
+            <div class="join-code-badge" style="margin: 0;">
               <?= htmlspecialchars($quiz['join_code']) ?>
             </div>
           </div>

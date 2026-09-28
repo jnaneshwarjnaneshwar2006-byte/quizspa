@@ -55,6 +55,14 @@
   padding: 0;
 }
 
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-dark);
@@ -65,6 +73,16 @@ body {
   background-image: 
     radial-gradient(circle at 10% 20%, rgba(108, 92, 231, 0.15) 0%, transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(253, 121, 168, 0.12) 0%, transparent 40%);
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
 h1, h2, h3, h4, .brand-font {
@@ -84,6 +102,7 @@ h1, h2, h3, h4, .brand-font {
   align-items: center;
   gap: 8px;
   text-decoration: none;
+  max-width: 100%;
 }
 
 .brand-badge {
@@ -99,18 +118,24 @@ h1, h2, h3, h4, .brand-font {
 
 /* Common Layout Containers */
 .app-container {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--bg-dark-card);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(12px);
+  min-width: 0;
 }
 
 /* Buttons */
@@ -304,4 +329,101 @@ h1, h2, h3, h4, .brand-font {
   color: var(--text-muted);
   font-size: 0.85rem;
   margin-top: auto;
+  width: 100%;
+  box-sizing: border-box;
 }
+
+/* ==========================================================================
+   Global Mobile Responsive Foundation & Breakpoints
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 14px;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: var(--radius-md);
+  }
+
+  .brand-logo {
+    font-size: 1.65rem;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    font-size: 0.95rem;
+  }
+
+  .btn-lg {
+    padding: 12px 24px;
+    font-size: 1.05rem;
+  }
+
+  .form-control {
+    padding: 12px 14px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 14px 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .brand-logo {
+    font-size: 1.4rem;
+  }
+
+  .brand-badge {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+  }
+
+  .btn {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    gap: 6px;
+  }
+
+  .btn-lg {
+    padding: 12px 18px;
+    font-size: 0.98rem;
+  }
+
+  .alert {
+    padding: 10px 12px;
+    font-size: 0.88rem;
+  }
+
+  .app-footer {
+    padding: 20px 10px;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .app-container {
+    padding: 8px;
+  }
+
+  .card {
+    padding: 12px 10px;
+  }
+
+  .brand-logo {
+    font-size: 1.25rem;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
+

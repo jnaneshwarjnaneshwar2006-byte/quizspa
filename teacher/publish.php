@@ -72,14 +72,14 @@ $joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $qui
 
         <div class="form-group" style="margin-top: 20px;">
           <label class="form-label">Student Join URL</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="joinUrlInput" class="form-control" value="<?= htmlspecialchars($joinUrl) ?>" readonly style="font-family: monospace;">
+          <div class="join-url-container">
+            <input type="text" id="joinUrlInput" class="form-control join-url-input" value="<?= htmlspecialchars($joinUrl) ?>" readonly style="font-family: monospace;">
             <button type="button" onclick="copyJoinUrl()" class="btn btn-secondary">📋 Copy</button>
           </div>
         </div>
       </div>
 
-      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%;">
         <button onclick="copyJoinCode()" class="btn btn-secondary">🔢 Copy Code</button>
         <a href="live_lobby.php?id=<?= $quizId ?>" class="btn btn-primary btn-lg">🚀 Open Live Lobby</a>
         <a href="quizzes.php" class="btn btn-secondary btn-lg">Dashboard</a>

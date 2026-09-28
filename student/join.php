@@ -149,6 +149,7 @@ require_once __DIR__ . '/../config/security.php';
           } catch(e) {}
         }
       });
+      window.avatarEditorInstance = editor;
 
       document.getElementById('openEditorBtn').addEventListener('click', () => {
         editor.open(currentAvatarConfig);

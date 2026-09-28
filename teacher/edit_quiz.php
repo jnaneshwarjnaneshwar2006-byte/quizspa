@@ -84,7 +84,7 @@ $questions = $qStmt->fetchAll();
         </div>
 
         <div class="card" style="margin-bottom: 30px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div class="add-question-header">
             <h2 style="font-size: 1.3rem;">2. Questions</h2>
             <button type="button" id="addQuestionBtn" class="btn btn-accent">➕ Add Another Question</button>
           </div>
@@ -94,7 +94,7 @@ $questions = $qStmt->fetchAll();
           </div>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 16px;">
+        <div class="quiz-form-actions">
           <a href="quizzes.php" class="btn btn-secondary btn-lg">Cancel</a>
           <button type="submit" class="btn btn-primary btn-lg">💾 Update Quiz</button>
         </div>

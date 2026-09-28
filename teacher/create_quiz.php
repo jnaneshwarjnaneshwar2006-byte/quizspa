@@ -62,7 +62,7 @@ $csrfToken = generateCsrfToken();
 
         <!-- Questions Builder Card -->
         <div class="card" style="margin-bottom: 30px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div class="add-question-header">
             <h2 style="font-size: 1.3rem;">2. Add Questions</h2>
             <button type="button" id="addQuestionBtn" class="btn btn-accent">➕ Add Another Question</button>
           </div>
@@ -72,7 +72,7 @@ $csrfToken = generateCsrfToken();
           </div>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 16px;">
+        <div class="quiz-form-actions">
           <a href="dashboard.php" class="btn btn-secondary btn-lg">Cancel</a>
           <button type="submit" class="btn btn-primary btn-lg">🚀 Save & Publish Quiz</button>
         </div>
