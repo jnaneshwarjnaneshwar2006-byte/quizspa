@@ -52,6 +52,7 @@ if ($quizId) {
   <link rel="stylesheet" href="../assets/css/dashboard.css">
   <link rel="stylesheet" href="../assets/css/leaderboard.css">
   <link rel="stylesheet" href="../assets/css/avatar.css">
+  <script src="../assets/js/three.min.js"></script>
   <script src="../assets/js/avatar-engine.js"></script>
 </head>
 <body>

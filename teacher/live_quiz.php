@@ -40,6 +40,7 @@ if (!$quiz) {
   <link rel="stylesheet" href="../assets/css/quiz.css">
   <link rel="stylesheet" href="../assets/css/leaderboard.css">
   <link rel="stylesheet" href="../assets/css/avatar.css">
+  <script src="../assets/js/three.min.js"></script>
   <script src="../assets/js/avatar-engine.js"></script>
   <script src="../assets/js/leaderboard.js"></script>
 </head>

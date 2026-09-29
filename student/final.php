@@ -53,6 +53,7 @@ $quiz = $qzStmt->fetch();
     </div>
   </main>
 
+  <script src="../assets/js/three.min.js"></script>
   <script src="../assets/js/avatar-engine.js"></script>
   <script src="../assets/js/leaderboard.js"></script>
   <script>

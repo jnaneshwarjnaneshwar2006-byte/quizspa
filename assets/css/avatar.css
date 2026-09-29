@@ -373,10 +373,17 @@
 }
 
 .avatar-modal-preview-stage canvas,
-.avatar-modal-preview-stage svg,
 .avatar-stage canvas,
-.avatar-stage svg,
 .avatar-preview canvas,
+.player-modal-avatar-stage canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  outline: none;
+}
+
+.avatar-modal-preview-stage svg,
+.avatar-stage svg,
 .avatar-preview svg {
   max-width: 100%;
   max-height: 100%;

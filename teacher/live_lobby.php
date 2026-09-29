@@ -49,7 +49,7 @@ $joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $qui
   <link rel="stylesheet" href="../assets/css/lobby.css">
   <link rel="stylesheet" href="../assets/css/avatar.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="../assets/js/three.min.js"></script>
   <script src="../assets/js/avatar-engine.js"></script>
   <script src="../assets/js/earth-lobby.js"></script>
   <script src="../assets/js/lobby.js"></script>

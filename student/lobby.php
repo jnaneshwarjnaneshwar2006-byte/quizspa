@@ -102,6 +102,7 @@ $studentAvatar = getParticipantAvatarData($student);
     </div>
   </div>
 
+  <script src="../assets/js/three.min.js"></script>
   <script src="../assets/js/avatar-engine.js"></script>
   <script src="../assets/js/lobby.js"></script>
   <script>

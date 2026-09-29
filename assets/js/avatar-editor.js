@@ -298,7 +298,12 @@
           rotButtons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           this.rotation = btn.dataset.rot;
-          this.updatePreview();
+          const vp = AvatarEngine.getViewport(this.previewStage);
+          if (vp) {
+            vp.setRotationAngle(this.rotation);
+          } else {
+            this.updatePreview();
+          }
         });
       });
 
@@ -306,13 +311,23 @@
       document.getElementById('zoomInBtn').addEventListener('click', () => {
         this.zoom = Math.min(1.4, Number((this.zoom + 0.1).toFixed(1)));
         this.updateZoomDisplay();
-        this.updatePreview();
+        const vp = AvatarEngine.getViewport(this.previewStage);
+        if (vp) {
+          vp.setZoom(this.zoom);
+        } else {
+          this.updatePreview();
+        }
       });
 
       document.getElementById('zoomOutBtn').addEventListener('click', () => {
         this.zoom = Math.max(0.8, Number((this.zoom - 0.1).toFixed(1)));
         this.updateZoomDisplay();
-        this.updatePreview();
+        const vp = AvatarEngine.getViewport(this.previewStage);
+        if (vp) {
+          vp.setZoom(this.zoom);
+        } else {
+          this.updatePreview();
+        }
       });
 
       // Gender toggle buttons

@@ -75,6 +75,7 @@ require_once __DIR__ . '/../config/security.php';
   </div>
 
   <!-- Avatar Scripts -->
+  <script src="../assets/js/three.min.js"></script>
   <script src="../assets/js/avatar-engine.js"></script>
   <script src="../assets/js/avatar-editor.js"></script>
   <script>
