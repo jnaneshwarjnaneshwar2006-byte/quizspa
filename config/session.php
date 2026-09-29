@@ -22,18 +22,27 @@ if (session_status() === PHP_SESSION_NONE) {
  */
 function getBaseUrl(): string {
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? 80) == 443 ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+    $host = $_SERVER['HTTP_HOST'] ?? '127.0.0.1:8000';
     
     // Deduce subdirectory if hosted under folder
     $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
     $baseDir = rtrim($scriptDir, '/');
+    if ($baseDir === '.' || $baseDir === '/' || $baseDir === '') {
+        $baseDir = '';
+    } elseif (!str_starts_with($baseDir, '/')) {
+        $baseDir = '/' . $baseDir;
+    }
     
     // Trim known subfolders if present in SCRIPT_NAME
-    $subfolders = ['/teacher', '/student', '/api/auth', '/api/quiz', '/api/live', '/api/student', '/api/upload', '/api', '/api/creator/ai'];
+    $subfolders = ['/teacher', '/student', '/api/auth', '/api/quiz', '/api/live', '/api/student', '/api/upload', '/api', '/api/creator/ai', '/scratch'];
     foreach ($subfolders as $sf) {
-        if (substr($baseDir, -strlen($sf)) === $sf) {
+        if ($baseDir === $sf || (strlen($baseDir) >= strlen($sf) && substr($baseDir, -strlen($sf)) === $sf)) {
             $baseDir = substr($baseDir, 0, -strlen($sf));
         }
+    }
+    
+    if ($baseDir !== '' && !str_starts_with($baseDir, '/')) {
+        $baseDir = '/' . $baseDir;
     }
     
     return $protocol . '://' . $host . rtrim($baseDir, '/');

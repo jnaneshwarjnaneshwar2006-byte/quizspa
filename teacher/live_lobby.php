@@ -37,7 +37,7 @@ if (in_array($quiz['status'], ['published', 'draft'], true)) {
     $quiz['status'] = 'lobby';
 }
 
-$joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $quiz['join_code']);
+$joinUrl = getStudentJoinUrl($quiz['join_code']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -48,7 +48,7 @@ $joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $qui
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/lobby.css">
   <link rel="stylesheet" href="../assets/css/avatar.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="../assets/js/qrcode.min.js"></script>
   <script src="../assets/js/three.min.js"></script>
   <script src="../assets/js/avatar-engine.js"></script>
   <script src="../assets/js/earth-lobby.js"></script>
@@ -206,16 +206,18 @@ $joinUrl = $quiz['join_url'] ?: (getBaseUrl() . '/student/join.php?code=' . $qui
         if (typeof QRCode !== 'undefined') {
           new QRCode(qrContainer, {
             text: joinUrl,
-            width: 72,
-            height: 72,
+            width: 80,
+            height: 80,
             colorDark : "#0f0c1b",
-            colorLight : "#ffffff"
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.M
           });
         } else {
-          qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=72x72&data=${encodeURIComponent(joinUrl)}" style="width: 72px; height: 72px;">`;
+          qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(joinUrl)}" style="width: 80px; height: 80px; display: block;" alt="QR Code">`;
         }
       } catch(e) {
-        qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=72x72&data=${encodeURIComponent(joinUrl)}" style="width: 72px; height: 72px;">`;
+        console.warn('QR code generation warning:', e);
+        qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(joinUrl)}" style="width: 80px; height: 80px; display: block;" alt="QR Code">`;
       }
 
       // 2. Initialize 3D Rotating Earth Lobby

@@ -1,7 +1,8 @@
 /**
  * QuizSpark Realistic 3D Full-Body Avatar System - Three.js WebGL Engine
- * True 3D character generation with hierarchical skeleton bones, modular clothing meshes,
- * bone attachment sockets, physical hand gripping, soft studio lighting, and smooth 360° rotation.
+ * Single unified hierarchical skeleton rig, organic human-like 3D meshes,
+ * anti-leakage clothing occlusion, physical hand grip sockets,
+ * studio 3-point lighting, and responsive 360° interactive rotation.
  */
 (function (global) {
   'use strict';
@@ -179,7 +180,7 @@
   function createStandardMaterial(color, options = {}) {
     return new THREE.MeshStandardMaterial(Object.assign({
       color: parseColor(color),
-      roughness: 0.6,
+      roughness: 0.58,
       metalness: 0.05,
       flatShading: false
     }, options));
@@ -216,20 +217,20 @@
       const m = getBodyMetrics(this.config.body || 'regular');
       this.metrics = m;
 
-      // Root Ground Shadow
+      // Root Ground Contact Shadow
       const shadowCanvas = document.createElement('canvas');
       shadowCanvas.width = 128;
       shadowCanvas.height = 128;
       const ctx = shadowCanvas.getContext('2d');
       const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 60);
-      grad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
-      grad.addColorStop(0.6, 'rgba(0, 0, 0, 0.2)');
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0.48)');
+      grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.22)');
       grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 128, 128);
 
       const shadowTex = new THREE.CanvasTexture(shadowCanvas);
-      const shadowGeo = new THREE.PlaneGeometry(0.85, 0.85);
+      const shadowGeo = new THREE.PlaneGeometry(0.88, 0.88);
       const shadowMat = new THREE.MeshBasicMaterial({
         map: shadowTex,
         transparent: true,
@@ -240,26 +241,26 @@
       this.groundShadow.position.y = 0.002;
       this.group.add(this.groundShadow);
 
-      // Hierarchical Character Rig
+      // Hierarchical Character Rig Root (Rotates all parts together as ONE character)
       this.characterRoot = new THREE.Group();
       this.group.add(this.characterRoot);
 
-      // Pelvis / Hips
+      // Pelvis / Hips (Root bone of the body)
       this.bones.pelvis = new THREE.Group();
       this.bones.pelvis.position.set(0, m.hipY, 0);
       this.characterRoot.add(this.bones.pelvis);
 
-      // Spine & Chest
+      // Chest / Spine (Child of pelvis)
       this.bones.chest = new THREE.Group();
       this.bones.chest.position.set(0, m.chestY - m.hipY, 0);
       this.bones.pelvis.add(this.bones.chest);
 
-      // Neck
+      // Neck (Child of chest)
       this.bones.neck = new THREE.Group();
       this.bones.neck.position.set(0, m.neckY - m.chestY, 0);
       this.bones.chest.add(this.bones.neck);
 
-      // Head
+      // Head (Child of neck)
       this.bones.head = new THREE.Group();
       this.bones.head.position.set(0, m.headY - m.neckY, 0);
       this.bones.neck.add(this.bones.head);
@@ -298,8 +299,9 @@
       this.bones.leftHand.position.set(0, -m.armLen * 0.44, 0);
       this.bones.leftForearm.add(this.bones.leftHand);
 
+      // Explicit leftHandAnchor for items held in left hand (pencil, book, laptop)
       this.sockets.leftHand = new THREE.Group();
-      this.sockets.leftHand.position.set(0, -0.06, 0.02);
+      this.sockets.leftHand.position.set(0, -0.052, 0.020);
       this.bones.leftHand.add(this.sockets.leftHand);
 
       // Right Arm Chain
@@ -319,8 +321,9 @@
       this.bones.rightHand.position.set(0, -m.armLen * 0.44, 0);
       this.bones.rightForearm.add(this.bones.rightHand);
 
+      // Explicit rightHandAnchor for items held in right hand (trophies, awards)
       this.sockets.rightHand = new THREE.Group();
-      this.sockets.rightHand.position.set(0, -0.06, 0.02);
+      this.sockets.rightHand.position.set(0, -0.052, 0.020);
       this.bones.rightHand.add(this.sockets.rightHand);
 
       // Left Leg Chain
@@ -358,60 +361,62 @@
       this.sockets.waist.position.set(0, 0, 0);
       this.bones.pelvis.add(this.sockets.waist);
 
-      // Initial natural standing arm posture
+      // Natural standing posture
       this.bones.leftArm.rotation.z = 0.08;
       this.bones.leftArm.rotation.x = 0.05;
-      this.bones.leftForearm.rotation.x = -0.12;
+      this.bones.leftForearm.rotation.x = -0.14;
       this.bones.rightArm.rotation.z = -0.08;
       this.bones.rightArm.rotation.x = 0.05;
-      this.bones.rightForearm.rotation.x = -0.12;
+      this.bones.rightForearm.rotation.x = -0.14;
     }
 
     buildBody() {
       const m = this.metrics;
       this.skinMat = createStandardMaterial(0xe0a96d, { roughness: 0.65 });
 
-      // 1. Head Mesh
+      // 1. Head Mesh (Sculpted human-like proportions with jaw contour)
       const headGeo = new THREE.SphereGeometry(0.175, 24, 20);
       headGeo.scale(1.0, 1.15, 1.05);
       this.headMesh = createSmoothMesh(headGeo, this.skinMat);
       this.bones.head.add(this.headMesh);
 
-      // Ears
-      const earGeo = new THREE.SphereGeometry(0.038, 12, 10);
-      earGeo.scale(0.4, 1.2, 0.8);
+      // Ears (Sculpted organic ears)
+      const earGeo = new THREE.SphereGeometry(0.040, 14, 10);
+      earGeo.scale(0.38, 1.25, 0.85);
       const earL = createSmoothMesh(earGeo, this.skinMat);
       earL.position.set(-0.17, 0, 0);
-      earL.rotation.y = 0.2;
+      earL.rotation.y = 0.22;
       this.bones.head.add(earL);
 
       const earR = createSmoothMesh(earGeo, this.skinMat);
       earR.position.set(0.17, 0, 0);
-      earR.rotation.y = -0.2;
+      earR.rotation.y = -0.22;
       this.bones.head.add(earR);
 
-      // Neck Mesh
-      const neckGeo = new THREE.CylinderGeometry(0.062, 0.075, m.headY - m.neckY, 16);
+      // Neck Mesh (Child of neck bone)
+      const neckGeo = new THREE.CylinderGeometry(0.064, 0.076, m.headY - m.neckY, 16);
       neckGeo.translate(0, (m.headY - m.neckY) / 2, 0);
       this.neckMesh = createSmoothMesh(neckGeo, this.skinMat);
       this.bones.neck.add(this.neckMesh);
 
       // 2. Torso Base Mesh (Chest + Abdomen)
-      const torsoGeo = new THREE.CylinderGeometry(m.chestW * 0.44, m.waistW * 0.42, m.neckY - m.hipY, 18);
-      torsoGeo.scale(1.0, 1.0, 0.75);
-      torsoGeo.translate(0, (m.neckY - m.hipY) / 2, 0);
+      const torsoH = m.neckY - m.hipY;
+      const torsoGeo = new THREE.CylinderGeometry(m.chestW * 0.44, m.waistW * 0.42, torsoH, 18);
+      torsoGeo.scale(1.0, 1.0, 0.78);
+      torsoGeo.translate(0, torsoH / 2, 0);
       this.torsoMesh = createSmoothMesh(torsoGeo, this.skinMat);
       this.bones.pelvis.add(this.torsoMesh);
 
       // Pelvis Mesh
       const pelvisGeo = new THREE.SphereGeometry(m.hipW * 0.42, 16, 12);
-      pelvisGeo.scale(1.1, 0.8, 0.8);
+      pelvisGeo.scale(1.1, 0.82, 0.80);
       this.pelvisMesh = createSmoothMesh(pelvisGeo, this.skinMat);
       this.bones.pelvis.add(this.pelvisMesh);
 
-      // 3. Arms & Gripping Hands
-      const armGeo = new THREE.CylinderGeometry(0.046, 0.040, m.armLen * 0.44, 14);
-      armGeo.translate(0, -m.armLen * 0.22, 0);
+      // 3. Arms & Physical Gripping Hands
+      const armLenSegment = m.armLen * 0.44;
+      const armGeo = new THREE.CylinderGeometry(0.048, 0.042, armLenSegment, 14);
+      armGeo.translate(0, -armLenSegment / 2, 0);
 
       this.armLMesh = createSmoothMesh(armGeo, this.skinMat);
       this.bones.leftArm.add(this.armLMesh);
@@ -419,8 +424,8 @@
       this.armRMesh = createSmoothMesh(armGeo, this.skinMat);
       this.bones.rightArm.add(this.armRMesh);
 
-      const forearmGeo = new THREE.CylinderGeometry(0.040, 0.034, m.armLen * 0.44, 14);
-      forearmGeo.translate(0, -m.armLen * 0.22, 0);
+      const forearmGeo = new THREE.CylinderGeometry(0.042, 0.036, armLenSegment, 14);
+      forearmGeo.translate(0, -armLenSegment / 2, 0);
 
       this.forearmLMesh = createSmoothMesh(forearmGeo, this.skinMat);
       this.bones.leftForearm.add(this.forearmLMesh);
@@ -428,7 +433,7 @@
       this.forearmRMesh = createSmoothMesh(forearmGeo, this.skinMat);
       this.bones.rightForearm.add(this.forearmRMesh);
 
-      // Gripping Hands (Hand palm + curled grip fingers)
+      // Sculpted Gripping Hands (Palm + Curled fingers grip + Thumb)
       this.handLGroup = this.buildGrippingHand(this.skinMat, 'left');
       this.bones.leftHand.add(this.handLGroup);
 
@@ -437,7 +442,7 @@
 
       // 4. Legs (Thighs & Shins Base)
       const thighLen = m.hipY - m.kneeY;
-      const thighGeo = new THREE.CylinderGeometry(0.070, 0.054, thighLen, 16);
+      const thighGeo = new THREE.CylinderGeometry(0.072, 0.056, thighLen, 16);
       thighGeo.translate(0, -thighLen / 2, 0);
 
       this.thighLMesh = createSmoothMesh(thighGeo, this.skinMat);
@@ -447,7 +452,7 @@
       this.bones.rightThigh.add(this.thighRMesh);
 
       const shinLen = m.kneeY - m.ankleY;
-      const shinGeo = new THREE.CylinderGeometry(0.054, 0.042, shinLen, 16);
+      const shinGeo = new THREE.CylinderGeometry(0.056, 0.044, shinLen, 16);
       shinGeo.translate(0, -shinLen / 2, 0);
 
       this.shinLMesh = createSmoothMesh(shinGeo, this.skinMat);
@@ -457,15 +462,15 @@
       this.bones.rightShin.add(this.shinRMesh);
 
       // Feet Base
-      const footGeo = new THREE.BoxGeometry(0.075, 0.05, 0.14);
-      footGeo.translate(0, -0.025, 0.04);
+      const footGeo = new THREE.BoxGeometry(0.078, 0.054, 0.15);
+      footGeo.translate(0, -0.027, 0.045);
       this.footLMesh = createSmoothMesh(footGeo, this.skinMat);
       this.bones.leftFoot.add(this.footLMesh);
 
       this.footRMesh = createSmoothMesh(footGeo, this.skinMat);
       this.bones.rightFoot.add(this.footRMesh);
 
-      // Face Group for Features (Eyes, Eyebrows, Nose, Mouth, Freckles)
+      // Face Features Group
       this.faceFeaturesGroup = new THREE.Group();
       this.bones.head.add(this.faceFeaturesGroup);
     }
@@ -474,23 +479,23 @@
       const g = new THREE.Group();
 
       // Palm
-      const palmGeo = new THREE.BoxGeometry(0.052, 0.065, 0.034);
-      palmGeo.translate(0, -0.035, 0);
+      const palmGeo = new THREE.BoxGeometry(0.054, 0.068, 0.036);
+      palmGeo.translate(0, -0.034, 0);
       const palm = createSmoothMesh(palmGeo, material);
       g.add(palm);
 
-      // Curled Fingers (Forming natural cylindrical grip socket)
-      const fingerGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.048, 10);
+      // 4 Curled Fingers Forming Natural Grip Socket
+      const fingerGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.050, 12);
       fingerGeo.rotateZ(Math.PI / 2);
       fingerGeo.translate(0, -0.055, 0.022);
       const fingers = createSmoothMesh(fingerGeo, material);
       g.add(fingers);
 
-      // Thumb
-      const thumbGeo = new THREE.CylinderGeometry(0.013, 0.011, 0.034, 8);
+      // Opposed Thumb Pressing Over the Grip
+      const thumbGeo = new THREE.CylinderGeometry(0.014, 0.012, 0.036, 10);
       const sign = side === 'left' ? -1 : 1;
-      thumbGeo.rotateZ(sign * 0.6);
-      thumbGeo.translate(sign * 0.024, -0.028, 0.016);
+      thumbGeo.rotateZ(sign * 0.65);
+      thumbGeo.translate(sign * 0.024, -0.028, 0.018);
       const thumb = createSmoothMesh(thumbGeo, material);
       g.add(thumb);
 
@@ -512,10 +517,10 @@
       // Face Shape Proportions
       this.applyFaceShape(cfg.face);
 
-      // 2. Eyes, Eyebrows, Nose, Mouth, Freckles, Facial Hair
+      // 2. Face Features (3D Eyes, Eyebrows, Nose, Mouth, Freckles, Facial Hair)
       this.buildFaceFeatures(cfg);
 
-      // 3. Hair
+      // 3. Hairstyle
       this.buildHairstyle(cfg);
 
       // 4. Glasses
@@ -524,10 +529,10 @@
       // 5. Hats & Headwear
       this.buildHeadwear(cfg);
 
-      // 6. Tops & Shirts (Torso fitting & no duplicate stacking)
+      // 6. Tops & Shirts (Torso-fitted, zero gaps, anti-leakage occlusion)
       this.buildTops(cfg);
 
-      // 7. Pants & Lower Body (Leg occlusion & perfect waist fit)
+      // 7. Pants & Lowers (Leg occlusion & perfect waist meeting)
       this.buildBottoms(cfg);
 
       // 8. Dresses
@@ -536,10 +541,10 @@
       // 9. Shoes
       this.buildShoes(cfg);
 
-      // 10. Accessories
+      // 10. Accessories (Bags, Headphones, Necklaces, Watches)
       this.buildAccessories(cfg);
 
-      // 11. Held Special Items (Pencil, Book, Laptop, Trophy, etc.)
+      // 11. Held Special Items (Pencil with physical hand anchor, Book, Laptop, Trophy)
       this.buildSpecialItems(cfg);
 
       // 12. Leaderboard Award (Gold Trophy, Silver/Bronze Medals)
@@ -576,7 +581,7 @@
       const hairColor = parseColor(cfg.hairColor || 'black');
       const skinShadow = parseColor((PALETTES.skin[cfg.skin] || PALETTES.skin.skin_04).shadow);
 
-      // --- Eyes (3D Specular Eyes) ---
+      // --- 3D Layered Eyes ---
       const eyeStyle = cfg.eyes || 'eyes_friendly';
       const eyeR = (eyeStyle === 'eyes_large' || eyeStyle === 'eyes_cartoon') ? 0.038 : (eyeStyle === 'eyes_small' ? 0.028 : 0.033);
       const eyeSpacing = 0.064;
@@ -585,44 +590,50 @@
         const eyeG = new THREE.Group();
         eyeG.position.set(sign * eyeSpacing, 0.025, 0.155);
 
-        // Sclera (White)
-        const scleraGeo = new THREE.SphereGeometry(eyeR, 14, 12);
-        scleraGeo.scale(1.15, 0.9, 0.45);
-        const scleraMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+        // Sclera (White base with subtle specular gloss)
+        const scleraGeo = new THREE.SphereGeometry(eyeR, 16, 14);
+        scleraGeo.scale(1.15, 0.92, 0.46);
+        const scleraMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15 });
         const sclera = new THREE.Mesh(scleraGeo, scleraMat);
         eyeG.add(sclera);
 
         // Iris
-        const irisGeo = new THREE.CircleGeometry(eyeR * 0.65, 14);
+        const irisGeo = new THREE.CircleGeometry(eyeR * 0.65, 16);
         const irisMat = new THREE.MeshBasicMaterial({ color: eyeColor });
         const iris = new THREE.Mesh(irisGeo, irisMat);
-        iris.position.set(sign * 0.003, 0, eyeR * 0.43);
+        iris.position.set(sign * 0.003, 0, eyeR * 0.44);
         eyeG.add(iris);
 
         // Pupil
-        const pupilGeo = new THREE.CircleGeometry(eyeR * 0.32, 12);
+        const pupilGeo = new THREE.CircleGeometry(eyeR * 0.32, 14);
         const pupilMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0d });
         const pupil = new THREE.Mesh(pupilGeo, pupilMat);
-        pupil.position.set(sign * 0.003, 0, eyeR * 0.45);
+        pupil.position.set(sign * 0.003, 0, eyeR * 0.46);
         eyeG.add(pupil);
 
-        // Specular Reflex Highlight
-        const reflexGeo = new THREE.CircleGeometry(eyeR * 0.14, 8);
+        // Primary Specular Reflection
+        const reflexGeo = new THREE.CircleGeometry(eyeR * 0.15, 10);
         const reflexMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const reflex = new THREE.Mesh(reflexGeo, reflexMat);
-        reflex.position.set(sign * 0.003 - 0.007, 0.007, eyeR * 0.47);
+        reflex.position.set(sign * 0.003 - 0.007, 0.008, eyeR * 0.48);
         eyeG.add(reflex);
+
+        // Secondary Soft Highlight
+        const softReflexGeo = new THREE.CircleGeometry(eyeR * 0.08, 8);
+        const softReflex = new THREE.Mesh(softReflexGeo, reflexMat);
+        softReflex.position.set(sign * 0.003 + 0.006, -0.006, eyeR * 0.48);
+        eyeG.add(softReflex);
 
         this.faceFeaturesGroup.add(eyeG);
       });
 
       // --- Eyebrows ---
       const browStyle = cfg.eyebrows || 'brows_thick';
-      const browThick = (browStyle === 'brows_thick' || browStyle === 'brows_bushy') ? 0.012 : (browStyle === 'brows_thin' ? 0.006 : 0.009);
-      const browAngle = (browStyle === 'brows_curved' || browStyle === 'brows_arched') ? 0.14 : (browStyle === 'brows_raised' ? 0.22 : 0.05);
+      const browThick = (browStyle === 'brows_thick' || browStyle === 'brows_bushy') ? 0.013 : (browStyle === 'brows_thin' ? 0.006 : 0.009);
+      const browAngle = (browStyle === 'brows_curved' || browStyle === 'brows_arched') ? 0.14 : (browStyle === 'brows_raised' ? 0.22 : 0.06);
 
       [-1, 1].forEach(sign => {
-        const browGeo = new THREE.BoxGeometry(0.048, browThick, 0.012);
+        const browGeo = new THREE.BoxGeometry(0.050, browThick, 0.012);
         const browMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.8 });
         const brow = new THREE.Mesh(browGeo, browMat);
         brow.position.set(sign * eyeSpacing, 0.068, 0.165);
@@ -630,45 +641,45 @@
         this.faceFeaturesGroup.add(brow);
       });
 
-      // --- Nose ---
+      // --- 3D Sculpted Nose ---
       const noseStyle = cfg.nose || 'nose_medium';
-      const noseLen = (noseStyle === 'nose_small' || noseStyle === 'nose_button') ? 0.024 : 0.038;
-      const noseW = (noseStyle === 'nose_wide') ? 0.032 : 0.022;
+      const noseLen = (noseStyle === 'nose_small' || noseStyle === 'nose_button') ? 0.026 : 0.038;
+      const noseW = (noseStyle === 'nose_wide') ? 0.034 : 0.024;
 
-      const noseGeo = new THREE.ConeGeometry(noseW, noseLen, 10);
+      const noseGeo = new THREE.ConeGeometry(noseW, noseLen, 12);
       noseGeo.rotateX(-Math.PI / 2);
       const noseMesh = createSmoothMesh(noseGeo, this.skinMat);
       noseMesh.position.set(0, -0.012, 0.178);
       this.faceFeaturesGroup.add(noseMesh);
 
-      // --- Mouth ---
+      // --- Mouth & Lips ---
       const mouthStyle = cfg.mouth || 'mouth_smile';
-      const mouthColor = 0xc0392b;
+      const lipColor = 0xc0392b;
 
       if (mouthStyle === 'mouth_big_smile' || mouthStyle === 'mouth_laugh' || mouthStyle === 'mouth_grin') {
-        const mouthGeo = new THREE.CylinderGeometry(0.034, 0.034, 0.012, 14, 1, false, 0, Math.PI);
+        const mouthGeo = new THREE.CylinderGeometry(0.036, 0.036, 0.012, 16, 1, false, 0, Math.PI);
         mouthGeo.rotateX(-Math.PI / 2);
-        const mouthMat = new THREE.MeshStandardMaterial({ color: mouthColor });
+        const mouthMat = new THREE.MeshStandardMaterial({ color: lipColor });
         const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-        mouth.position.set(0, -0.065, 0.162);
+        mouth.position.set(0, -0.065, 0.164);
         this.faceFeaturesGroup.add(mouth);
 
         // Teeth
-        const teethGeo = new THREE.BoxGeometry(0.036, 0.008, 0.006);
+        const teethGeo = new THREE.BoxGeometry(0.038, 0.009, 0.006);
         const teethMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const teeth = new THREE.Mesh(teethGeo, teethMat);
-        teeth.position.set(0, -0.062, 0.168);
+        teeth.position.set(0, -0.062, 0.170);
         this.faceFeaturesGroup.add(teeth);
       } else {
-        const mouthGeo = new THREE.TorusGeometry(0.026, 0.005, 8, 14, Math.PI * 0.8);
+        const mouthGeo = new THREE.TorusGeometry(0.028, 0.006, 10, 16, Math.PI * 0.8);
         mouthGeo.rotateZ(-Math.PI * 0.9);
-        const mouthMat = new THREE.MeshStandardMaterial({ color: mouthColor });
+        const mouthMat = new THREE.MeshStandardMaterial({ color: lipColor });
         const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-        mouth.position.set(0, -0.062, 0.166);
+        mouth.position.set(0, -0.062, 0.168);
         this.faceFeaturesGroup.add(mouth);
       }
 
-      // --- Freckles / Beauty Marks ---
+      // --- Freckles / Beauty Spots ---
       const marks = cfg.freckles || 'none';
       if (marks === 'freckles_light' || marks === 'freckles_cheeks') {
         const dotMat = new THREE.MeshBasicMaterial({ color: skinShadow });
@@ -733,7 +744,7 @@
       const hairColor = parseColor(cfg.hairColor || 'black');
       const mat = createStandardMaterial(hairColor, { roughness: 0.45, metalness: 0.05 });
 
-      // Volumetric 3D Hair Models
+      // Volumetric Stylized 3D Hair Models
       if (style === 'hair_boy_fade' || style === 'hair_boy_crew' || style === 'hair_boy_buzz') {
         const topGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.52);
         topGeo.scale(1.02, 1.16, 1.05);
@@ -759,7 +770,6 @@
         const quiff = createSmoothMesh(quiffGeo, mat);
         this.hairMeshGroup.add(quiff);
       } else if (style === 'hair_boy_curly' || style === 'hair_girl_curly') {
-        // Volumetric Curls Clusters
         const clusterCoords = [
           [0, 0.18, 0.02, 0.08], [-0.08, 0.16, 0.06, 0.07], [0.08, 0.16, 0.06, 0.07],
           [-0.12, 0.12, 0, 0.075], [0.12, 0.12, 0, 0.075], [-0.07, 0.15, -0.08, 0.08],
@@ -778,13 +788,11 @@
         const afro = createSmoothMesh(afroGeo, mat);
         this.hairMeshGroup.add(afro);
       } else if (style === 'hair_girl_straight' || style === 'hair_girl_wavy' || style === 'hair_girl_shoulder') {
-        // Cap
         const topGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
         topGeo.scale(1.03, 1.18, 1.06);
         topGeo.translate(0, 0.03, 0);
         this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
 
-        // Flowing Hair Strands (Left, Right, Back)
         const strandGeo = new THREE.CylinderGeometry(0.05, 0.07, 0.44, 14);
         strandGeo.translate(0, -0.18, 0);
 
@@ -806,13 +814,11 @@
         topGeo.scale(1.02, 1.16, 1.05);
         this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
 
-        // High Pony Tail
         const ponyGeo = new THREE.CylinderGeometry(0.04, 0.07, 0.38, 12);
         ponyGeo.rotateX(-0.5);
         ponyGeo.translate(0, 0.04, -0.22);
         this.hairMeshGroup.add(createSmoothMesh(ponyGeo, mat));
 
-        // Hair Band
         const bandGeo = new THREE.TorusGeometry(0.045, 0.012, 8, 16);
         bandGeo.rotateX(-0.5);
         bandGeo.translate(0, 0.14, -0.14);
@@ -824,7 +830,6 @@
         this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
 
         const bunGeo = new THREE.SphereGeometry(0.09, 14, 12);
-        bunGeo.position = new THREE.Vector3(0, 0.25, -0.04);
         const bun = createSmoothMesh(bunGeo, mat);
         bun.position.set(0, 0.25, -0.04);
         this.hairMeshGroup.add(bun);
@@ -848,7 +853,6 @@
         fringeGeo.translate(0, 0.12, 0.14);
         this.hairMeshGroup.add(createSmoothMesh(fringeGeo, mat));
       } else {
-        // Default classic short
         const topGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
         topGeo.scale(1.02, 1.16, 1.05);
         topGeo.translate(0, 0.02, 0);
@@ -876,7 +880,6 @@
       const spacing = 0.064;
 
       [-1, 1].forEach(sign => {
-        // Rims
         let rimGeo;
         if (style === 'glasses_square' || style === 'glasses_thick' || style === 'glasses_wayfarer') {
           rimGeo = new THREE.BoxGeometry(glassR * 2.2, glassR * 1.8, 0.012);
@@ -887,13 +890,11 @@
         rim.position.set(sign * spacing, 0, 0.02);
         g.add(rim);
 
-        // Lens
         const lensGeo = new THREE.CircleGeometry(glassR * 0.92, 14);
         const lens = new THREE.Mesh(lensGeo, glassMat);
         lens.position.set(sign * spacing, 0, 0.02);
         g.add(lens);
 
-        // Temples / Arms extending back to ears
         const templeGeo = new THREE.BoxGeometry(0.006, 0.006, 0.15);
         templeGeo.translate(0, 0, -0.075);
         const temple = createSmoothMesh(templeGeo, frameMat);
@@ -901,7 +902,6 @@
         g.add(temple);
       });
 
-      // Bridge
       const bridgeGeo = new THREE.BoxGeometry(spacing * 0.7, 0.008, 0.008);
       const bridge = createSmoothMesh(bridgeGeo, frameMat);
       bridge.position.set(0, 0.01, 0.02);
@@ -920,13 +920,11 @@
       const g = new THREE.Group();
 
       if (style === 'headwear_cap' || style === 'headwear_snapback') {
-        // Crown Dome
         const domeGeo = new THREE.SphereGeometry(0.19, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.5);
         domeGeo.scale(1.02, 0.8, 1.05);
         const dome = createSmoothMesh(domeGeo, mat);
         g.add(dome);
 
-        // Visor Brim
         const visorGeo = new THREE.BoxGeometry(0.20, 0.014, 0.16);
         visorGeo.translate(0, -0.02, 0.16);
         visorGeo.rotateX(0.12);
@@ -997,14 +995,33 @@
 
     buildTops(cfg) {
       if (this.topGroup) {
-        this.bones.pelvis.remove(this.topGroup);
+        this.bones.chest.remove(this.topGroup);
       }
       this.topGroup = new THREE.Group();
-      this.bones.pelvis.add(this.topGroup);
+      this.bones.chest.add(this.topGroup);
 
-      if (cfg.dress && cfg.dress !== 'none') return;
+      if (this.leftSleeveMesh) this.bones.leftArm.remove(this.leftSleeveMesh);
+      if (this.rightSleeveMesh) this.bones.rightArm.remove(this.rightSleeveMesh);
+      if (this.leftForeSleeveMesh) this.bones.leftForearm.remove(this.leftForeSleeveMesh);
+      if (this.rightForeSleeveMesh) this.bones.rightForearm.remove(this.rightForeSleeveMesh);
+
+      if (cfg.dress && cfg.dress !== 'none') {
+        this.torsoMesh.visible = false;
+        return;
+      }
+
       const style = cfg.top || 'top_tshirt';
-      if (style === 'none') return;
+      if (style === 'none') {
+        this.torsoMesh.visible = true;
+        this.armLMesh.visible = true;
+        this.armRMesh.visible = true;
+        this.forearmLMesh.visible = true;
+        this.forearmRMesh.visible = true;
+        return;
+      }
+
+      // Hide underlying base torso mesh to ELIMINATE any possibility of skin clipping through shirt!
+      this.torsoMesh.visible = false;
 
       const m = this.metrics;
       const topColor = parseColor(cfg.topColor || 'blue');
@@ -1012,62 +1029,92 @@
       const shadowColor = parseColor((PALETTES.clothing[cfg.topColor] || PALETTES.clothing.blue).shadow);
       const accentMat = createStandardMaterial(shadowColor, { roughness: 0.65 });
 
-      // Torso Clothing Wrap (Fits seamlessly over chest and waist, covering overlap)
-      const torsoH = (m.neckY - m.hipY) + 0.06;
+      // Torso Clothing Body (Attached directly to Chest bone for rigid kinematic lockstep)
+      const torsoH = (m.neckY - m.hipY) + 0.05;
       const topGeo = new THREE.CylinderGeometry(m.chestW * 0.46, m.waistW * 0.45, torsoH, 18);
-      topGeo.scale(1.04, 1.0, 0.80);
-      topGeo.translate(0, torsoH / 2 - 0.03, 0);
+      topGeo.scale(1.04, 1.0, 0.82);
+      // Position shirt centered on chest bone, overlapping waist slightly
+      const offsetY = -(m.chestY - m.hipY) + torsoH / 2 - 0.02;
+      topGeo.translate(0, offsetY, 0);
       const topMesh = createSmoothMesh(topGeo, mat);
       this.topGroup.add(topMesh);
 
-      // Sleeves (Attached to upper arms)
+      // Ribbed Collar at Neck
+      const collarGeo = new THREE.TorusGeometry(0.082, 0.012, 8, 18);
+      collarGeo.rotateX(Math.PI / 2);
+      collarGeo.translate(0, m.neckY - m.chestY - 0.01, 0);
+      this.topGroup.add(createSmoothMesh(collarGeo, accentMat));
+
+      // Sleeves
       const isLongSleeve = (style === 'top_hoodie' || style === 'top_jacket' || style === 'top_leather_jacket' || style === 'top_blazer' || style === 'top_sweater' || style === 'top_shirt');
-      const sleeveLen = isLongSleeve ? (m.armLen * 0.46) : (m.armLen * 0.22);
-      const sleeveGeo = new THREE.CylinderGeometry(0.054, 0.048, sleeveLen, 14);
-      sleeveGeo.translate(0, -sleeveLen / 2, 0);
-
-      const sleeveL = createSmoothMesh(sleeveGeo, mat);
-      this.bones.leftArm.add(sleeveL);
-      this.leftSleeveMesh = sleeveL;
-
-      const sleeveR = createSmoothMesh(sleeveGeo, mat);
-      this.bones.rightArm.add(sleeveR);
-      this.rightSleeveMesh = sleeveR;
-
-      // Forearm sleeves for jackets/hoodies
+      
       if (isLongSleeve) {
-        const foreGeo = new THREE.CylinderGeometry(0.048, 0.042, m.armLen * 0.40, 14);
-        foreGeo.translate(0, -m.armLen * 0.20, 0);
-        const foreL = createSmoothMesh(foreGeo, mat);
-        this.bones.leftForearm.add(foreL);
-        this.leftForeSleeveMesh = foreL;
+        // Hide skin arm cylinders for long sleeves
+        this.armLMesh.visible = false;
+        this.armRMesh.visible = false;
+        this.forearmLMesh.visible = false;
+        this.forearmRMesh.visible = false;
 
-        const foreR = createSmoothMesh(foreGeo, mat);
-        this.bones.rightForearm.add(foreR);
-        this.rightForeSleeveMesh = foreR;
+        const upperSleeveLen = m.armLen * 0.44;
+        const sGeo = new THREE.CylinderGeometry(0.056, 0.050, upperSleeveLen, 14);
+        sGeo.translate(0, -upperSleeveLen / 2, 0);
+
+        this.leftSleeveMesh = createSmoothMesh(sGeo, mat);
+        this.bones.leftArm.add(this.leftSleeveMesh);
+
+        this.rightSleeveMesh = createSmoothMesh(sGeo, mat);
+        this.bones.rightArm.add(this.rightSleeveMesh);
+
+        const foreSleeveLen = m.armLen * 0.42;
+        const foreGeo = new THREE.CylinderGeometry(0.050, 0.044, foreSleeveLen, 14);
+        foreGeo.translate(0, -foreSleeveLen / 2, 0);
+
+        this.leftForeSleeveMesh = createSmoothMesh(foreGeo, mat);
+        this.bones.leftForearm.add(this.leftForeSleeveMesh);
+
+        this.rightForeSleeveMesh = createSmoothMesh(foreGeo, mat);
+        this.bones.rightForearm.add(this.rightForeSleeveMesh);
+      } else {
+        // Short sleeves: hide upper arm skin, show forearms cleanly
+        this.armLMesh.visible = false;
+        this.armRMesh.visible = false;
+        this.forearmLMesh.visible = true;
+        this.forearmRMesh.visible = true;
+
+        const shortSleeveLen = m.armLen * 0.24;
+        const sGeo = new THREE.CylinderGeometry(0.056, 0.050, shortSleeveLen, 14);
+        sGeo.translate(0, -shortSleeveLen / 2, 0);
+
+        this.leftSleeveMesh = createSmoothMesh(sGeo, mat);
+        this.bones.leftArm.add(this.leftSleeveMesh);
+
+        this.rightSleeveMesh = createSmoothMesh(sGeo, mat);
+        this.bones.rightArm.add(this.rightSleeveMesh);
       }
 
-      // Special Collar / Hood / Ties
+      // Special Style Details (Hoodie Hood, Blazer Lapels, Polo Collar)
       if (style === 'top_hoodie') {
-        const hoodGeo = new THREE.SphereGeometry(0.16, 14, 12);
-        hoodGeo.scale(1.0, 0.6, 0.8);
-        hoodGeo.translate(0, m.neckY - m.hipY - 0.02, -0.09);
+        const hoodGeo = new THREE.SphereGeometry(0.17, 14, 12);
+        hoodGeo.scale(1.0, 0.65, 0.85);
+        hoodGeo.translate(0, m.neckY - m.chestY - 0.02, -0.10);
         this.topGroup.add(createSmoothMesh(hoodGeo, accentMat));
       } else if (style === 'top_blazer') {
-        // Lapels
-        const lapelGeo = new THREE.BoxGeometry(0.08, 0.22, 0.02);
-        lapelGeo.translate(-0.06, m.chestY - m.hipY + 0.04, 0.12);
+        const lapelGeo = new THREE.BoxGeometry(0.08, 0.24, 0.02);
+        lapelGeo.translate(-0.06, 0.04, 0.12);
         this.topGroup.add(createSmoothMesh(lapelGeo, accentMat));
 
         const lapelR = createSmoothMesh(lapelGeo, accentMat);
         lapelR.position.x = 0.12;
         this.topGroup.add(lapelR);
 
-        // Tie
-        const tieGeo = new THREE.BoxGeometry(0.038, 0.24, 0.01);
-        tieGeo.translate(0, m.chestY - m.hipY + 0.02, 0.13);
+        const tieGeo = new THREE.BoxGeometry(0.038, 0.25, 0.01);
+        tieGeo.translate(0, 0.02, 0.13);
         const tieMat = createStandardMaterial(0xc0392b);
         this.topGroup.add(createSmoothMesh(tieGeo, tieMat));
+      } else if (style === 'top_polo') {
+        const placketGeo = new THREE.BoxGeometry(0.042, 0.14, 0.012);
+        placketGeo.translate(0, 0.04, 0.125);
+        this.topGroup.add(createSmoothMesh(placketGeo, accentMat));
       }
     }
 
@@ -1084,7 +1131,7 @@
       if (this.rightPantsShin) this.bones.rightShin.remove(this.rightPantsShin);
 
       if (cfg.dress && cfg.dress !== 'none') {
-        // Legs fully hidden or visible under skirt as needed
+        this.pelvisMesh.visible = false;
         this.thighLMesh.visible = false;
         this.thighRMesh.visible = false;
         this.shinLMesh.visible = true;
@@ -1093,16 +1140,26 @@
       }
 
       const style = cfg.bottom || 'bottom_jeans';
-      if (style === 'none') return;
+      if (style === 'none') {
+        this.pelvisMesh.visible = true;
+        this.thighLMesh.visible = true;
+        this.thighRMesh.visible = true;
+        this.shinLMesh.visible = true;
+        this.shinRMesh.visible = true;
+        return;
+      }
+
+      // Hide underlying base pelvis skin mesh when wearing pants
+      this.pelvisMesh.visible = false;
 
       const m = this.metrics;
       const bottomColor = parseColor(cfg.bottomColor || 'denim');
       const mat = createStandardMaterial(bottomColor, { roughness: 0.7 });
 
-      // Waistband / Pelvis Pants Mesh (Perfect waist meeting)
+      // Waistband & Pelvis (Fitted cleanly over the hips)
       const pelvisPantsGeo = new THREE.SphereGeometry(m.hipW * 0.44, 18, 14);
-      pelvisPantsGeo.scale(1.14, 0.88, 0.85);
-      pelvisPantsGeo.translate(0, 0.02, 0);
+      pelvisPantsGeo.scale(1.14, 0.90, 0.86);
+      pelvisPantsGeo.translate(0, 0.01, 0);
       const pelvisPants = createSmoothMesh(pelvisPantsGeo, mat);
       this.bottomGroup.add(pelvisPants);
 
@@ -1117,14 +1174,18 @@
         skirtGeo.translate(0, -thighLen * 0.40, 0);
         this.bottomGroup.add(createSmoothMesh(skirtGeo, mat));
 
-        // Exposed legs
         this.thighLMesh.visible = true;
         this.thighRMesh.visible = true;
         this.shinLMesh.visible = true;
         this.shinRMesh.visible = true;
       } else if (isShorts) {
-        const shortsThighLen = thighLen * 0.55;
-        const shortsGeo = new THREE.CylinderGeometry(0.078, 0.070, shortsThighLen, 16);
+        this.thighLMesh.visible = false;
+        this.thighRMesh.visible = false;
+        this.shinLMesh.visible = true;
+        this.shinRMesh.visible = true;
+
+        const shortsThighLen = thighLen * 0.60;
+        const shortsGeo = new THREE.CylinderGeometry(0.080, 0.072, shortsThighLen, 16);
         shortsGeo.translate(0, -shortsThighLen / 2, 0);
 
         this.leftPantsThigh = createSmoothMesh(shortsGeo, mat);
@@ -1132,20 +1193,14 @@
 
         this.rightPantsThigh = createSmoothMesh(shortsGeo, mat);
         this.bones.rightThigh.add(this.rightPantsThigh);
-
-        this.thighLMesh.visible = true;
-        this.thighRMesh.visible = true;
-        this.shinLMesh.visible = true;
-        this.shinRMesh.visible = true;
       } else {
-        // Full Pants (Jeans, Joggers, Cargo, Formal, etc.)
-        // Occude base leg cylinders to eliminate ANY possibility of skin clipping through pants!
+        // Full Pants: HIDE all leg skin meshes to PREVENT any clipping/leakage
         this.thighLMesh.visible = false;
         this.thighRMesh.visible = false;
         this.shinLMesh.visible = false;
         this.shinRMesh.visible = false;
 
-        const pThighGeo = new THREE.CylinderGeometry(0.076, 0.062, thighLen, 16);
+        const pThighGeo = new THREE.CylinderGeometry(0.078, 0.064, thighLen, 16);
         pThighGeo.translate(0, -thighLen / 2, 0);
 
         this.leftPantsThigh = createSmoothMesh(pThighGeo, mat);
@@ -1154,7 +1209,7 @@
         this.rightPantsThigh = createSmoothMesh(pThighGeo, mat);
         this.bones.rightThigh.add(this.rightPantsThigh);
 
-        const pShinGeo = new THREE.CylinderGeometry(0.062, 0.052, shinLen, 16);
+        const pShinGeo = new THREE.CylinderGeometry(0.064, 0.052, shinLen, 16);
         pShinGeo.translate(0, -shinLen / 2, 0);
 
         this.leftPantsShin = createSmoothMesh(pShinGeo, mat);
@@ -1163,7 +1218,6 @@
         this.rightPantsShin = createSmoothMesh(pShinGeo, mat);
         this.bones.rightShin.add(this.rightPantsShin);
 
-        // Cargo Pockets
         if (style === 'bottom_cargo') {
           const pocketGeo = new THREE.BoxGeometry(0.04, 0.07, 0.05);
           const pL = createSmoothMesh(pocketGeo, mat);
@@ -1209,6 +1263,10 @@
       if (this.leftShoeMesh) this.bones.leftFoot.remove(this.leftShoeMesh);
       if (this.rightShoeMesh) this.bones.rightFoot.remove(this.rightShoeMesh);
 
+      // Hide skin foot boxes when wearing shoes
+      this.footLMesh.visible = false;
+      this.footRMesh.visible = false;
+
       const style = cfg.shoes || 'shoes_sneakers';
       const shoeColor = parseColor(cfg.shoeColor || 'white');
       const mat = createStandardMaterial(shoeColor, { roughness: 0.5 });
@@ -1218,16 +1276,14 @@
         const shoeG = new THREE.Group();
         const parentFoot = sign === -1 ? this.bones.leftFoot : this.bones.rightFoot;
 
-        // Shoe Upper
         const isBoot = (style === 'shoes_boots' || style === 'shoes_hightops');
         const shoeH = isBoot ? 0.12 : 0.06;
-        const upperGeo = new THREE.BoxGeometry(0.082, shoeH, 0.16);
+        const upperGeo = new THREE.BoxGeometry(0.084, shoeH, 0.16);
         upperGeo.translate(0, shoeH / 2 - 0.025, 0.035);
         const upper = createSmoothMesh(upperGeo, mat);
         shoeG.add(upper);
 
-        // Sole
-        const soleGeo = new THREE.BoxGeometry(0.088, 0.024, 0.17);
+        const soleGeo = new THREE.BoxGeometry(0.090, 0.024, 0.17);
         soleGeo.translate(0, -0.015, 0.035);
         const sole = createSmoothMesh(soleGeo, soleMat);
         shoeG.add(sole);
@@ -1252,7 +1308,6 @@
         const bag = createSmoothMesh(bagGeo, mat);
         this.sockets.back.add(bag);
 
-        // Straps
         const strapMat = createStandardMaterial(0x2d3436);
         [-0.11, 0.11].forEach(x => {
           const strapGeo = new THREE.TorusGeometry(0.18, 0.016, 8, 16, Math.PI);
@@ -1286,6 +1341,10 @@
       }
     }
 
+    /**
+     * Handheld items: Explicit socket attachment system
+     * Pencil, Book, Laptop, Trophy securely gripped in hand
+     */
     buildSpecialItems(cfg) {
       this.sockets.leftHand.clear();
       const item = cfg.specialItem || 'none';
@@ -1294,44 +1353,45 @@
       const itemG = new THREE.Group();
 
       if (item === 'item_pencil') {
-        // Physical 3D Hexagonal Pencil held directly in hand
+        // Physical 3D Hexagonal Pencil held firmly inside the fingers grip socket
         const pencilMat = createStandardMaterial(0xf39c12);
         const woodMat = createStandardMaterial(0xf5cba7);
         const leadMat = createStandardMaterial(0x2c3e50, { roughness: 0.2 });
-        const metalMat = createStandardMaterial(0xbdc3c7, { metalness: 0.8, roughness: 0.2 });
+        const metalMat = createStandardMaterial(0xbdc3c7, { metalness: 0.85, roughness: 0.2 });
         const eraserMat = createStandardMaterial(0xff7675);
 
-        // Pencil Hex Shaft
+        // Pencil Hex Body Shaft (Centered exactly along grip cylinder)
         const shaftGeo = new THREE.CylinderGeometry(0.010, 0.010, 0.22, 6);
         shaftGeo.rotateX(Math.PI / 2);
         itemG.add(createSmoothMesh(shaftGeo, pencilMat));
 
-        // Sharpened Wooden Cone
+        // Sharpened Wooden Cone (Front)
         const coneGeo = new THREE.ConeGeometry(0.010, 0.035, 12);
         coneGeo.rotateX(Math.PI / 2);
         coneGeo.translate(0, 0, 0.125);
         itemG.add(createSmoothMesh(coneGeo, woodMat));
 
-        // Lead Tip
+        // Graphite Lead Tip
         const tipGeo = new THREE.ConeGeometry(0.004, 0.012, 10);
         tipGeo.rotateX(Math.PI / 2);
         tipGeo.translate(0, 0, 0.145);
         itemG.add(createSmoothMesh(tipGeo, leadMat));
 
-        // Metal Ferrule Band
+        // Metal Ferrule Band (Rear)
         const bandGeo = new THREE.CylinderGeometry(0.0105, 0.0105, 0.020, 12);
         bandGeo.rotateX(Math.PI / 2);
         bandGeo.translate(0, 0, -0.12);
         itemG.add(createSmoothMesh(bandGeo, metalMat));
 
-        // Pink Eraser
+        // Rubber Eraser (Rear end)
         const eraserGeo = new THREE.CylinderGeometry(0.0095, 0.0095, 0.022, 12);
         eraserGeo.rotateX(Math.PI / 2);
         eraserGeo.translate(0, 0, -0.14);
         itemG.add(createSmoothMesh(eraserGeo, eraserMat));
 
-        // Held Writing Angle in hand
-        itemG.rotation.set(-0.45, 0.35, 0.2);
+        // Natural writing grip angle relative to hand
+        itemG.position.set(0, 0, 0);
+        itemG.rotation.set(-0.40, 0.30, 0.18);
         this.sockets.leftHand.add(itemG);
       } else if (item === 'item_book') {
         const coverMat = createStandardMaterial(0x2980b9);
@@ -1391,7 +1451,6 @@
         pedestalGeo.translate(0, 0.01, 0);
         awardG.add(createSmoothMesh(pedestalGeo, baseMat));
 
-        // Handles
         [-0.07, 0.07].forEach(x => {
           const handleGeo = new THREE.TorusGeometry(0.035, 0.008, 8, 14);
           handleGeo.position.set(x, 0.10, 0);
@@ -1431,14 +1490,14 @@
     animate(delta = 0.016) {
       this.animTime += delta;
 
-      // Subtle natural breathing & idle presence
-      const breath = Math.sin(this.animTime * 2.2) * 0.006;
+      // Subtle natural breathing & idle head sway
+      const breath = Math.sin(this.animTime * 2.2) * 0.005;
       if (this.bones.chest) {
         this.bones.chest.position.y = (this.metrics.chestY - this.metrics.hipY) + breath;
       }
       if (this.bones.head) {
-        this.bones.head.rotation.x = Math.sin(this.animTime * 1.5) * 0.02;
-        this.bones.head.rotation.y = Math.cos(this.animTime * 0.8) * 0.03;
+        this.bones.head.rotation.x = Math.sin(this.animTime * 1.5) * 0.018;
+        this.bones.head.rotation.y = Math.cos(this.animTime * 0.8) * 0.025;
       }
     }
 
@@ -1470,7 +1529,7 @@
       this.isDragging = false;
       this.previousMouseX = 0;
       this.dragSpeed = 0.0085;
-      this.dampingFactor = 0.08;
+      this.dampingFactor = 0.09;
 
       // Zoom Scale
       this.zoom = options.zoom || this.config.zoom || 1.0;
@@ -1518,7 +1577,7 @@
       this.canvas.style.cursor = 'grab';
       this.container.appendChild(this.canvas);
 
-      // Lighting Setup (Soft 3D Studio Lighting)
+      // Lighting Setup (Studio 3-Point Lighting)
       this.setupLighting();
 
       // 3D Avatar Model
@@ -1527,12 +1586,12 @@
     }
 
     setupLighting() {
-      // Ambient Light for soft baseline illumination
+      // Ambient Light
       const ambient = new THREE.AmbientLight(0xffffff, 0.65);
       this.scene.add(ambient);
 
-      // Main Key Directional Light (Warm tone)
-      const keyLight = new THREE.DirectionalLight(0xfffaed, 0.75);
+      // Warm Key Light
+      const keyLight = new THREE.DirectionalLight(0xfffaed, 0.78);
       keyLight.position.set(2.5, 4.0, 3.5);
       keyLight.castShadow = true;
       keyLight.shadow.mapSize.width = 512;
@@ -1540,13 +1599,13 @@
       keyLight.shadow.bias = -0.001;
       this.scene.add(keyLight);
 
-      // Fill Light from opposite angle (Cool soft tone)
+      // Cool Fill Light
       const fillLight = new THREE.DirectionalLight(0xdde8ff, 0.45);
       fillLight.position.set(-2.5, 2.5, 2.0);
       this.scene.add(fillLight);
 
-      // Subtle Rim / Back Light for silhouette definition
-      const rimLight = new THREE.DirectionalLight(0x88ccff, 0.40);
+      // Rim Light for 3D silhouette definition
+      const rimLight = new THREE.DirectionalLight(0x88ccff, 0.42);
       rimLight.position.set(0, 3.0, -3.5);
       this.scene.add(rimLight);
     }
@@ -1604,7 +1663,7 @@
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
 
-      // Touch drag rotation for mobile phones
+      // Touch drag rotation for mobile screens
       let touchStartX = 0;
       this.canvas.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
@@ -1617,14 +1676,14 @@
         if (!this.isDragging || e.touches.length !== 1) return;
         const deltaX = e.touches[0].clientX - touchStartX;
         touchStartX = e.touches[0].clientX;
-        this.targetRotationY += deltaX * this.dragSpeed * 1.2;
+        this.targetRotationY += deltaX * this.dragSpeed * 1.25;
       }, { passive: true });
 
       window.addEventListener('touchend', () => {
         this.isDragging = false;
       });
 
-      // Resize observer
+      // Responsive Resize Observer
       this.resizeObserver = new ResizeObserver(() => {
         this.handleResize();
       });
@@ -1654,7 +1713,7 @@
         // Smooth rotation damping
         this.rotationY += (this.targetRotationY - this.rotationY) * this.dampingFactor;
         if (this.character) {
-          this.character.group.rotation.y = this.rotationY;
+          this.character.characterRoot.rotation.y = this.rotationY;
           if (this.animated) {
             this.character.animate(delta);
           }
@@ -1689,7 +1748,7 @@
     }
   }
 
-  // Active Viewport instances registry (keyed by container or id)
+  // Active Viewports map
   const activeViewports = new WeakMap();
 
   // 7. Main AvatarEngine Global API
@@ -1742,22 +1801,26 @@
 
       // Check WebGL / Three.js availability
       if (typeof THREE === 'undefined') {
-        console.warn('Three.js not found in global scope. Loading fallback or waiting for script.');
+        console.warn('Three.js not found in global scope.');
         return null;
       }
 
       try {
         viewport = new AvatarViewport3D(container, config, options);
+        container._avatarViewport = viewport;
         activeViewports.set(container, viewport);
+        AvatarEngine.lastError = null;
         return viewport;
       } catch (e) {
+        AvatarEngine.lastError = (e && e.stack) ? e.stack : String(e);
         console.error('AvatarEngine.mount WebGL error:', e);
         return null;
       }
     },
 
     getViewport(container) {
-      return activeViewports.get(container) || null;
+      if (!container) return null;
+      return container._avatarViewport || activeViewports.get(container) || null;
     },
 
     getDefault(style = 'boy') {
