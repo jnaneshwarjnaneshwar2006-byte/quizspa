@@ -391,6 +391,107 @@
   object-fit: contain;
 }
 
+/* 360° View Header Banner */
+.avatar-360-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(108, 92, 231, 0.15);
+  border: 1px solid rgba(108, 92, 231, 0.3);
+  border-radius: var(--radius-full);
+  padding: 4px 14px;
+  margin-bottom: 6px;
+  width: auto;
+}
+
+.avatar-360-header .rotate-arrow {
+  color: var(--accent-cyan, #00cec9);
+  font-size: 0.95rem;
+  font-weight: 800;
+  animation: rotateNudge 2s infinite ease-in-out;
+}
+
+.avatar-360-header .rotate-label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+@keyframes rotateNudge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* 360° Rotation Step Controls */
+.avatar-360-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.btn-360-step {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-360-step:hover {
+  background: rgba(108, 92, 231, 0.35);
+  border-color: var(--primary, #6c5ce7);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+}
+
+.btn-360-step:active {
+  transform: translateY(0);
+}
+
+.btn-360-step.btn-360-reset {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+}
+
+.btn-360-step.btn-360-reset:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* Drag to Rotate Hint */
+.avatar-drag-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.avatar-drag-hint .hint-icon {
+  font-size: 0.85rem;
+}
+
 /* 3D Rotation & Zoom Toolbar */
 .avatar-stage-controls {
   display: flex;

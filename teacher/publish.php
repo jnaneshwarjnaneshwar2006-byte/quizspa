@@ -64,22 +64,30 @@ $joinUrl = getStudentJoinUrl($quiz['join_code']);
         <div class="join-code-badge" id="joinCodeText"><?= htmlspecialchars($quiz['join_code']) ?></div>
 
         <div style="margin: 24px 0 16px;">
-          <div class="qr-box" style="padding: 14px; background: #ffffff; border-radius: 12px; display: inline-block;">
-            <div id="qrcode" style="min-width: 200px; min-height: 200px; display: flex; align-items: center; justify-content: center;"></div>
+          <div class="qr-box" style="padding: 14px; background: #ffffff; border-radius: 12px; display: inline-block; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+            <div id="qrcode" style="min-width: 220px; min-height: 220px; display: flex; align-items: center; justify-content: center;"></div>
           </div>
           <div id="qrFallbackMsg" style="display: none; color: #e17055; font-size: 0.9rem; margin-top: 8px; font-weight: 600;">
             QR code could not be generated. Use the student join link below.
           </div>
-          <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 8px;">
-            📱 Students scan this QR code using their phone camera to open the join page
+          <p style="font-size: 1.1rem; font-weight: 800; color: var(--accent-cyan); margin-top: 12px; margin-bottom: 4px; letter-spacing: 0.5px;">
+            📱 Scan to Join
           </p>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 2px;">
+            Students scan this QR code using their phone camera to open the join page
+          </p>
+          <div style="margin-top: 12px;">
+            <button type="button" onclick="downloadQrCode('qrcode', 'quiz_qr_<?= htmlspecialchars($quiz['join_code']) ?>.png')" class="btn btn-secondary btn-sm" id="downloadQrBtn" style="display: inline-flex; align-items: center; gap: 6px;">
+              📥 Download QR
+            </button>
+          </div>
         </div>
 
         <div class="form-group" style="margin-top: 20px; text-align: left;">
           <label class="form-label" style="font-weight: 700; color: var(--text-muted);">Student Join Link</label>
           <div class="join-url-container">
             <input type="text" id="joinUrlInput" class="form-control join-url-input" value="<?= htmlspecialchars($joinUrl) ?>" readonly style="font-family: monospace; font-size: 0.95rem;">
-            <button type="button" onclick="copyJoinUrl()" class="btn btn-primary" id="copyUrlBtn" style="white-space: nowrap;">📋 COPY JOIN LINK</button>
+            <button type="button" onclick="copyJoinUrl()" class="btn btn-primary" id="copyUrlBtn" style="white-space: nowrap;">📋 Copy Join Link</button>
           </div>
         </div>
       </div>
@@ -98,33 +106,39 @@ $joinUrl = getStudentJoinUrl($quiz['join_code']);
       const qrcodeContainer = document.getElementById('qrcode');
       const fallbackMsg = document.getElementById('qrFallbackMsg');
 
-      // Generate QR code using local QRCode library with remote API & SVG fallback
-      try {
-        if (typeof QRCode !== 'undefined') {
-          new QRCode(qrcodeContainer, {
-            text: joinUrl,
-            width: 220,
-            height: 220,
-            colorDark : "#0f0c1b",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-          });
-        } else {
-          renderFallbackQr(qrcodeContainer, fallbackMsg, joinUrl);
-        }
-      } catch(e) {
-        console.warn('Local QRCode generator error, falling back:', e);
-        renderFallbackQr(qrcodeContainer, fallbackMsg, joinUrl);
-      }
+      renderQrCode(qrcodeContainer, fallbackMsg, joinUrl, 220, 220);
     });
 
-    function renderFallbackQr(container, fallbackMsg, text) {
+    function renderQrCode(container, fallbackMsg, text, width = 220, height = 220) {
+      if (!container) return;
+      container.innerHTML = '';
+
+      try {
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(container, {
+            text: text,
+            width: width,
+            height: height,
+            colorDark: "#0f0c1b",
+            colorLight: "#ffffff",
+            correctLevel: (typeof QRCode.CorrectLevel !== 'undefined' && QRCode.CorrectLevel.H) ? QRCode.CorrectLevel.H : 0
+          });
+        } else {
+          renderFallbackQr(container, fallbackMsg, text, width, height);
+        }
+      } catch (e) {
+        console.warn('Local QRCode generator error, falling back:', e);
+        renderFallbackQr(container, fallbackMsg, text, width, height);
+      }
+    }
+
+    function renderFallbackQr(container, fallbackMsg, text, width = 220, height = 220) {
       if (!container) return;
       const img = document.createElement('img');
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(text)}`;
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${width}x${height}&data=${encodeURIComponent(text)}`;
       img.alt = 'Student Join QR Code';
-      img.style.width = '220px';
-      img.style.height = '220px';
+      img.style.width = width + 'px';
+      img.style.height = height + 'px';
       img.style.display = 'block';
       img.onload = () => {
         container.innerHTML = '';
@@ -138,29 +152,98 @@ $joinUrl = getStudentJoinUrl($quiz['join_code']);
       container.appendChild(img);
     }
 
+    function copyToClipboard(text, btnElement, successText) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          if (btnElement) {
+            const oldHtml = btnElement.innerHTML;
+            btnElement.innerHTML = successText;
+            setTimeout(() => { btnElement.innerHTML = oldHtml; }, 2000);
+          }
+        }).catch(() => {
+          fallbackCopyToClipboard(text, btnElement, successText);
+        });
+      } else {
+        fallbackCopyToClipboard(text, btnElement, successText);
+      }
+    }
+
+    function fallbackCopyToClipboard(text, btnElement, successText) {
+      const tempInput = document.createElement('input');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        if (btnElement) {
+          const oldHtml = btnElement.innerHTML;
+          btnElement.innerHTML = successText;
+          setTimeout(() => { btnElement.innerHTML = oldHtml; }, 2000);
+        }
+      } catch (e) {
+        alert(text);
+      }
+      document.body.removeChild(tempInput);
+    }
+
     function copyJoinCode() {
       const code = document.getElementById('joinCodeText').innerText.trim();
-      navigator.clipboard.writeText(code).then(() => {
-        const btn = document.getElementById('copyCodeBtn');
-        const oldText = btn.innerHTML;
-        btn.innerHTML = '✓ Copied Code!';
-        setTimeout(() => { btn.innerHTML = oldText; }, 2000);
-      }).catch(() => {
-        alert('Join code: ' + code);
-      });
+      const btn = document.getElementById('copyCodeBtn');
+      copyToClipboard(code, btn, '✓ Copied Code!');
     }
 
     function copyJoinUrl() {
       const urlInput = document.getElementById('joinUrlInput');
-      urlInput.select();
-      navigator.clipboard.writeText(urlInput.value).then(() => {
-        const btn = document.getElementById('copyUrlBtn');
-        const oldText = btn.innerHTML;
-        btn.innerHTML = '✓ Copied Link!';
-        setTimeout(() => { btn.innerHTML = oldText; }, 2000);
-      }).catch(() => {
-        alert('Join URL: ' + urlInput.value);
-      });
+      const btn = document.getElementById('copyUrlBtn');
+      copyToClipboard(urlInput.value, btn, '✓ Copied Link!');
+    }
+
+    function downloadQrCode(containerId, filename) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const canvas = container.querySelector('canvas');
+      if (canvas) {
+        try {
+          const a = document.createElement('a');
+          a.download = filename || 'quiz-qr-code.png';
+          a.href = canvas.toDataURL('image/png');
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          return;
+        } catch (e) {
+          console.warn('Canvas export failed:', e);
+        }
+      }
+
+      const img = container.querySelector('img');
+      if (img && img.src) {
+        if (img.src.startsWith('data:')) {
+          const a = document.createElement('a');
+          a.download = filename || 'quiz-qr-code.png';
+          a.href = img.src;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          fetch(img.src)
+            .then(res => res.blob())
+            .then(blob => {
+              const blobUrl = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.download = filename || 'quiz-qr-code.png';
+              a.href = blobUrl;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            })
+            .catch(() => {
+              window.open(img.src, '_blank');
+            });
+        }
+      }
     }
   </script>
 </body>

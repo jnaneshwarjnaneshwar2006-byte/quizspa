@@ -1,8 +1,13 @@
 /**
  * QuizSpark Realistic 3D Full-Body Avatar System - Three.js WebGL Engine
- * Single unified hierarchical skeleton rig, organic human-like 3D meshes,
- * anti-leakage clothing occlusion, physical hand grip sockets,
- * studio 3-point lighting, and responsive 360° interactive rotation.
+ * 
+ * Features:
+ * - Single unified hierarchical skeleton rig (Pelvis -> Torso -> Neck -> Head, Shoulders -> Arms -> Hands, Legs -> Feet)
+ * - Contoured, fitted 3D shirt & pants with zero gaps and zero body/skin clipping
+ * - Anatomical hand grip socket with 3D hexagonal pencil physically clutched inside fingers
+ * - Strict single-slot equipment system with clean disposal and replacement
+ * - Responsive 360° interactive rotation with mouse and touch/swipe drag and inertia damping
+ * - Studio 3-point lighting and automated full-body camera framing
  */
 (function (global) {
   'use strict';
@@ -193,6 +198,18 @@
     return mesh;
   }
 
+  // Clean recursive disposal helper for groups
+  function disposeGroup(group) {
+    if (!group) return;
+    group.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
+      }
+    });
+  }
+
   /**
    * 5. 3D Character Model Builder
    */
@@ -204,7 +221,6 @@
       this.group = new THREE.Group();
       this.bones = {};
       this.sockets = {};
-      this.clothingMeshes = {};
       this.materials = {};
       this.animTime = 0;
 
@@ -217,7 +233,7 @@
       const m = getBodyMetrics(this.config.body || 'regular');
       this.metrics = m;
 
-      // Root Ground Contact Shadow
+      // Ground Contact Shadow
       const shadowCanvas = document.createElement('canvas');
       shadowCanvas.width = 128;
       shadowCanvas.height = 128;
@@ -299,7 +315,7 @@
       this.bones.leftHand.position.set(0, -m.armLen * 0.44, 0);
       this.bones.leftForearm.add(this.bones.leftHand);
 
-      // Explicit leftHandAnchor for items held in left hand (pencil, book, laptop)
+      // Explicit leftHandSocket inside the fingers grip channel
       this.sockets.leftHand = new THREE.Group();
       this.sockets.leftHand.position.set(0, -0.052, 0.020);
       this.bones.leftHand.add(this.sockets.leftHand);
@@ -321,7 +337,7 @@
       this.bones.rightHand.position.set(0, -m.armLen * 0.44, 0);
       this.bones.rightForearm.add(this.bones.rightHand);
 
-      // Explicit rightHandAnchor for items held in right hand (trophies, awards)
+      // Explicit rightHandSocket inside the fingers grip channel
       this.sockets.rightHand = new THREE.Group();
       this.sockets.rightHand.position.set(0, -0.052, 0.020);
       this.bones.rightHand.add(this.sockets.rightHand);
@@ -374,13 +390,13 @@
       const m = this.metrics;
       this.skinMat = createStandardMaterial(0xe0a96d, { roughness: 0.65 });
 
-      // 1. Head Mesh (Sculpted human-like proportions with jaw contour)
+      // 1. Head Mesh
       const headGeo = new THREE.SphereGeometry(0.175, 24, 20);
       headGeo.scale(1.0, 1.15, 1.05);
       this.headMesh = createSmoothMesh(headGeo, this.skinMat);
       this.bones.head.add(this.headMesh);
 
-      // Ears (Sculpted organic ears)
+      // Ears
       const earGeo = new THREE.SphereGeometry(0.040, 14, 10);
       earGeo.scale(0.38, 1.25, 0.85);
       const earL = createSmoothMesh(earGeo, this.skinMat);
@@ -575,6 +591,7 @@
     }
 
     buildFaceFeatures(cfg) {
+      disposeGroup(this.faceFeaturesGroup);
       this.faceFeaturesGroup.clear();
 
       const eyeColor = parseColor(cfg.eyeColor || 'dark_brown');
@@ -733,6 +750,7 @@
 
     buildHairstyle(cfg) {
       if (this.hairMeshGroup) {
+        disposeGroup(this.hairMeshGroup);
         this.bones.head.remove(this.hairMeshGroup);
       }
       this.hairMeshGroup = new THREE.Group();
@@ -861,6 +879,7 @@
     }
 
     buildGlasses(cfg) {
+      disposeGroup(this.sockets.face);
       this.sockets.face.clear();
       const style = cfg.glasses || 'none';
       if (style === 'none') return;
@@ -911,6 +930,7 @@
     }
 
     buildHeadwear(cfg) {
+      disposeGroup(this.sockets.head);
       this.sockets.head.clear();
       const style = cfg.headwear || 'none';
       if (style === 'none') return;
@@ -995,15 +1015,20 @@
 
     buildTops(cfg) {
       if (this.topGroup) {
+        disposeGroup(this.topGroup);
         this.bones.chest.remove(this.topGroup);
       }
       this.topGroup = new THREE.Group();
       this.bones.chest.add(this.topGroup);
 
-      if (this.leftSleeveMesh) this.bones.leftArm.remove(this.leftSleeveMesh);
-      if (this.rightSleeveMesh) this.bones.rightArm.remove(this.rightSleeveMesh);
-      if (this.leftForeSleeveMesh) this.bones.leftForearm.remove(this.leftForeSleeveMesh);
-      if (this.rightForeSleeveMesh) this.bones.rightForearm.remove(this.rightForeSleeveMesh);
+      if (this.leftShoulderMesh) { disposeGroup(this.leftShoulderMesh); this.bones.leftShoulder.remove(this.leftShoulderMesh); this.leftShoulderMesh = null; }
+      if (this.rightShoulderMesh) { disposeGroup(this.rightShoulderMesh); this.bones.rightShoulder.remove(this.rightShoulderMesh); this.rightShoulderMesh = null; }
+      if (this.leftSleeveMesh) { disposeGroup(this.leftSleeveMesh); this.bones.leftArm.remove(this.leftSleeveMesh); this.leftSleeveMesh = null; }
+      if (this.rightSleeveMesh) { disposeGroup(this.rightSleeveMesh); this.bones.rightArm.remove(this.rightSleeveMesh); this.rightSleeveMesh = null; }
+      if (this.leftElbowMesh) { disposeGroup(this.leftElbowMesh); this.bones.leftForearm.remove(this.leftElbowMesh); this.leftElbowMesh = null; }
+      if (this.rightElbowMesh) { disposeGroup(this.rightElbowMesh); this.bones.rightForearm.remove(this.rightElbowMesh); this.rightElbowMesh = null; }
+      if (this.leftForeSleeveMesh) { disposeGroup(this.leftForeSleeveMesh); this.bones.leftForearm.remove(this.leftForeSleeveMesh); this.leftForeSleeveMesh = null; }
+      if (this.rightForeSleeveMesh) { disposeGroup(this.rightForeSleeveMesh); this.bones.rightForearm.remove(this.rightForeSleeveMesh); this.rightForeSleeveMesh = null; }
 
       if (cfg.dress && cfg.dress !== 'none') {
         this.torsoMesh.visible = false;
@@ -1029,12 +1054,20 @@
       const shadowColor = parseColor((PALETTES.clothing[cfg.topColor] || PALETTES.clothing.blue).shadow);
       const accentMat = createStandardMaterial(shadowColor, { roughness: 0.65 });
 
+      // Seamless Shoulder Caps to bridge chest and arm sleeves
+      const shoulderCapGeo = new THREE.SphereGeometry(0.060, 14, 12);
+      this.leftShoulderMesh = createSmoothMesh(shoulderCapGeo, mat);
+      this.bones.leftShoulder.add(this.leftShoulderMesh);
+
+      this.rightShoulderMesh = createSmoothMesh(shoulderCapGeo, mat);
+      this.bones.rightShoulder.add(this.rightShoulderMesh);
+
       // Torso Clothing Body (Attached directly to Chest bone for rigid kinematic lockstep)
-      const torsoH = (m.neckY - m.hipY) + 0.05;
+      const torsoH = (m.neckY - m.hipY) + 0.08;
       const topGeo = new THREE.CylinderGeometry(m.chestW * 0.46, m.waistW * 0.45, torsoH, 18);
-      topGeo.scale(1.04, 1.0, 0.82);
-      // Position shirt centered on chest bone, overlapping waist slightly
-      const offsetY = -(m.chestY - m.hipY) + torsoH / 2 - 0.02;
+      topGeo.scale(1.05, 1.0, 0.84);
+      // Position shirt centered on chest bone, overlapping waist cleanly
+      const offsetY = -(m.chestY - m.hipY) + torsoH / 2 - 0.03;
       topGeo.translate(0, offsetY, 0);
       const topMesh = createSmoothMesh(topGeo, mat);
       this.topGroup.add(topMesh);
@@ -1056,7 +1089,7 @@
         this.forearmRMesh.visible = false;
 
         const upperSleeveLen = m.armLen * 0.44;
-        const sGeo = new THREE.CylinderGeometry(0.056, 0.050, upperSleeveLen, 14);
+        const sGeo = new THREE.CylinderGeometry(0.058, 0.052, upperSleeveLen, 14);
         sGeo.translate(0, -upperSleeveLen / 2, 0);
 
         this.leftSleeveMesh = createSmoothMesh(sGeo, mat);
@@ -1065,8 +1098,16 @@
         this.rightSleeveMesh = createSmoothMesh(sGeo, mat);
         this.bones.rightArm.add(this.rightSleeveMesh);
 
+        // Elbow Joint Caps for seamless sleeve bending
+        const elbowCapGeo = new THREE.SphereGeometry(0.050, 12, 10);
+        this.leftElbowMesh = createSmoothMesh(elbowCapGeo, mat);
+        this.bones.leftForearm.add(this.leftElbowMesh);
+
+        this.rightElbowMesh = createSmoothMesh(elbowCapGeo, mat);
+        this.bones.rightForearm.add(this.rightElbowMesh);
+
         const foreSleeveLen = m.armLen * 0.42;
-        const foreGeo = new THREE.CylinderGeometry(0.050, 0.044, foreSleeveLen, 14);
+        const foreGeo = new THREE.CylinderGeometry(0.052, 0.046, foreSleeveLen, 14);
         foreGeo.translate(0, -foreSleeveLen / 2, 0);
 
         this.leftForeSleeveMesh = createSmoothMesh(foreGeo, mat);
@@ -1081,8 +1122,8 @@
         this.forearmLMesh.visible = true;
         this.forearmRMesh.visible = true;
 
-        const shortSleeveLen = m.armLen * 0.24;
-        const sGeo = new THREE.CylinderGeometry(0.056, 0.050, shortSleeveLen, 14);
+        const shortSleeveLen = m.armLen * 0.26;
+        const sGeo = new THREE.CylinderGeometry(0.058, 0.052, shortSleeveLen, 14);
         sGeo.translate(0, -shortSleeveLen / 2, 0);
 
         this.leftSleeveMesh = createSmoothMesh(sGeo, mat);
@@ -1120,15 +1161,20 @@
 
     buildBottoms(cfg) {
       if (this.bottomGroup) {
+        disposeGroup(this.bottomGroup);
         this.bones.pelvis.remove(this.bottomGroup);
       }
       this.bottomGroup = new THREE.Group();
       this.bones.pelvis.add(this.bottomGroup);
 
-      if (this.leftPantsThigh) this.bones.leftThigh.remove(this.leftPantsThigh);
-      if (this.rightPantsThigh) this.bones.rightThigh.remove(this.rightPantsThigh);
-      if (this.leftPantsShin) this.bones.leftShin.remove(this.leftPantsShin);
-      if (this.rightPantsShin) this.bones.rightShin.remove(this.rightPantsShin);
+      if (this.leftHipMesh) { disposeGroup(this.leftHipMesh); this.bones.leftThigh.remove(this.leftHipMesh); this.leftHipMesh = null; }
+      if (this.rightHipMesh) { disposeGroup(this.rightHipMesh); this.bones.rightThigh.remove(this.rightHipMesh); this.rightHipMesh = null; }
+      if (this.leftPantsThigh) { disposeGroup(this.leftPantsThigh); this.bones.leftThigh.remove(this.leftPantsThigh); this.leftPantsThigh = null; }
+      if (this.rightPantsThigh) { disposeGroup(this.rightPantsThigh); this.bones.rightThigh.remove(this.rightPantsThigh); this.rightPantsThigh = null; }
+      if (this.leftKneeMesh) { disposeGroup(this.leftKneeMesh); this.bones.leftShin.remove(this.leftKneeMesh); this.leftKneeMesh = null; }
+      if (this.rightKneeMesh) { disposeGroup(this.rightKneeMesh); this.bones.rightShin.remove(this.rightKneeMesh); this.rightKneeMesh = null; }
+      if (this.leftPantsShin) { disposeGroup(this.leftPantsShin); this.bones.leftShin.remove(this.leftPantsShin); this.leftPantsShin = null; }
+      if (this.rightPantsShin) { disposeGroup(this.rightPantsShin); this.bones.rightShin.remove(this.rightPantsShin); this.rightPantsShin = null; }
 
       if (cfg.dress && cfg.dress !== 'none') {
         this.pelvisMesh.visible = false;
@@ -1156,12 +1202,17 @@
       const bottomColor = parseColor(cfg.bottomColor || 'denim');
       const mat = createStandardMaterial(bottomColor, { roughness: 0.7 });
 
-      // Waistband & Pelvis (Fitted cleanly over the hips)
-      const pelvisPantsGeo = new THREE.SphereGeometry(m.hipW * 0.44, 18, 14);
-      pelvisPantsGeo.scale(1.14, 0.90, 0.86);
+      // Waistband & Pelvis (Fitted cleanly over hips and overlapping shirt hem)
+      const pelvisPantsGeo = new THREE.SphereGeometry(m.hipW * 0.45, 18, 14);
+      pelvisPantsGeo.scale(1.15, 0.92, 0.88);
       pelvisPantsGeo.translate(0, 0.01, 0);
       const pelvisPants = createSmoothMesh(pelvisPantsGeo, mat);
       this.bottomGroup.add(pelvisPants);
+
+      const waistbandGeo = new THREE.CylinderGeometry(m.waistW * 0.46, m.hipW * 0.48, 0.20, 18);
+      waistbandGeo.scale(1.10, 1.0, 0.86);
+      waistbandGeo.translate(0, 0.04, 0);
+      this.bottomGroup.add(createSmoothMesh(waistbandGeo, mat));
 
       const isShorts = (style === 'bottom_shorts');
       const isSkirt = (style === 'bottom_skirt');
@@ -1185,7 +1236,7 @@
         this.shinRMesh.visible = true;
 
         const shortsThighLen = thighLen * 0.60;
-        const shortsGeo = new THREE.CylinderGeometry(0.080, 0.072, shortsThighLen, 16);
+        const shortsGeo = new THREE.CylinderGeometry(0.082, 0.074, shortsThighLen, 16);
         shortsGeo.translate(0, -shortsThighLen / 2, 0);
 
         this.leftPantsThigh = createSmoothMesh(shortsGeo, mat);
@@ -1200,7 +1251,14 @@
         this.shinLMesh.visible = false;
         this.shinRMesh.visible = false;
 
-        const pThighGeo = new THREE.CylinderGeometry(0.078, 0.064, thighLen, 16);
+        // Hip Joint Caps
+        const hipCapGeo = new THREE.SphereGeometry(0.080, 14, 12);
+        this.leftHipMesh = createSmoothMesh(hipCapGeo, mat);
+        this.bones.leftThigh.add(this.leftHipMesh);
+        this.rightHipMesh = createSmoothMesh(hipCapGeo, mat);
+        this.bones.rightThigh.add(this.rightHipMesh);
+
+        const pThighGeo = new THREE.CylinderGeometry(0.080, 0.066, thighLen, 16);
         pThighGeo.translate(0, -thighLen / 2, 0);
 
         this.leftPantsThigh = createSmoothMesh(pThighGeo, mat);
@@ -1209,7 +1267,14 @@
         this.rightPantsThigh = createSmoothMesh(pThighGeo, mat);
         this.bones.rightThigh.add(this.rightPantsThigh);
 
-        const pShinGeo = new THREE.CylinderGeometry(0.064, 0.052, shinLen, 16);
+        // Knee Joint Caps for smooth continuous connection between thigh and shin
+        const kneeCapGeo = new THREE.SphereGeometry(0.066, 14, 12);
+        this.leftKneeMesh = createSmoothMesh(kneeCapGeo, mat);
+        this.bones.leftShin.add(this.leftKneeMesh);
+        this.rightKneeMesh = createSmoothMesh(kneeCapGeo, mat);
+        this.bones.rightShin.add(this.rightKneeMesh);
+
+        const pShinGeo = new THREE.CylinderGeometry(0.066, 0.054, shinLen, 16);
         pShinGeo.translate(0, -shinLen / 2, 0);
 
         this.leftPantsShin = createSmoothMesh(pShinGeo, mat);
@@ -1233,6 +1298,7 @@
 
     buildDress(cfg) {
       if (this.dressGroup) {
+        disposeGroup(this.dressGroup);
         this.bones.pelvis.remove(this.dressGroup);
       }
       this.dressGroup = new THREE.Group();
@@ -1260,8 +1326,8 @@
     }
 
     buildShoes(cfg) {
-      if (this.leftShoeMesh) this.bones.leftFoot.remove(this.leftShoeMesh);
-      if (this.rightShoeMesh) this.bones.rightFoot.remove(this.rightShoeMesh);
+      if (this.leftShoeMesh) { disposeGroup(this.leftShoeMesh); this.bones.leftFoot.remove(this.leftShoeMesh); this.leftShoeMesh = null; }
+      if (this.rightShoeMesh) { disposeGroup(this.rightShoeMesh); this.bones.rightFoot.remove(this.rightShoeMesh); this.rightShoeMesh = null; }
 
       // Hide skin foot boxes when wearing shoes
       this.footLMesh.visible = false;
@@ -1295,6 +1361,7 @@
     }
 
     buildAccessories(cfg) {
+      disposeGroup(this.sockets.back);
       this.sockets.back.clear();
       const style = cfg.accessory || 'none';
       if (style === 'none') return;
@@ -1346,6 +1413,7 @@
      * Pencil, Book, Laptop, Trophy securely gripped in hand
      */
     buildSpecialItems(cfg) {
+      disposeGroup(this.sockets.leftHand);
       this.sockets.leftHand.clear();
       const item = cfg.specialItem || 'none';
       if (item === 'none') return;
@@ -1354,44 +1422,44 @@
 
       if (item === 'item_pencil') {
         // Physical 3D Hexagonal Pencil held firmly inside the fingers grip socket
-        const pencilMat = createStandardMaterial(0xf39c12);
-        const woodMat = createStandardMaterial(0xf5cba7);
+        const pencilMat = createStandardMaterial(0xf1c40f, { roughness: 0.4 });
+        const woodMat = createStandardMaterial(0xf5cba7, { roughness: 0.6 });
         const leadMat = createStandardMaterial(0x2c3e50, { roughness: 0.2 });
-        const metalMat = createStandardMaterial(0xbdc3c7, { metalness: 0.85, roughness: 0.2 });
-        const eraserMat = createStandardMaterial(0xff7675);
+        const metalMat = createStandardMaterial(0xdcdde1, { metalness: 0.85, roughness: 0.2 });
+        const eraserMat = createStandardMaterial(0xff7675, { roughness: 0.7 });
 
         // Pencil Hex Body Shaft (Centered exactly along grip cylinder)
-        const shaftGeo = new THREE.CylinderGeometry(0.010, 0.010, 0.22, 6);
+        const shaftGeo = new THREE.CylinderGeometry(0.010, 0.010, 0.24, 6);
         shaftGeo.rotateX(Math.PI / 2);
         itemG.add(createSmoothMesh(shaftGeo, pencilMat));
 
         // Sharpened Wooden Cone (Front)
-        const coneGeo = new THREE.ConeGeometry(0.010, 0.035, 12);
+        const coneGeo = new THREE.ConeGeometry(0.010, 0.036, 12);
         coneGeo.rotateX(Math.PI / 2);
-        coneGeo.translate(0, 0, 0.125);
+        coneGeo.translate(0, 0, 0.138);
         itemG.add(createSmoothMesh(coneGeo, woodMat));
 
-        // Graphite Lead Tip
-        const tipGeo = new THREE.ConeGeometry(0.004, 0.012, 10);
+        // Graphite Lead Tip (Front sharp point)
+        const tipGeo = new THREE.ConeGeometry(0.004, 0.014, 10);
         tipGeo.rotateX(Math.PI / 2);
-        tipGeo.translate(0, 0, 0.145);
+        tipGeo.translate(0, 0, 0.160);
         itemG.add(createSmoothMesh(tipGeo, leadMat));
 
         // Metal Ferrule Band (Rear)
-        const bandGeo = new THREE.CylinderGeometry(0.0105, 0.0105, 0.020, 12);
+        const bandGeo = new THREE.CylinderGeometry(0.0105, 0.0105, 0.022, 12);
         bandGeo.rotateX(Math.PI / 2);
-        bandGeo.translate(0, 0, -0.12);
+        bandGeo.translate(0, 0, -0.131);
         itemG.add(createSmoothMesh(bandGeo, metalMat));
 
         // Rubber Eraser (Rear end)
-        const eraserGeo = new THREE.CylinderGeometry(0.0095, 0.0095, 0.022, 12);
+        const eraserGeo = new THREE.CylinderGeometry(0.0095, 0.0095, 0.024, 12);
         eraserGeo.rotateX(Math.PI / 2);
-        eraserGeo.translate(0, 0, -0.14);
+        eraserGeo.translate(0, 0, -0.152);
         itemG.add(createSmoothMesh(eraserGeo, eraserMat));
 
         // Natural writing grip angle relative to hand
         itemG.position.set(0, 0, 0);
-        itemG.rotation.set(-0.40, 0.30, 0.18);
+        itemG.rotation.set(-0.35, 0.25, 0.15);
         this.sockets.leftHand.add(itemG);
       } else if (item === 'item_book') {
         const coverMat = createStandardMaterial(0x2980b9);
@@ -1433,6 +1501,7 @@
     }
 
     buildHeldAwards(cfg) {
+      disposeGroup(this.sockets.rightHand);
       this.sockets.rightHand.clear();
       const award = cfg.heldAward || this.options.heldAward || this.options.award || null;
       if (!award || award === 'none') return;
@@ -1502,13 +1571,7 @@
     }
 
     dispose() {
-      this.group.traverse(obj => {
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) {
-          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-          else obj.material.dispose();
-        }
-      });
+      disposeGroup(this.group);
     }
   }
 
@@ -1533,8 +1596,6 @@
 
       // Zoom Scale
       this.zoom = options.zoom || this.config.zoom || 1.0;
-      this.baseCameraY = this.mode === 'badge' ? 1.56 : 0.98;
-      this.baseCameraZ = this.mode === 'badge' ? 0.92 : 2.75;
 
       this.initScene();
       this.bindEvents();
@@ -1575,6 +1636,7 @@
       this.canvas.style.height = '100%';
       this.canvas.style.display = 'block';
       this.canvas.style.cursor = 'grab';
+      this.canvas.style.touchAction = 'none'; // Prevent browser gesture conflicts while rotating
       this.container.appendChild(this.canvas);
 
       // Lighting Setup (Studio 3-Point Lighting)
@@ -1611,9 +1673,21 @@
     }
 
     updateCameraPosition() {
-      const z = this.baseCameraZ / this.zoom;
-      this.camera.position.set(0, this.baseCameraY, z);
-      this.camera.lookAt(0, this.baseCameraY, 0);
+      const aspect = (this.width && this.height) ? (this.width / this.height) : 1.0;
+      if (this.mode === 'badge') {
+        this.camera.position.set(0, 1.48, 1.05 / this.zoom);
+        this.camera.lookAt(0, 1.44, 0);
+      } else {
+        // Target vertical framing height ~2.05 units (covers from y = -0.05 to y = 1.95)
+        const targetH = 2.05;
+        const fovRad = (this.camera.fov * Math.PI) / 180;
+        let dist = (targetH / (2 * Math.tan(fovRad / 2))) / this.zoom;
+        if (aspect < 0.75) {
+          dist = dist * (0.75 / aspect);
+        }
+        this.camera.position.set(0, 0.90, dist);
+        this.camera.lookAt(0, 0.90, 0);
+      }
     }
 
     applyInitialRotation(rot) {
@@ -1632,6 +1706,14 @@
       else if (rot === 'back') this.targetRotationY = Math.PI;
       else if (rot === 'front') this.targetRotationY = 0;
       else if (typeof rot === 'number') this.targetRotationY = rot;
+    }
+
+    rotateBy(delta) {
+      this.targetRotationY += delta;
+    }
+
+    resetRotation() {
+      this.targetRotationY = 0;
     }
 
     setZoom(val) {
@@ -1700,6 +1782,7 @@
       this.height = h;
       this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();
+      this.updateCameraPosition();
       this.renderer.setSize(w, h);
     }
 

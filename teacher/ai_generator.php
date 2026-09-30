@@ -22,6 +22,7 @@ $csrfToken = generateCsrfToken();
   <title>AI Quiz Generator - QuizSpark</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <script src="../assets/js/qrcode.min.js"></script>
   <style>
     .ai-hero-card {
       background: linear-gradient(135deg, rgba(108, 92, 231, 0.25) 0%, rgba(24, 20, 42, 0.95) 100%);
@@ -469,20 +470,51 @@ $csrfToken = generateCsrfToken();
 
   <!-- Modal: Publish Success -->
   <div class="modal-overlay" id="publishModalOverlay">
-    <div class="modal-card" style="text-align: center; max-width: 480px;">
-      <div style="font-size: 3.5rem; margin-bottom: 12px;">🎉</div>
-      <h2 style="font-size: 1.8rem; margin-bottom: 6px;">Quiz Published!</h2>
-      <p style="color: var(--text-muted); margin-bottom: 20px;">Students can now join using this game PIN:</p>
+    <div class="modal-card" style="text-align: center; max-width: 520px; max-height: 90vh; overflow-y: auto;">
+      <div style="font-size: 3rem; margin-bottom: 6px;">🎉</div>
+      <h2 style="font-size: 1.8rem; margin-bottom: 4px; color: var(--accent-cyan);">Quiz Published!</h2>
+      <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 0.95rem;">Your quiz is live and ready for students to join!</p>
 
-      <div style="background: rgba(255, 255, 255, 0.05); border: 2px dashed #00b894; border-radius: var(--radius-lg); padding: 18px; margin-bottom: 20px;">
-        <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700; display: block;">JOIN CODE</span>
-        <div id="publishedJoinCodeDisplay" style="font-family: 'Outfit', sans-serif; font-size: 2.8rem; font-weight: 900; letter-spacing: 8px; color: #55efc4;">
+      <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 18px;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; display: block; letter-spacing: 1px; text-transform: uppercase;">GAME PIN / JOIN CODE</span>
+        <div id="publishedJoinCodeDisplay" style="font-family: 'Outfit', sans-serif; font-size: 2.8rem; font-weight: 900; letter-spacing: 8px; color: #55efc4; margin: 6px 0;">
           000000
+        </div>
+
+        <div style="margin: 16px 0 12px;">
+          <div class="qr-box" style="padding: 12px; background: #ffffff; border-radius: 12px; display: inline-block; box-shadow: 0 6px 20px rgba(0,0,0,0.3);">
+            <div id="publishModalQrCode" style="min-width: 180px; min-height: 180px; display: flex; align-items: center; justify-content: center;"></div>
+          </div>
+          <div id="publishModalQrFallbackMsg" style="display: none; color: #e17055; font-size: 0.85rem; margin-top: 6px; font-weight: 600;">
+            QR code could not be generated. Use the student join link below.
+          </div>
+          <p style="font-size: 1.05rem; font-weight: 800; color: var(--accent-cyan); margin-top: 10px; margin-bottom: 2px; letter-spacing: 0.5px;">
+            📱 Scan to Join
+          </p>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0; margin-bottom: 10px;">
+            Students scan this QR code with their camera to join instantly
+          </p>
+          <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+            <button type="button" onclick="downloadQrCode('publishModalQrCode', 'quiz_qr_' + (document.getElementById('publishedJoinCodeDisplay').textContent.trim()) + '.png')" class="btn btn-secondary btn-sm" id="btnDownloadModalQr" style="font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px;">
+              📥 Download QR
+            </button>
+            <button type="button" onclick="copyAiJoinCode()" class="btn btn-secondary btn-sm" id="btnCopyModalCode" style="font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px;">
+              🔢 Copy Code
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 14px; text-align: left;">
+          <label class="form-label" style="font-weight: 700; color: var(--text-muted); font-size: 0.85rem;">Student Join Link</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="publishedJoinUrlInput" class="form-control" value="" readonly style="font-family: monospace; font-size: 0.88rem; flex: 1;">
+            <button type="button" onclick="copyAiJoinUrl()" class="btn btn-primary btn-sm" id="btnCopyModalUrl" style="white-space: nowrap;">📋 Copy Join Link</button>
+          </div>
         </div>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 10px;">
-        <a id="btnGoToLobby" href="dashboard.php" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe);">
+        <a id="btnGoToLobby" href="dashboard.php" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe); padding: 12px 20px;">
           ⚡ Open Live Lobby & Start
         </a>
         <a href="dashboard.php" class="btn btn-secondary">Return to Dashboard</a>
@@ -925,7 +957,16 @@ $csrfToken = generateCsrfToken();
 
         if (data.success && data.data) {
           const joinCode = data.data.join_code;
+          const joinUrl = data.data.join_url || `${window.location.origin}/student/join.php?code=${joinCode}`;
+
           document.getElementById('publishedJoinCodeDisplay').textContent = joinCode;
+          document.getElementById('publishedJoinUrlInput').value = joinUrl;
+
+          // Render QR Code inside publish modal
+          const qrContainer = document.getElementById('publishModalQrCode');
+          const fallbackMsg = document.getElementById('publishModalQrFallbackMsg');
+          renderQrCodeHelper(qrContainer, fallbackMsg, joinUrl, 180, 180);
+
           document.getElementById('btnGoToLobby').href = `live_lobby.php?id=${activeQuizId}`;
           document.getElementById('publishModalOverlay').style.display = 'flex';
           showAlert('success', 'Quiz published successfully!');
@@ -936,6 +977,142 @@ $csrfToken = generateCsrfToken();
         showAlert('error', 'Network error during publish.');
       } finally {
         btn.disabled = false;
+      }
+    }
+
+    function renderQrCodeHelper(container, fallbackMsg, text, width = 180, height = 180) {
+      if (!container) return;
+      container.innerHTML = '';
+      try {
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(container, {
+            text: text,
+            width: width,
+            height: height,
+            colorDark: "#0f0c1b",
+            colorLight: "#ffffff",
+            correctLevel: (typeof QRCode.CorrectLevel !== 'undefined' && QRCode.CorrectLevel.H) ? QRCode.CorrectLevel.H : 0
+          });
+        } else {
+          renderFallbackQrHelper(container, fallbackMsg, text, width, height);
+        }
+      } catch (e) {
+        console.warn('Local QRCode generator error, falling back:', e);
+        renderFallbackQrHelper(container, fallbackMsg, text, width, height);
+      }
+    }
+
+    function renderFallbackQrHelper(container, fallbackMsg, text, width = 180, height = 180) {
+      if (!container) return;
+      const img = document.createElement('img');
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${width}x${height}&data=${encodeURIComponent(text)}`;
+      img.alt = 'Student Join QR Code';
+      img.style.width = width + 'px';
+      img.style.height = height + 'px';
+      img.style.display = 'block';
+      img.onload = () => {
+        container.innerHTML = '';
+        container.appendChild(img);
+      };
+      img.onerror = () => {
+        if (fallbackMsg) fallbackMsg.style.display = 'block';
+        container.innerHTML = `<div style="padding: 16px; color: #2d3436; font-size: 0.8rem; font-weight: 700;">[ QR Code Unavailable ]</div>`;
+      };
+      container.innerHTML = '';
+      container.appendChild(img);
+    }
+
+    function copyAiJoinCode() {
+      const code = document.getElementById('publishedJoinCodeDisplay').textContent.trim();
+      const btn = document.getElementById('btnCopyModalCode');
+      copyToClipboardHelper(code, btn, '✓ Copied Code!');
+    }
+
+    function copyAiJoinUrl() {
+      const urlInput = document.getElementById('publishedJoinUrlInput');
+      const btn = document.getElementById('btnCopyModalUrl');
+      copyToClipboardHelper(urlInput.value, btn, '✓ Copied Link!');
+    }
+
+    function copyToClipboardHelper(text, btnElement, successText) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          if (btnElement) {
+            const oldHtml = btnElement.innerHTML;
+            btnElement.innerHTML = successText;
+            setTimeout(() => { btnElement.innerHTML = oldHtml; }, 2000);
+          }
+        }).catch(() => {
+          fallbackCopyToClipboardHelper(text, btnElement, successText);
+        });
+      } else {
+        fallbackCopyToClipboardHelper(text, btnElement, successText);
+      }
+    }
+
+    function fallbackCopyToClipboardHelper(text, btnElement, successText) {
+      const tempInput = document.createElement('input');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        if (btnElement) {
+          const oldHtml = btnElement.innerHTML;
+          btnElement.innerHTML = successText;
+          setTimeout(() => { btnElement.innerHTML = oldHtml; }, 2000);
+        }
+      } catch (e) {
+        alert(text);
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function downloadQrCode(containerId, filename) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const canvas = container.querySelector('canvas');
+      if (canvas) {
+        try {
+          const a = document.createElement('a');
+          a.download = filename || 'quiz-qr-code.png';
+          a.href = canvas.toDataURL('image/png');
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          return;
+        } catch (e) {
+          console.warn('Canvas export failed:', e);
+        }
+      }
+
+      const img = container.querySelector('img');
+      if (img && img.src) {
+        if (img.src.startsWith('data:')) {
+          const a = document.createElement('a');
+          a.download = filename || 'quiz-qr-code.png';
+          a.href = img.src;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          fetch(img.src)
+            .then(res => res.blob())
+            .then(blob => {
+              const blobUrl = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.download = filename || 'quiz-qr-code.png';
+              a.href = blobUrl;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            })
+            .catch(() => {
+              window.open(img.src, '_blank');
+            });
+        }
       }
     }
   </script>

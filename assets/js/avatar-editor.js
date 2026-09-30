@@ -191,11 +191,24 @@
             <div class="avatar-modal-body">
               <!-- Left / Top: Interactive 3D Preview Stage -->
               <div class="avatar-modal-preview-panel">
-                <div class="avatar-modal-preview-stage" id="modalAvatarPreviewStage">
-                  <!-- Dynamic SVG Avatar Mounted Here -->
+                <div class="avatar-360-header">
+                  <span class="rotate-arrow">↶</span>
+                  <span class="rotate-label">360° 3D AVATAR VIEW</span>
+                  <span class="rotate-arrow">↷</span>
                 </div>
 
-                <!-- 3D Rotation & Zoom Toolbar -->
+                <div class="avatar-modal-preview-stage" id="modalAvatarPreviewStage">
+                  <!-- Dynamic 3D Avatar Mounted Here -->
+                </div>
+
+                <!-- 3D Rotation Step Controls -->
+                <div class="avatar-360-controls" role="group" aria-label="360 Rotation Controls">
+                  <button type="button" class="btn-360-step" id="editorRotLeft" title="Rotate Left 45°">↶ Rotate Left</button>
+                  <button type="button" class="btn-360-step btn-360-reset" id="editorRotReset" title="Reset View">↺ Reset View</button>
+                  <button type="button" class="btn-360-step" id="editorRotRight" title="Rotate Right 45°">Rotate Right ↷</button>
+                </div>
+
+                <!-- 3D Rotation Angle Presets & Zoom Toolbar -->
                 <div class="avatar-stage-controls">
                   <div class="avatar-rotation-bar" role="group" aria-label="3D View Angle">
                     <button type="button" class="avatar-rot-btn active" data-rot="front" title="Front View">Front</button>
@@ -211,8 +224,9 @@
                   </div>
                 </div>
 
-                <div class="avatar-preview-tag">
-                  <span class="pulse-dot">●</span> 3D Live Character View
+                <div class="avatar-drag-hint">
+                  <span class="hint-icon">👆</span>
+                  <span class="hint-text">Drag or swipe to rotate 360°</span>
                 </div>
               </div>
 
@@ -291,7 +305,39 @@
       document.getElementById('undoAvatarBtn').addEventListener('click', () => this.undo());
       document.getElementById('redoAvatarBtn').addEventListener('click', () => this.redo());
 
-      // 3D Rotation buttons
+      // 360 Step Rotation & Reset Buttons
+      const btnRotLeft = document.getElementById('editorRotLeft');
+      const btnRotRight = document.getElementById('editorRotRight');
+      const btnRotReset = document.getElementById('editorRotReset');
+
+      if (btnRotLeft) {
+        btnRotLeft.addEventListener('click', () => {
+          const vp = AvatarEngine.getViewport(this.previewStage);
+          if (vp) vp.rotateBy(-Math.PI / 4);
+        });
+      }
+
+      if (btnRotRight) {
+        btnRotRight.addEventListener('click', () => {
+          const vp = AvatarEngine.getViewport(this.previewStage);
+          if (vp) vp.rotateBy(Math.PI / 4);
+        });
+      }
+
+      if (btnRotReset) {
+        btnRotReset.addEventListener('click', () => {
+          const vp = AvatarEngine.getViewport(this.previewStage);
+          if (vp) {
+            vp.resetRotation();
+            this.rotation = 'front';
+            rotButtons.forEach(b => b.classList.remove('active'));
+            const frontBtn = this.backdrop.querySelector('.avatar-rot-btn[data-rot="front"]');
+            if (frontBtn) frontBtn.classList.add('active');
+          }
+        });
+      }
+
+      // 3D Rotation preset angle buttons
       const rotButtons = this.backdrop.querySelectorAll('.avatar-rot-btn');
       rotButtons.forEach(btn => {
         btn.addEventListener('click', () => {

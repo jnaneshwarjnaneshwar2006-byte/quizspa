@@ -54,13 +54,33 @@ require_once __DIR__ . '/../config/security.php';
           <!-- Curated Presets Strip -->
           <div class="presets-strip" id="presetsStrip" aria-label="Preset Outfits"></div>
 
+          <!-- 360 View Header -->
+          <div class="avatar-360-header">
+            <span class="rotate-arrow">↶</span>
+            <span class="rotate-label">360° 3D AVATAR VIEW</span>
+            <span class="rotate-arrow">↷</span>
+          </div>
+
           <!-- Large 3D Character Stage -->
           <div class="avatar-stage" id="avatarPreviewStage">
-            <!-- Full-Body SVG Mounted by JS -->
+            <!-- Full-Body 3D WebGL Avatar Mounted by JS -->
+          </div>
+
+          <!-- 360° Rotation Controls -->
+          <div class="avatar-360-controls" role="group" aria-label="360 Rotation Controls">
+            <button type="button" class="btn-360-step" id="btnJoinRotLeft" title="Rotate Left 45°">↶ Rotate Left</button>
+            <button type="button" class="btn-360-step btn-360-reset" id="btnJoinRotReset" title="Reset View">↺ Reset View</button>
+            <button type="button" class="btn-360-step" id="btnJoinRotRight" title="Rotate Right 45°">Rotate Right ↷</button>
+          </div>
+
+          <!-- Drag / Swipe Hint -->
+          <div class="avatar-drag-hint">
+            <span class="hint-icon">👆</span>
+            <span class="hint-text">Drag or swipe to rotate 360°</span>
           </div>
 
           <!-- Edit Avatar Modal Trigger -->
-          <div>
+          <div style="margin-top: 14px;">
             <button type="button" id="openEditorBtn" class="btn-edit-avatar">
               ✏️ EDIT AVATAR
             </button>
@@ -115,6 +135,32 @@ require_once __DIR__ . '/../config/security.php';
 
       function renderPreview() {
         AvatarEngine.mount(previewStage, currentAvatarConfig, { mode: 'full', animated: true });
+      }
+
+      // 360 Rotation Controls
+      const btnJoinRotLeft = document.getElementById('btnJoinRotLeft');
+      const btnJoinRotRight = document.getElementById('btnJoinRotRight');
+      const btnJoinRotReset = document.getElementById('btnJoinRotReset');
+
+      if (btnJoinRotLeft) {
+        btnJoinRotLeft.addEventListener('click', () => {
+          const vp = AvatarEngine.getViewport(previewStage);
+          if (vp) vp.rotateBy(-Math.PI / 4);
+        });
+      }
+
+      if (btnJoinRotRight) {
+        btnJoinRotRight.addEventListener('click', () => {
+          const vp = AvatarEngine.getViewport(previewStage);
+          if (vp) vp.rotateBy(Math.PI / 4);
+        });
+      }
+
+      if (btnJoinRotReset) {
+        btnJoinRotReset.addEventListener('click', () => {
+          const vp = AvatarEngine.getViewport(previewStage);
+          if (vp) vp.resetRotation();
+        });
       }
 
       function renderPresets() {
