@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Visual Test</title>
+  <script src="/assets/js/three.min.js"></script>
+  <script src="/assets/js/avatar-engine.js"></script>
+  <style>
+    body { margin: 0; background: #0b0c18; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
+    #avatar-container { width: 480px; height: 640px; border-radius: 24px; background: #13152c; box-shadow: 0 10px 40px rgba(0,0,0,0.6); position: relative; }
+  </style>
+</head>
+<body>
+  <div id="avatar-container"></div>
+  <script>
+    window.initAvatar = function() {
+      if (typeof AvatarEngine === 'undefined') return false;
+      const container = document.getElementById('avatar-container');
+      window.avatarInstance = AvatarEngine.mount(container, {
+        config: AvatarEngine.getDefault('boy'),
+        interactive: true,
+        enableControls: true,
+        quality: 'high',
+        cameraPreset: 'full'
+      });
+      return true;
+    };
+
+    window.updateConfig = function(cfg) {
+      if (!window.avatarInstance) window.initAvatar();
+      if (window.avatarInstance) {
+        window.avatarInstance.updateConfig(cfg);
+        return true;
+      }
+      return false;
+    };
+    window.setCameraPreset = function(preset) {
+      if (window.avatarInstance) {
+        window.avatarInstance.setCameraPreset(preset);
+        return true;
+      }
+      return false;
+    };
+    window.setRotation = function(rot) {
+      if (window.avatarInstance) {
+        window.avatarInstance.setRotationAngle(rot);
+        return true;
+      }
+      return false;
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      window.initAvatar();
+    });
+  </script>
+</body>
+</html>

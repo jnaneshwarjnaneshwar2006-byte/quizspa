@@ -3,10 +3,11 @@
  * 
  * Features:
  * - Single unified hierarchical skeleton rig (Pelvis -> Torso -> Neck -> Head, Shoulders -> Arms -> Hands, Legs -> Feet)
- * - Contoured, fitted 3D shirt & pants with zero gaps and zero body/skin clipping
+ * - Real 3D customisation for all items (Glasses, Hair, Hats, Tops, Pants, Dresses, Shoes, Facial Hair, Accessories)
+ * - Contoured, fitted 3D clothes with distinct 3D geometry and zero body/skin clipping
  * - Anatomical hand grip socket with 3D hexagonal pencil physically clutched inside fingers
  * - Strict single-slot equipment system with clean disposal and replacement
- * - Responsive 360° interactive rotation with mouse and touch/swipe drag and inertia damping
+ * - Responsive 360° interactive rotation with mouse and touch/swipe drag and inertia damping (NO rotation buttons)
  * - Studio 3-point lighting and automated full-body camera framing
  */
 (function (global) {
@@ -112,7 +113,7 @@
     const g = (num >> 8) & 255;
     const b = num & 255;
 
-    const shadow = `rgb(${Math.max(0, Math.round(r * 0.55))},${Math.max(0, Math.round(g * 0.55))},${Math.max(0, Math.round(b * 0.55))})`;
+    const shadow = `rgb(${Math.max(0, Math.round(r * 0.55))},${Math.max(0, Math.round(g * 0.55))},${Math.max(0, Math.round(g * 0.55))})`;
     const highlight = `rgb(${Math.min(255, Math.round(r * 1.35 + 30))},${Math.min(255, Math.round(g * 1.35 + 30))},${Math.min(255, Math.round(b * 1.35 + 30))})`;
 
     return { main: hexColor, shadow, highlight, label: 'Custom', hex: num };
@@ -283,11 +284,11 @@
 
       // Sockets on Head
       this.sockets.head = new THREE.Group();
-      this.sockets.head.position.set(0, 0.18, 0);
+      this.sockets.head.position.set(0, 0.165, 0);
       this.bones.head.add(this.sockets.head);
 
       this.sockets.face = new THREE.Group();
-      this.sockets.face.position.set(0, 0.02, 0.14);
+      this.sockets.face.position.set(0, 0.025, 0.168);
       this.bones.head.add(this.sockets.face);
 
       this.sockets.leftEar = new THREE.Group();
@@ -315,7 +316,7 @@
       this.bones.leftHand.position.set(0, -m.armLen * 0.44, 0);
       this.bones.leftForearm.add(this.bones.leftHand);
 
-      // Explicit leftHandSocket inside the fingers grip channel
+      // Left Hand Grip Socket
       this.sockets.leftHand = new THREE.Group();
       this.sockets.leftHand.position.set(0, -0.052, 0.020);
       this.bones.leftHand.add(this.sockets.leftHand);
@@ -337,7 +338,7 @@
       this.bones.rightHand.position.set(0, -m.armLen * 0.44, 0);
       this.bones.rightForearm.add(this.bones.rightHand);
 
-      // Explicit rightHandSocket inside the fingers grip channel
+      // Right Hand Grip Socket
       this.sockets.rightHand = new THREE.Group();
       this.sockets.rightHand.position.set(0, -0.052, 0.020);
       this.bones.rightHand.add(this.sockets.rightHand);
@@ -368,7 +369,7 @@
       this.bones.rightFoot.position.set(0, -(m.kneeY - m.ankleY), 0);
       this.bones.rightShin.add(this.bones.rightFoot);
 
-      // Other sockets
+      // Additional Equipment Sockets
       this.sockets.back = new THREE.Group();
       this.sockets.back.position.set(0, 0, -0.15);
       this.bones.chest.add(this.sockets.back);
@@ -377,7 +378,7 @@
       this.sockets.waist.position.set(0, 0, 0);
       this.bones.pelvis.add(this.sockets.waist);
 
-      // Natural standing posture
+      // Natural relaxed standing posture
       this.bones.leftArm.rotation.z = 0.08;
       this.bones.leftArm.rotation.x = 0.05;
       this.bones.leftForearm.rotation.x = -0.14;
@@ -391,8 +392,8 @@
       this.skinMat = createStandardMaterial(0xe0a96d, { roughness: 0.65 });
 
       // 1. Head Mesh
-      const headGeo = new THREE.SphereGeometry(0.175, 24, 20);
-      headGeo.scale(1.0, 1.15, 1.05);
+      const headGeo = new THREE.SphereGeometry(0.165, 24, 20);
+      headGeo.scale(1.0, 1.10, 1.0);
       this.headMesh = createSmoothMesh(headGeo, this.skinMat);
       this.bones.head.add(this.headMesh);
 
@@ -400,12 +401,12 @@
       const earGeo = new THREE.SphereGeometry(0.040, 14, 10);
       earGeo.scale(0.38, 1.25, 0.85);
       const earL = createSmoothMesh(earGeo, this.skinMat);
-      earL.position.set(-0.17, 0, 0);
+      earL.position.set(-0.165, 0, 0);
       earL.rotation.y = 0.22;
       this.bones.head.add(earL);
 
       const earR = createSmoothMesh(earGeo, this.skinMat);
-      earR.position.set(0.17, 0, 0);
+      earR.position.set(0.165, 0, 0);
       earR.rotation.y = -0.22;
       this.bones.head.add(earR);
 
@@ -540,28 +541,28 @@
       // 3. Hairstyle
       this.buildHairstyle(cfg);
 
-      // 4. Glasses
+      // 4. Real 3D Spectacles / Glasses
       this.buildGlasses(cfg);
 
-      // 5. Hats & Headwear
+      // 5. Real 3D Hats & Headwear
       this.buildHeadwear(cfg);
 
-      // 6. Tops & Shirts (Torso-fitted, zero gaps, anti-leakage occlusion)
+      // 6. Real 3D Tops & Shirts (Torso-fitted, distinct models for all tops)
       this.buildTops(cfg);
 
-      // 7. Pants & Lowers (Leg occlusion & perfect waist meeting)
+      // 7. Real 3D Pants & Lowers (Leg occlusion & perfect waist meeting)
       this.buildBottoms(cfg);
 
-      // 8. Dresses
+      // 8. Real 3D Dresses
       this.buildDress(cfg);
 
-      // 9. Shoes
+      // 9. Real 3D Shoes
       this.buildShoes(cfg);
 
-      // 10. Accessories (Bags, Headphones, Necklaces, Watches)
+      // 10. Real 3D Accessories (Bags, Headphones, Necklaces, Watches, Earrings)
       this.buildAccessories(cfg);
 
-      // 11. Held Special Items (Pencil with physical hand anchor, Book, Laptop, Trophy)
+      // 11. Held Special Items (Pencil gripped in hand, Book, Laptop, Trophy)
       this.buildSpecialItems(cfg);
 
       // 12. Leaderboard Award (Gold Trophy, Silver/Bronze Medals)
@@ -587,22 +588,22 @@
 
     applyFaceShape(shape = 'face_round') {
       if (!this.headMesh) return;
-      let sx = 1.0, sy = 1.15, sz = 1.05;
+      let sx = 1.0, sy = 1.0, sz = 1.0;
 
       if (shape === 'face_oval') {
-        sx = 0.94; sy = 1.20; sz = 1.02;
+        sx = 0.94; sy = 1.06; sz = 0.96;
       } else if (shape === 'face_square') {
-        sx = 1.06; sy = 1.08; sz = 1.06;
+        sx = 1.06; sy = 0.96; sz = 1.04;
       } else if (shape === 'face_soft') {
-        sx = 0.98; sy = 1.12; sz = 1.02;
+        sx = 0.98; sy = 0.98; sz = 0.98;
       } else if (shape === 'face_long') {
-        sx = 0.92; sy = 1.25; sz = 1.0;
+        sx = 0.92; sy = 1.12; sz = 0.94;
       } else if (shape === 'face_wide') {
-        sx = 1.12; sy = 1.06; sz = 1.08;
+        sx = 1.08; sy = 0.94; sz = 1.04;
       } else if (shape === 'face_heart') {
-        sx = 1.02; sy = 1.14; sz = 1.02;
+        sx = 1.02; sy = 1.02; sz = 0.98;
       } else if (shape === 'face_chiseled' || shape === 'face_diamond') {
-        sx = 1.04; sy = 1.18; sz = 1.06;
+        sx = 1.02; sy = 1.04; sz = 1.02;
       }
 
       this.headMesh.scale.set(sx, sy, sz);
@@ -628,94 +629,131 @@
 
       [-1, 1].forEach(sign => {
         const eyeG = new THREE.Group();
-        eyeG.position.set(sign * eyeSpacing, 0.025, 0.155);
+        eyeG.position.set(sign * eyeSpacing, 0.025, 0.164);
 
-        // Sclera (White base with subtle specular gloss)
-        const scleraGeo = new THREE.SphereGeometry(eyeR, 16, 14);
-        scleraGeo.scale(1.15, 0.92, 0.46);
-        const scleraMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15 });
-        const sclera = new THREE.Mesh(scleraGeo, scleraMat);
-        eyeG.add(sclera);
+        if (eyeStyle === 'eyes_wink' && sign === 1) {
+          // Playful winking eye arc
+          const winkGeo = new THREE.TorusGeometry(eyeR * 0.85, 0.005, 8, 16, Math.PI * 0.85);
+          winkGeo.rotateZ(Math.PI * 0.08);
+          const winkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.5 });
+          const winkMesh = createSmoothMesh(winkGeo, winkMat);
+          winkMesh.position.set(0, -0.005, 0.005);
+          eyeG.add(winkMesh);
+        } else {
+          // Sclera (White base sphere)
+          const scleraGeo = new THREE.SphereGeometry(eyeR, 16, 14);
+          scleraGeo.scale(1.15, 0.95, 0.45);
+          const scleraMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15 });
+          const sclera = new THREE.Mesh(scleraGeo, scleraMat);
+          sclera.position.set(0, 0, 0.006);
+          eyeG.add(sclera);
 
-        // Iris
-        const irisGeo = new THREE.CircleGeometry(eyeR * 0.65, 16);
-        const irisMat = new THREE.MeshBasicMaterial({ color: eyeColor });
-        const iris = new THREE.Mesh(irisGeo, irisMat);
-        iris.position.set(sign * 0.003, 0, eyeR * 0.44);
-        eyeG.add(iris);
+          // Iris (Colored disc)
+          const irisGeo = new THREE.CircleGeometry(eyeR * 0.65, 16);
+          const irisMat = new THREE.MeshBasicMaterial({ color: eyeColor });
+          const iris = new THREE.Mesh(irisGeo, irisMat);
+          iris.position.set(sign * 0.002, 0, 0.016);
+          eyeG.add(iris);
 
-        // Pupil
-        const pupilGeo = new THREE.CircleGeometry(eyeR * 0.32, 14);
-        const pupilMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0d });
-        const pupil = new THREE.Mesh(pupilGeo, pupilMat);
-        pupil.position.set(sign * 0.003, 0, eyeR * 0.46);
-        eyeG.add(pupil);
+          // Pupil (Dark center disc)
+          const pupilGeo = new THREE.CircleGeometry(eyeR * 0.32, 14);
+          const pupilMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0d });
+          const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+          pupil.position.set(sign * 0.002, 0, 0.018);
+          eyeG.add(pupil);
 
-        // Primary Specular Reflection
-        const reflexGeo = new THREE.CircleGeometry(eyeR * 0.15, 10);
-        const reflexMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const reflex = new THREE.Mesh(reflexGeo, reflexMat);
-        reflex.position.set(sign * 0.003 - 0.007, 0.008, eyeR * 0.48);
-        eyeG.add(reflex);
+          // Specular highlights (Lively reflections)
+          const reflexMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+          const reflexGeo = new THREE.CircleGeometry(eyeR * 0.15, 10);
+          const reflex = new THREE.Mesh(reflexGeo, reflexMat);
+          reflex.position.set(sign * 0.002 - 0.007, 0.008, 0.020);
+          eyeG.add(reflex);
 
-        // Secondary Soft Highlight
-        const softReflexGeo = new THREE.CircleGeometry(eyeR * 0.08, 8);
-        const softReflex = new THREE.Mesh(softReflexGeo, reflexMat);
-        softReflex.position.set(sign * 0.003 + 0.006, -0.006, eyeR * 0.48);
-        eyeG.add(softReflex);
+          const softReflexGeo = new THREE.CircleGeometry(eyeR * 0.08, 8);
+          const softReflex = new THREE.Mesh(softReflexGeo, reflexMat);
+          softReflex.position.set(sign * 0.002 + 0.006, -0.006, 0.020);
+          eyeG.add(softReflex);
+
+          // Eyelids for sleepy / focused looks
+          if (eyeStyle === 'eyes_sleepy' || eyeStyle === 'eyes_squint') {
+            const lidGeo = new THREE.BoxGeometry(eyeR * 2.3, eyeR * 0.7, 0.01);
+            const lid = createSmoothMesh(lidGeo, this.skinMat);
+            lid.position.set(0, eyeR * 0.38, 0.018);
+            eyeG.add(lid);
+          }
+        }
 
         this.faceFeaturesGroup.add(eyeG);
       });
 
-      // --- Eyebrows ---
+      // --- 3D Eyebrows ---
       const browStyle = cfg.eyebrows || 'brows_thick';
-      const browThick = (browStyle === 'brows_thick' || browStyle === 'brows_bushy') ? 0.013 : (browStyle === 'brows_thin' ? 0.006 : 0.009);
-      const browAngle = (browStyle === 'brows_curved' || browStyle === 'brows_arched') ? 0.14 : (browStyle === 'brows_raised' ? 0.22 : 0.06);
+      const browThick = (browStyle === 'brows_thick' || browStyle === 'brows_bushy') ? 0.014 : (browStyle === 'brows_thin' ? 0.007 : 0.010);
+      const browAngle = (browStyle === 'brows_curved' || browStyle === 'brows_arched') ? 0.14 : (browStyle === 'brows_raised' ? 0.22 : (browStyle === 'brows_straight' ? 0.0 : 0.06));
 
       [-1, 1].forEach(sign => {
-        const browGeo = new THREE.BoxGeometry(0.050, browThick, 0.012);
+        const browGeo = new THREE.BoxGeometry(0.052, browThick, 0.014);
         const browMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.8 });
-        const brow = new THREE.Mesh(browGeo, browMat);
-        brow.position.set(sign * eyeSpacing, 0.068, 0.165);
+        const brow = createSmoothMesh(browGeo, browMat);
+        brow.position.set(sign * eyeSpacing, 0.065, 0.162);
         brow.rotation.z = -sign * browAngle;
         this.faceFeaturesGroup.add(brow);
       });
 
       // --- 3D Sculpted Nose ---
       const noseStyle = cfg.nose || 'nose_medium';
-      const noseLen = (noseStyle === 'nose_small' || noseStyle === 'nose_button') ? 0.026 : 0.038;
-      const noseW = (noseStyle === 'nose_wide') ? 0.034 : 0.024;
+      const noseLen = (noseStyle === 'nose_small' || noseStyle === 'nose_button') ? 0.028 : 0.040;
+      const noseW = (noseStyle === 'nose_wide') ? 0.036 : 0.025;
 
       const noseGeo = new THREE.ConeGeometry(noseW, noseLen, 12);
       noseGeo.rotateX(-Math.PI / 2);
       const noseMesh = createSmoothMesh(noseGeo, this.skinMat);
-      noseMesh.position.set(0, -0.012, 0.178);
+      noseMesh.position.set(0, -0.008, 0.166);
       this.faceFeaturesGroup.add(noseMesh);
 
-      // --- Mouth & Lips ---
+      // --- 3D Sculpted Mouth & Lips ---
       const mouthStyle = cfg.mouth || 'mouth_smile';
-      const lipColor = 0xc0392b;
+      const lipColor = 0xb83227;
 
       if (mouthStyle === 'mouth_big_smile' || mouthStyle === 'mouth_laugh' || mouthStyle === 'mouth_grin') {
-        const mouthGeo = new THREE.CylinderGeometry(0.036, 0.036, 0.012, 16, 1, false, 0, Math.PI);
+        const mouthGeo = new THREE.CylinderGeometry(0.038, 0.038, 0.014, 16, 1, false, 0, Math.PI);
         mouthGeo.rotateX(-Math.PI / 2);
         const mouthMat = new THREE.MeshStandardMaterial({ color: lipColor });
-        const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-        mouth.position.set(0, -0.065, 0.164);
+        const mouth = createSmoothMesh(mouthGeo, mouthMat);
+        mouth.position.set(0, -0.056, 0.160);
         this.faceFeaturesGroup.add(mouth);
 
         // Teeth
-        const teethGeo = new THREE.BoxGeometry(0.038, 0.009, 0.006);
+        const teethGeo = new THREE.BoxGeometry(0.040, 0.010, 0.008);
         const teethMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const teeth = new THREE.Mesh(teethGeo, teethMat);
-        teeth.position.set(0, -0.062, 0.170);
+        teeth.position.set(0, -0.053, 0.168);
         this.faceFeaturesGroup.add(teeth);
+      } else if (mouthStyle === 'mouth_open' || mouthStyle === 'mouth_surprised') {
+        const mouthGeo = new THREE.CylinderGeometry(0.024, 0.024, 0.014, 14);
+        mouthGeo.rotateX(-Math.PI / 2);
+        const mouthMat = new THREE.MeshStandardMaterial({ color: 0x1f1f24 });
+        const mouth = createSmoothMesh(mouthGeo, mouthMat);
+        mouth.position.set(0, -0.055, 0.160);
+        this.faceFeaturesGroup.add(mouth);
+
+        const lipRingGeo = new THREE.TorusGeometry(0.024, 0.006, 8, 16);
+        const lipRing = createSmoothMesh(lipRingGeo, new THREE.MeshStandardMaterial({ color: lipColor }));
+        lipRing.position.set(0, -0.055, 0.163);
+        this.faceFeaturesGroup.add(lipRing);
+      } else if (mouthStyle === 'mouth_smirk') {
+        const mouthGeo = new THREE.TorusGeometry(0.030, 0.006, 10, 16, Math.PI * 0.7);
+        mouthGeo.rotateZ(-Math.PI * 0.82);
+        const mouthMat = new THREE.MeshStandardMaterial({ color: lipColor });
+        const mouth = createSmoothMesh(mouthGeo, mouthMat);
+        mouth.position.set(0.008, -0.053, 0.162);
+        this.faceFeaturesGroup.add(mouth);
       } else {
-        const mouthGeo = new THREE.TorusGeometry(0.028, 0.006, 10, 16, Math.PI * 0.8);
+        const mouthGeo = new THREE.TorusGeometry(0.030, 0.006, 10, 16, Math.PI * 0.8);
         mouthGeo.rotateZ(-Math.PI * 0.9);
         const mouthMat = new THREE.MeshStandardMaterial({ color: lipColor });
-        const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-        mouth.position.set(0, -0.062, 0.168);
+        const mouth = createSmoothMesh(mouthGeo, mouthMat);
+        mouth.position.set(0, -0.055, 0.162);
         this.faceFeaturesGroup.add(mouth);
       }
 
@@ -724,8 +762,8 @@
       if (marks === 'freckles_light' || marks === 'freckles_cheeks') {
         const dotMat = new THREE.MeshBasicMaterial({ color: skinShadow });
         [
-          [-0.07, -0.02, 0.155], [-0.09, -0.025, 0.145], [-0.05, -0.03, 0.16],
-          [0.07, -0.02, 0.155], [0.09, -0.025, 0.145], [0.05, -0.03, 0.16]
+          [-0.07, -0.015, 0.158], [-0.09, -0.020, 0.148], [-0.05, -0.025, 0.162],
+          [0.07, -0.015, 0.158], [0.09, -0.020, 0.148], [0.05, -0.025, 0.162]
         ].forEach(pos => {
           const dot = new THREE.Mesh(new THREE.SphereGeometry(0.004, 6, 6), dotMat);
           dot.position.set(...pos);
@@ -733,45 +771,71 @@
         });
       } else if (marks === 'beauty_spot_left') {
         const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 8, 8), new THREE.MeshBasicMaterial({ color: skinShadow }));
-        dot.position.set(-0.065, -0.045, 0.158);
+        dot.position.set(-0.065, -0.040, 0.160);
         this.faceFeaturesGroup.add(dot);
       } else if (marks === 'beauty_spot_right') {
         const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 8, 8), new THREE.MeshBasicMaterial({ color: skinShadow }));
-        dot.position.set(0.065, -0.045, 0.158);
+        dot.position.set(0.065, -0.040, 0.160);
         this.faceFeaturesGroup.add(dot);
       }
 
-      // --- Facial Hair ---
+      // --- Real 3D Facial Hair (Mustache, Beard, Goatee) ---
       const fHair = cfg.facialHair || 'none';
       if (fHair !== 'none') {
         const facialHairColor = parseColor(cfg.facialHairColor || cfg.hairColor || 'black');
         const fMat = new THREE.MeshStandardMaterial({ color: facialHairColor, roughness: 0.8 });
+        
         if (fHair === 'mustache' || fHair === 'mustache_handlebar') {
-          const stacheGeo = new THREE.TorusGeometry(0.034, 0.009, 8, 14, Math.PI * 0.75);
-          stacheGeo.rotateZ(Math.PI * 0.12);
-          const stache = createSmoothMesh(stacheGeo, fMat);
-          stache.position.set(0, -0.042, 0.174);
-          this.faceFeaturesGroup.add(stache);
+          const stacheG = new THREE.Group();
+          [-1, 1].forEach(sign => {
+            const wingGeo = new THREE.CylinderGeometry(0.010, 0.004, 0.045, 10);
+            wingGeo.rotateZ(sign * (fHair === 'mustache_handlebar' ? -0.85 : -0.35));
+            wingGeo.translate(sign * 0.024, -0.038, 0.168);
+            stacheG.add(createSmoothMesh(wingGeo, fMat));
+          });
+          const centerGeo = new THREE.SphereGeometry(0.012, 10, 8);
+          centerGeo.translate(0, -0.035, 0.170);
+          stacheG.add(createSmoothMesh(centerGeo, fMat));
+          this.faceFeaturesGroup.add(stacheG);
         } else if (fHair === 'light_beard' || fHair === 'short_beard' || fHair === 'stubble') {
-          const beardGeo = new THREE.SphereGeometry(0.18, 16, 12, 0, Math.PI * 2, Math.PI * 0.45, Math.PI * 0.55);
-          beardGeo.scale(1.02, 1.15, 1.06);
+          const beardGeo = new THREE.SphereGeometry(0.172, 18, 14, 0, Math.PI * 2, Math.PI * 0.44, Math.PI * 0.56);
+          beardGeo.scale(1.02, 1.10, 1.03);
           const beard = createSmoothMesh(beardGeo, fMat);
           this.faceFeaturesGroup.add(beard);
         } else if (fHair === 'full_beard' || fHair === 'lumberjack') {
-          const beardGeo = new THREE.BoxGeometry(0.18, 0.14, 0.14);
-          beardGeo.translate(0, -0.12, 0.08);
-          const beard = createSmoothMesh(beardGeo, fMat);
-          this.faceFeaturesGroup.add(beard);
+          const beardG = new THREE.Group();
+          const jawGeo = new THREE.SphereGeometry(0.176, 18, 14, 0, Math.PI * 2, Math.PI * 0.40, Math.PI * 0.60);
+          jawGeo.scale(1.04, 1.12, 1.05);
+          beardG.add(createSmoothMesh(jawGeo, fMat));
+
+          const chinGeo = new THREE.BoxGeometry(0.15, 0.15, 0.13);
+          chinGeo.translate(0, -0.11, 0.09);
+          beardG.add(createSmoothMesh(chinGeo, fMat));
+          this.faceFeaturesGroup.add(beardG);
         } else if (fHair === 'goatee' || fHair === 'vandyke') {
-          const goateeGeo = new THREE.SphereGeometry(0.04, 10, 10);
-          goateeGeo.scale(0.8, 1.4, 0.8);
-          goateeGeo.translate(0, -0.10, 0.14);
-          const goatee = createSmoothMesh(goateeGeo, fMat);
-          this.faceFeaturesGroup.add(goatee);
+          const goateeG = new THREE.Group();
+          const chinGeo = new THREE.SphereGeometry(0.040, 12, 10);
+          chinGeo.scale(0.85, 1.35, 0.85);
+          chinGeo.translate(0, -0.090, 0.148);
+          goateeG.add(createSmoothMesh(chinGeo, fMat));
+
+          const stacheGeo = new THREE.TorusGeometry(0.030, 0.007, 8, 14, Math.PI * 0.8);
+          stacheGeo.rotateZ(Math.PI * 0.1);
+          stacheGeo.translate(0, -0.038, 0.168);
+          goateeG.add(createSmoothMesh(stacheGeo, fMat));
+          this.faceFeaturesGroup.add(goateeG);
+        } else if (fHair === 'soul_patch') {
+          const patchGeo = new THREE.ConeGeometry(0.012, 0.024, 8);
+          patchGeo.rotateX(Math.PI);
+          patchGeo.translate(0, -0.075, 0.162);
+          this.faceFeaturesGroup.add(createSmoothMesh(patchGeo, fMat));
         }
       }
     }
 
+    /**
+     * 3D Hairstyles (Proper Volumetric Geometry Models)
+     */
     buildHairstyle(cfg) {
       if (this.hairMeshGroup) {
         disposeGroup(this.hairMeshGroup);
@@ -791,14 +855,12 @@
         const topGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.52);
         topGeo.scale(1.02, 1.16, 1.05);
         topGeo.translate(0, 0.02, -0.01);
-        const hairTop = createSmoothMesh(topGeo, mat);
-        this.hairMeshGroup.add(hairTop);
+        this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
 
         const sideGeo = new THREE.CylinderGeometry(0.182, 0.178, 0.12, 20);
         sideGeo.scale(1.0, 1.0, 1.05);
         sideGeo.translate(0, 0.02, -0.01);
-        const hairSides = createSmoothMesh(sideGeo, mat);
-        this.hairMeshGroup.add(hairSides);
+        this.hairMeshGroup.add(createSmoothMesh(sideGeo, mat));
       } else if (style === 'hair_boy_short') {
         const topGeo = new THREE.SphereGeometry(0.188, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.56);
         topGeo.scale(1.03, 1.18, 1.06);
@@ -818,14 +880,12 @@
         const topGeo = new THREE.SphereGeometry(0.19, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
         topGeo.scale(1.04, 1.20, 1.08);
         topGeo.translate(0, 0.04, 0.02);
-        const hairTop = createSmoothMesh(topGeo, mat);
-        this.hairMeshGroup.add(hairTop);
+        this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
 
         const quiffGeo = new THREE.BoxGeometry(0.14, 0.08, 0.08);
         quiffGeo.rotateX(0.3);
         quiffGeo.translate(0.02, 0.18, 0.11);
-        const quiff = createSmoothMesh(quiffGeo, mat);
-        this.hairMeshGroup.add(quiff);
+        this.hairMeshGroup.add(createSmoothMesh(quiffGeo, mat));
       } else if (style === 'hair_boy_spiky') {
         const baseGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.52);
         baseGeo.scale(1.02, 1.15, 1.05);
@@ -1020,6 +1080,12 @@
       }
     }
 
+    /**
+     * Real 3D Spectacles / Glasses Model Generator
+     * - Fits correctly on face centered over eye level
+     * - Stays attached to face socket while character rotates
+     * - Proper 3D rims, bridge, nose pads, specular glass lenses, and ear temple arms
+     */
     buildGlasses(cfg) {
       disposeGroup(this.sockets.face);
       this.sockets.face.clear();
@@ -1029,68 +1095,148 @@
       const isGold = (style === 'glasses_gold_round');
       const isSunglasses = (style === 'glasses_sunglasses' || style === 'glasses_aviator');
       const frameColor = isGold ? 0xf1c40f : parseColor(cfg.glassesColor || 'black');
+      
       const frameMat = createStandardMaterial(frameColor, {
-        metalness: isGold ? 0.85 : 0.3,
-        roughness: isGold ? 0.18 : 0.4
+        metalness: isGold ? 0.85 : (style === 'glasses_thin' || style === 'glasses_aviator' ? 0.7 : 0.25),
+        roughness: isGold ? 0.18 : (style === 'glasses_thin' ? 0.25 : 0.45)
       });
 
       const glassMat = new THREE.MeshStandardMaterial({
-        color: isSunglasses ? 0x111111 : 0xffffff,
-        roughness: 0.08,
+        color: isSunglasses ? 0x151515 : 0xf0f8ff,
+        roughness: 0.05,
         metalness: 0.1,
         transparent: true,
-        opacity: isSunglasses ? 0.88 : 0.22
+        opacity: isSunglasses ? 0.88 : 0.24,
+        depthWrite: false
+      });
+
+      const specGlintMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.65
       });
 
       const g = new THREE.Group();
-      const glassR = (isSunglasses || style === 'glasses_thick') ? 0.038 : 0.032;
+      const glassR = (isSunglasses || style === 'glasses_thick' || style === 'glasses_aviator') ? 0.038 : 0.033;
       const spacing = 0.064;
 
+      // 3D Rim Profiles & Lenses (Left and Right)
       [-1, 1].forEach(sign => {
+        const eyePosX = sign * spacing;
+
+        // 1. Rims
         if (style !== 'glasses_rimless') {
-          let rimGeo;
           if (style === 'glasses_square' || style === 'glasses_wayfarer') {
-            rimGeo = new THREE.BoxGeometry(glassR * 2.1, glassR * 1.7, 0.012);
+            // Rectangular wire/acetate frame
+            const rimW = glassR * 2.1;
+            const rimH = glassR * 1.7;
+            const thick = (style === 'glasses_thick') ? 0.016 : 0.008;
+
+            // Frame border bars (Top, Bottom, Left, Right)
+            const topBar = createSmoothMesh(new THREE.BoxGeometry(rimW, thick, thick), frameMat);
+            topBar.position.set(eyePosX, rimH / 2, 0.02);
+            g.add(topBar);
+
+            const botBar = createSmoothMesh(new THREE.BoxGeometry(rimW, thick, thick), frameMat);
+            botBar.position.set(eyePosX, -rimH / 2, 0.02);
+            g.add(botBar);
+
+            const leftBar = createSmoothMesh(new THREE.BoxGeometry(thick, rimH, thick), frameMat);
+            leftBar.position.set(eyePosX - rimW / 2, 0, 0.02);
+            g.add(leftBar);
+
+            const rightBar = createSmoothMesh(new THREE.BoxGeometry(thick, rimH, thick), frameMat);
+            rightBar.position.set(eyePosX + rimW / 2, 0, 0.02);
+            g.add(rightBar);
           } else if (style === 'glasses_thick') {
-            rimGeo = new THREE.BoxGeometry(glassR * 2.3, glassR * 1.9, 0.020);
+            const rimGeo = new THREE.TorusGeometry(glassR, 0.0075, 12, 24);
+            const rim = createSmoothMesh(rimGeo, frameMat);
+            rim.position.set(eyePosX, 0, 0.02);
+            g.add(rim);
           } else if (style === 'glasses_thin') {
-            rimGeo = new THREE.TorusGeometry(glassR, 0.0028, 8, 16);
+            const rimGeo = new THREE.TorusGeometry(glassR, 0.0024, 10, 24);
+            const rim = createSmoothMesh(rimGeo, frameMat);
+            rim.position.set(eyePosX, 0, 0.02);
+            g.add(rim);
+          } else if (style === 'glasses_aviator') {
+            // Teardrop aviator rim
+            const rimGeo = new THREE.TorusGeometry(glassR, 0.0030, 10, 24);
+            rimGeo.scale(1.0, 1.15, 1.0);
+            const rim = createSmoothMesh(rimGeo, frameMat);
+            rim.position.set(eyePosX, -0.003, 0.02);
+            g.add(rim);
           } else {
-            rimGeo = new THREE.TorusGeometry(glassR, 0.005, 8, 16);
+            // Classic Round
+            const rimGeo = new THREE.TorusGeometry(glassR, 0.0042, 12, 28);
+            const rim = createSmoothMesh(rimGeo, frameMat);
+            rim.position.set(eyePosX, 0, 0.02);
+            g.add(rim);
           }
-          const rim = createSmoothMesh(rimGeo, frameMat);
-          rim.position.set(sign * spacing, 0, 0.02);
-          g.add(rim);
         }
 
-        const lensGeo = new THREE.CircleGeometry(glassR * 0.92, 14);
+        // 2. Real Transparent Glass Lens
+        const lensGeo = new THREE.CircleGeometry(glassR * 0.94, 20);
+        if (style === 'glasses_aviator') {
+          lensGeo.scale(1.0, 1.15, 1.0);
+        } else if (style === 'glasses_square' || style === 'glasses_wayfarer') {
+          lensGeo.scale(1.05, 0.85, 1.0);
+        }
         const lens = new THREE.Mesh(lensGeo, glassMat);
-        lens.position.set(sign * spacing, 0, 0.02);
+        lens.position.set(eyePosX, style === 'glasses_aviator' ? -0.003 : 0, 0.02);
         g.add(lens);
 
-        const templeGeo = new THREE.BoxGeometry(0.006, 0.006, 0.15);
-        templeGeo.translate(0, 0, -0.075);
+        // 3. Specular Glint Highlight on Lens (Gives realistic glassy depth)
+        const glintGeo = new THREE.CircleGeometry(glassR * 0.22, 10);
+        const glint = new THREE.Mesh(glintGeo, specGlintMat);
+        glint.position.set(eyePosX - 0.010, 0.012, 0.022);
+        g.add(glint);
+
+        // 4. Nose Pads on inner rims
+        const padGeo = new THREE.BoxGeometry(0.004, 0.008, 0.006);
+        const pad = createSmoothMesh(padGeo, frameMat);
+        pad.position.set(eyePosX - sign * (glassR * 0.85), -0.008, 0.015);
+        g.add(pad);
+
+        // 5. 3D Ear Temples extending backward along head sides to the ears
+        const templeArmLength = 0.16;
+        const templeGeo = new THREE.BoxGeometry(0.0045, 0.005, templeArmLength);
+        templeGeo.translate(0, 0, -templeArmLength / 2);
         const temple = createSmoothMesh(templeGeo, frameMat);
-        temple.position.set(sign * (spacing + glassR), 0, 0.02);
+        const templeOuterX = sign * (spacing + glassR * 0.95);
+        temple.position.set(templeOuterX, 0, 0.02);
+        // Slight inward angle to hug the side of the head naturally
+        temple.rotation.y = -sign * 0.04;
         g.add(temple);
+
+        // Ear Hook at the back of temple
+        const earHookGeo = new THREE.BoxGeometry(0.0045, 0.022, 0.006);
+        earHookGeo.translate(0, -0.010, 0);
+        const earHook = createSmoothMesh(earHookGeo, frameMat);
+        earHook.position.set(templeOuterX - sign * 0.006, 0, -templeArmLength + 0.02);
+        g.add(earHook);
       });
 
-      const bridgeGeo = new THREE.BoxGeometry(spacing * 0.7, 0.008, 0.008);
+      // 6. Central Nose Bridge connecting left & right frames
+      const bridgeLen = spacing * 0.75;
+      const bridgeGeo = new THREE.BoxGeometry(bridgeLen, 0.006, 0.006);
       const bridge = createSmoothMesh(bridgeGeo, frameMat);
-      bridge.position.set(0, 0.01, 0.02);
+      bridge.position.set(0, 0.008, 0.02);
       g.add(bridge);
 
-      // Top bar for aviator shades
+      // Top Brow Bar for Aviator glasses
       if (style === 'glasses_aviator') {
-        const topBarGeo = new THREE.BoxGeometry(spacing * 1.8, 0.006, 0.008);
+        const topBarGeo = new THREE.BoxGeometry(spacing * 1.85, 0.005, 0.005);
         const topBar = createSmoothMesh(topBarGeo, frameMat);
-        topBar.position.set(0, glassR + 0.006, 0.02);
+        topBar.position.set(0, glassR + 0.010, 0.02);
         g.add(topBar);
       }
 
       this.sockets.face.add(g);
     }
 
+    /**
+     * Real 3D Hats and Headwear
+     */
     buildHeadwear(cfg) {
       disposeGroup(this.sockets.head);
       this.sockets.head.clear();
@@ -1102,11 +1248,18 @@
       const g = new THREE.Group();
 
       if (style === 'headwear_cap' || style === 'headwear_snapback') {
+        // Baseball Cap
         const domeGeo = new THREE.SphereGeometry(0.19, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.5);
         domeGeo.scale(1.02, 0.8, 1.05);
         const dome = createSmoothMesh(domeGeo, mat);
         g.add(dome);
 
+        // Cap Top Button
+        const btnGeo = new THREE.SphereGeometry(0.018, 10, 8);
+        btnGeo.translate(0, 0.155, 0);
+        g.add(createSmoothMesh(btnGeo, mat));
+
+        // Front Visor
         const visorGeo = new THREE.BoxGeometry(0.20, 0.014, 0.16);
         visorGeo.translate(0, -0.02, 0.16);
         visorGeo.rotateX(0.12);
@@ -1126,6 +1279,13 @@
         beanieGeo.translate(0, 0.06, 0);
         g.add(createSmoothMesh(beanieGeo, mat));
 
+        // Cuff rim
+        const cuffGeo = new THREE.TorusGeometry(0.19, 0.020, 8, 20);
+        cuffGeo.rotateX(Math.PI / 2);
+        cuffGeo.translate(0, -0.02, 0);
+        g.add(createSmoothMesh(cuffGeo, mat));
+
+        // Top Fluffy Pom-Pom
         const pomGeo = new THREE.SphereGeometry(0.055, 12, 10);
         pomGeo.translate(0, 0.18, 0);
         const pomMat = createStandardMaterial(0xf1c40f);
@@ -1146,11 +1306,25 @@
         const brimGeo = new THREE.CylinderGeometry(0.30, 0.30, 0.016, 20);
         brimGeo.translate(0, -0.01, 0);
         g.add(createSmoothMesh(brimGeo, mat));
+
+        const bandGeo = new THREE.TorusGeometry(0.182, 0.012, 8, 20);
+        bandGeo.rotateX(Math.PI / 2);
+        bandGeo.translate(0, 0.005, 0);
+        g.add(createSmoothMesh(bandGeo, createStandardMaterial(0x2d3436)));
       } else if (style === 'headwear_crown') {
-        const goldMat = createStandardMaterial(0xf1c40f, { metalness: 0.85, roughness: 0.25 });
+        const goldMat = createStandardMaterial(0xf1c40f, { metalness: 0.90, roughness: 0.18 });
         const crownGeo = new THREE.CylinderGeometry(0.19, 0.17, 0.12, 8, 1, true);
         crownGeo.translate(0, 0.04, 0);
         g.add(createSmoothMesh(crownGeo, goldMat));
+
+        // Jewel studs
+        const jewelMat = createStandardMaterial(0xe74c3c, { metalness: 0.5, roughness: 0.1 });
+        [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => {
+          const ang = (i / 8) * Math.PI * 2;
+          const gem = createSmoothMesh(new THREE.SphereGeometry(0.014, 8, 8), jewelMat);
+          gem.position.set(Math.cos(ang) * 0.185, 0.04, Math.sin(ang) * 0.185);
+          g.add(gem);
+        });
       } else if (style === 'headwear_gradcap') {
         const gradMat = createStandardMaterial(0x1a252f, { roughness: 0.5 });
         const mortarGeo = new THREE.BoxGeometry(0.36, 0.018, 0.36);
@@ -1161,6 +1335,12 @@
         const skullGeo = new THREE.CylinderGeometry(0.16, 0.18, 0.08, 16);
         skullGeo.translate(0, 0.02, 0);
         g.add(createSmoothMesh(skullGeo, gradMat));
+
+        // Golden tassel
+        const tasselMat = createStandardMaterial(0xf1c40f, { metalness: 0.8 });
+        const tasselGeo = new THREE.CylinderGeometry(0.006, 0.010, 0.14, 8);
+        tasselGeo.translate(0.12, 0.02, 0.12);
+        g.add(createSmoothMesh(tasselGeo, tasselMat));
       } else if (style === 'headwear_headband') {
         const bandGeo = new THREE.TorusGeometry(0.182, 0.022, 8, 20);
         bandGeo.rotateX(Math.PI / 2);
@@ -1170,11 +1350,21 @@
         const coneGeo = new THREE.ConeGeometry(0.14, 0.28, 16);
         coneGeo.translate(0, 0.12, 0);
         g.add(createSmoothMesh(coneGeo, mat));
+
+        const pom = createSmoothMesh(new THREE.SphereGeometry(0.028, 10, 8), createStandardMaterial(0xf1c40f));
+        pom.position.set(0, 0.26, 0);
+        g.add(pom);
       }
 
       this.sockets.head.add(g);
     }
 
+    /**
+     * Real 3D Fitted Tops & Shirts
+     * - Seamless chest and arm bone attachment
+     * - Distinct, striking 3D geometry for every top type
+     * - Eliminates clipping by cleanly hiding covered skin meshes
+     */
     buildTops(cfg) {
       if (this.topGroup) {
         disposeGroup(this.topGroup);
@@ -1207,14 +1397,20 @@
         return;
       }
 
-      // Hide underlying base torso mesh to ELIMINATE any possibility of skin clipping through shirt!
+      // Hide underlying base torso mesh to eliminate any possibility of skin clipping through shirt
       this.torsoMesh.visible = false;
 
       const m = this.metrics;
       const topColor = parseColor(cfg.topColor || 'blue');
-      const mat = createStandardMaterial(topColor, { roughness: 0.65 });
+      const mat = (style === 'top_leather_jacket')
+        ? createStandardMaterial(0x1e272e, { roughness: 0.30, metalness: 0.25 })
+        : createStandardMaterial(topColor, { roughness: 0.65 });
+
       const shadowColor = parseColor((PALETTES.clothing[cfg.topColor] || PALETTES.clothing.blue).shadow);
       const accentMat = createStandardMaterial(shadowColor, { roughness: 0.65 });
+      const whiteMat = createStandardMaterial(0xffffff, { roughness: 0.4 });
+      const goldMat = createStandardMaterial(0xf1c40f, { metalness: 0.85, roughness: 0.2 });
+      const metalMat = createStandardMaterial(0xdcdde1, { metalness: 0.92, roughness: 0.15 });
 
       // Seamless Shoulder Caps to bridge chest and arm sleeves
       const shoulderCapGeo = new THREE.SphereGeometry(0.060, 14, 12);
@@ -1228,19 +1424,20 @@
       const torsoH = (m.neckY - m.hipY) + 0.08;
       const topGeo = new THREE.CylinderGeometry(m.chestW * 0.46, m.waistW * 0.45, torsoH, 18);
       topGeo.scale(1.05, 1.0, 0.84);
-      // Position shirt centered on chest bone, overlapping waist cleanly
       const offsetY = -(m.chestY - m.hipY) + torsoH / 2 - 0.03;
       topGeo.translate(0, offsetY, 0);
       const topMesh = createSmoothMesh(topGeo, mat);
       this.topGroup.add(topMesh);
 
-      // Ribbed Collar at Neck
-      const collarGeo = new THREE.TorusGeometry(0.082, 0.012, 8, 18);
-      collarGeo.rotateX(Math.PI / 2);
-      collarGeo.translate(0, m.neckY - m.chestY - 0.01, 0);
-      this.topGroup.add(createSmoothMesh(collarGeo, accentMat));
+      // Ribbed Collar at Neck (for t-shirts, hoodies, casual tops)
+      if (style !== 'top_blazer' && style !== 'top_polo' && style !== 'top_shirt') {
+        const collarGeo = new THREE.TorusGeometry(0.082, 0.012, 8, 18);
+        collarGeo.rotateX(Math.PI / 2);
+        collarGeo.translate(0, m.neckY - m.chestY - 0.01, 0);
+        this.topGroup.add(createSmoothMesh(collarGeo, accentMat));
+      }
 
-      // Sleeves
+      // Sleeves (Long vs Short)
       const isLongSleeve = (style === 'top_hoodie' || style === 'top_jacket' || style === 'top_leather_jacket' || style === 'top_blazer' || style === 'top_sweater' || style === 'top_shirt');
       
       if (isLongSleeve) {
@@ -1277,6 +1474,16 @@
 
         this.rightForeSleeveMesh = createSmoothMesh(foreGeo, mat);
         this.bones.rightForearm.add(this.rightForeSleeveMesh);
+
+        // Long Sleeve Cuffs
+        [-1, 1].forEach(sign => {
+          const cuffGeo = new THREE.TorusGeometry(0.046, 0.010, 8, 14);
+          cuffGeo.rotateX(Math.PI / 2);
+          cuffGeo.translate(0, -foreSleeveLen + 0.02, 0);
+          const cuff = createSmoothMesh(cuffGeo, accentMat);
+          if (sign === -1) this.bones.leftForearm.add(cuff);
+          else this.bones.rightForearm.add(cuff);
+        });
       } else {
         // Short sleeves: hide upper arm skin, show forearms cleanly
         this.armLMesh.visible = false;
@@ -1284,7 +1491,7 @@
         this.forearmLMesh.visible = true;
         this.forearmRMesh.visible = true;
 
-        const shortSleeveLen = m.armLen * 0.26;
+        const shortSleeveLen = m.armLen * 0.28;
         const sGeo = new THREE.CylinderGeometry(0.058, 0.052, shortSleeveLen, 14);
         sGeo.translate(0, -shortSleeveLen / 2, 0);
 
@@ -1293,34 +1500,223 @@
 
         this.rightSleeveMesh = createSmoothMesh(sGeo, mat);
         this.bones.rightArm.add(this.rightSleeveMesh);
+
+        // Short Sleeve Rolled Hem Rings
+        [-1, 1].forEach(sign => {
+          const hemGeo = new THREE.TorusGeometry(0.052, 0.008, 8, 14);
+          hemGeo.rotateX(Math.PI / 2);
+          hemGeo.translate(0, -shortSleeveLen + 0.01, 0);
+          const hem = createSmoothMesh(hemGeo, accentMat);
+          if (sign === -1) this.bones.leftArm.add(hem);
+          else this.bones.rightArm.add(hem);
+        });
       }
 
-      // Special Style Details (Hoodie Hood, Blazer Lapels, Polo Collar)
+      // DISTINCT 3D FEATURES FOR EVERY TOP STYLE
       if (style === 'top_hoodie') {
-        const hoodGeo = new THREE.SphereGeometry(0.17, 14, 12);
-        hoodGeo.scale(1.0, 0.65, 0.85);
-        hoodGeo.translate(0, m.neckY - m.chestY - 0.02, -0.10);
+        // 1. Streetwear Hoodie: Front Kangaroo Pocket, Hanging Drawstrings, Back Hood Cowl
+        // Back Cowl Hood (wrapping shoulders and back)
+        const hoodGeo = new THREE.SphereGeometry(0.18, 16, 12);
+        hoodGeo.scale(1.05, 0.70, 0.90);
+        hoodGeo.translate(0, m.neckY - m.chestY - 0.01, -0.09);
         this.topGroup.add(createSmoothMesh(hoodGeo, accentMat));
+
+        // Front 3D Kangaroo Pocket Pouch with side openings
+        const pouchGeo = new THREE.BoxGeometry(0.25, 0.13, 0.045);
+        pouchGeo.translate(0, offsetY - 0.05, 0.145);
+        this.topGroup.add(createSmoothMesh(pouchGeo, accentMat));
+
+        // Kangaroo Pocket Openings (Dark shadow wedges)
+        [-0.11, 0.11].forEach(x => {
+          const openingGeo = new THREE.BoxGeometry(0.02, 0.11, 0.046);
+          openingGeo.translate(x, offsetY - 0.05, 0.146);
+          this.topGroup.add(createSmoothMesh(openingGeo, createStandardMaterial(0x1e272e)));
+        });
+
+        // Dual Hanging White Drawstrings with Silver Metal Tips
+        [-0.045, 0.045].forEach(x => {
+          const stringGeo = new THREE.CylinderGeometry(0.0035, 0.0035, 0.14, 8);
+          stringGeo.translate(x, m.neckY - m.chestY - 0.09, 0.145);
+          this.topGroup.add(createSmoothMesh(stringGeo, whiteMat));
+
+          const tipGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.020, 8);
+          tipGeo.translate(x, m.neckY - m.chestY - 0.16, 0.145);
+          this.topGroup.add(createSmoothMesh(tipGeo, metalMat));
+        });
       } else if (style === 'top_blazer') {
-        const lapelGeo = new THREE.BoxGeometry(0.08, 0.24, 0.02);
-        lapelGeo.translate(-0.06, 0.04, 0.12);
-        this.topGroup.add(createSmoothMesh(lapelGeo, accentMat));
+        // 2. Formal Blazer & Tie: Structured lapels, inner white shirt, vibrant necktie, pocket square
+        // Inner Crisp White Shirt V-Placket
+        const innerShirtGeo = new THREE.BoxGeometry(0.12, 0.22, 0.015);
+        innerShirtGeo.translate(0, 0.06, 0.125);
+        this.topGroup.add(createSmoothMesh(innerShirtGeo, whiteMat));
 
-        const lapelR = createSmoothMesh(lapelGeo, accentMat);
-        lapelR.position.x = 0.12;
-        this.topGroup.add(lapelR);
+        // Blazer Left & Right Peaked Lapels
+        [-1, 1].forEach(sign => {
+          const lapelGeo = new THREE.BoxGeometry(0.075, 0.26, 0.022);
+          lapelGeo.rotateZ(sign * 0.12);
+          lapelGeo.translate(sign * 0.08, 0.03, 0.138);
+          this.topGroup.add(createSmoothMesh(lapelGeo, accentMat));
+        });
 
-        const tieGeo = new THREE.BoxGeometry(0.038, 0.25, 0.01);
-        tieGeo.translate(0, 0.02, 0.13);
-        const tieMat = createStandardMaterial(0xc0392b);
-        this.topGroup.add(createSmoothMesh(tieGeo, tieMat));
+        // Silk Necktie (Tie Knot + Hanging Tie Blade)
+        const tieMat = createStandardMaterial(0xc0392b, { roughness: 0.35, metalness: 0.15 });
+        const knotGeo = new THREE.BoxGeometry(0.040, 0.035, 0.020);
+        knotGeo.translate(0, m.neckY - m.chestY - 0.035, 0.142);
+        this.topGroup.add(createSmoothMesh(knotGeo, tieMat));
+
+        const bladeGeo = new THREE.BoxGeometry(0.036, 0.22, 0.012);
+        bladeGeo.translate(0, -0.01, 0.142);
+        this.topGroup.add(createSmoothMesh(bladeGeo, tieMat));
+
+        // Left Chest Pocket with Pocket Square
+        const pocketGeo = new THREE.BoxGeometry(0.055, 0.010, 0.012);
+        pocketGeo.translate(-0.09, 0.06, 0.136);
+        this.topGroup.add(createSmoothMesh(pocketGeo, accentMat));
+
+        const squareGeo = new THREE.BoxGeometry(0.038, 0.018, 0.008);
+        squareGeo.translate(-0.09, 0.072, 0.138);
+        this.topGroup.add(createSmoothMesh(squareGeo, whiteMat));
       } else if (style === 'top_polo') {
-        const placketGeo = new THREE.BoxGeometry(0.042, 0.14, 0.012);
-        placketGeo.translate(0, 0.04, 0.125);
+        // 3. Polo Shirt: 3D Folded Collar Wings + 3-Button Center Placket
+        // Folded Collar Wings (Left and Right)
+        [-1, 1].forEach(sign => {
+          const wingGeo = new THREE.BoxGeometry(0.085, 0.045, 0.025);
+          wingGeo.rotateZ(sign * -0.25);
+          wingGeo.translate(sign * 0.055, m.neckY - m.chestY - 0.015, 0.135);
+          this.topGroup.add(createSmoothMesh(wingGeo, accentMat));
+        });
+
+        // Front 3-Button Placket Strip
+        const placketGeo = new THREE.BoxGeometry(0.040, 0.16, 0.012);
+        placketGeo.translate(0, 0.04, 0.135);
         this.topGroup.add(createSmoothMesh(placketGeo, accentMat));
+
+        // 3 Pearl Button Studs
+        [0.09, 0.04, -0.01].forEach(y => {
+          const btnGeo = new THREE.CylinderGeometry(0.0055, 0.0055, 0.006, 8);
+          btnGeo.rotateX(Math.PI / 2);
+          btnGeo.translate(0, y, 0.144);
+          this.topGroup.add(createSmoothMesh(btnGeo, whiteMat));
+        });
+      } else if (style === 'top_shirt') {
+        // 4. Crisp Button-Down Shirt: Folded collar, full button placket with 4 buttons, chest pocket
+        // Shirt Collar
+        [-1, 1].forEach(sign => {
+          const wingGeo = new THREE.BoxGeometry(0.075, 0.045, 0.022);
+          wingGeo.rotateZ(sign * -0.32);
+          wingGeo.translate(sign * 0.050, m.neckY - m.chestY - 0.015, 0.135);
+          this.topGroup.add(createSmoothMesh(wingGeo, accentMat));
+        });
+
+        // Full Length Front Placket
+        const placketGeo = new THREE.BoxGeometry(0.038, torsoH * 0.85, 0.010);
+        placketGeo.translate(0, offsetY + 0.02, 0.135);
+        this.topGroup.add(createSmoothMesh(placketGeo, accentMat));
+
+        // 4 Pearl Buttons
+        [0.10, 0.04, -0.02, -0.08].forEach(y => {
+          const btnGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.006, 8);
+          btnGeo.rotateX(Math.PI / 2);
+          btnGeo.translate(0, y, 0.142);
+          this.topGroup.add(createSmoothMesh(btnGeo, whiteMat));
+        });
+
+        // Left Chest Pocket
+        const pocketGeo = new THREE.BoxGeometry(0.055, 0.060, 0.008);
+        pocketGeo.translate(-0.085, 0.03, 0.136);
+        this.topGroup.add(createSmoothMesh(pocketGeo, accentMat));
+      } else if (style === 'top_leather_jacket') {
+        // 5. Biker Leather Jacket: Asymmetrical diagonal zipper, wide lapels with silver snaps, epaulets
+        // Asymmetrical Diagonal Silver Zipper Track
+        const zipGeo = new THREE.BoxGeometry(0.014, 0.30, 0.015);
+        zipGeo.rotateZ(0.18);
+        zipGeo.translate(0.03, offsetY + 0.04, 0.140);
+        this.topGroup.add(createSmoothMesh(zipGeo, metalMat));
+
+        // Zipper Pull Tab
+        const pullGeo = new THREE.BoxGeometry(0.012, 0.025, 0.008);
+        pullGeo.translate(0.045, offsetY + 0.06, 0.150);
+        this.topGroup.add(createSmoothMesh(pullGeo, metalMat));
+
+        // Wide Biker Notched Lapels with Silver Snaps
+        [-1, 1].forEach(sign => {
+          const lapelGeo = new THREE.BoxGeometry(0.080, 0.16, 0.022);
+          lapelGeo.rotateZ(sign * 0.22);
+          lapelGeo.translate(sign * 0.075, 0.07, 0.140);
+          this.topGroup.add(createSmoothMesh(lapelGeo, createStandardMaterial(0x151922)));
+
+          // Snap Studs
+          const snapGeo = new THREE.SphereGeometry(0.006, 8, 8);
+          snapGeo.translate(sign * 0.09, 0.08, 0.152);
+          this.topGroup.add(createSmoothMesh(snapGeo, metalMat));
+        });
+
+        // Shoulder Epaulet Straps
+        [-1, 1].forEach(sign => {
+          const epauletGeo = new THREE.BoxGeometry(0.065, 0.016, 0.035);
+          const epauletMesh = createSmoothMesh(epauletGeo, createStandardMaterial(0x151922));
+          epauletMesh.position.set(sign * (m.shoulderW * 0.44), 0.05, 0);
+          this.topGroup.add(epauletMesh);
+        });
+      } else if (style === 'top_jacket') {
+        // 6. Track Zip Jacket: High stand-up athletic collar + full front zipper + shoulder stripes
+        // Stand Collar
+        const standCollarGeo = new THREE.CylinderGeometry(0.075, 0.082, 0.035, 18);
+        standCollarGeo.translate(0, m.neckY - m.chestY + 0.005, 0);
+        this.topGroup.add(createSmoothMesh(standCollarGeo, accentMat));
+
+        // Center Zipper Track
+        const zipGeo = new THREE.BoxGeometry(0.012, torsoH * 0.85, 0.014);
+        zipGeo.translate(0, offsetY + 0.02, 0.138);
+        this.topGroup.add(createSmoothMesh(zipGeo, metalMat));
+
+        // Dual Shoulder Racing Stripes
+        [-1, 1].forEach(sign => {
+          const stripeGeo = new THREE.BoxGeometry(0.020, 0.006, 0.080);
+          const stripeMesh = createSmoothMesh(stripeGeo, whiteMat);
+          stripeMesh.position.set(sign * (m.shoulderW * 0.42), 0.05, 0);
+          this.topGroup.add(stripeMesh);
+        });
+      } else if (style === 'top_printed') {
+        // 7. Graphic Print T-Shirt: Bold graphic badge / crest plate on center chest
+        const badgeMat = createStandardMaterial(0x1e272e, { roughness: 0.3 });
+        const crestBackGeo = new THREE.BoxGeometry(0.14, 0.14, 0.008);
+        crestBackGeo.translate(0, 0.04, 0.136);
+        this.topGroup.add(createSmoothMesh(crestBackGeo, badgeMat));
+
+        // Golden Star / Emblem on the badge
+        const starGeo = new THREE.BoxGeometry(0.08, 0.08, 0.010);
+        starGeo.rotateZ(Math.PI / 4);
+        starGeo.translate(0, 0.04, 0.142);
+        this.topGroup.add(createSmoothMesh(starGeo, goldMat));
+      } else if (style === 'top_jersey') {
+        // 8. Sports Jersey: V-Neck Trim + Bold Athletic Number #7 Plate
+        const vTrimGeo = new THREE.TorusGeometry(0.085, 0.012, 6, 12, Math.PI * 0.8);
+        vTrimGeo.rotateZ(Math.PI * 0.6);
+        vTrimGeo.translate(0, m.neckY - m.chestY - 0.02, 0.125);
+        this.topGroup.add(createSmoothMesh(vTrimGeo, goldMat));
+
+        // Team Number #7
+        const numBar1 = createSmoothMesh(new THREE.BoxGeometry(0.08, 0.022, 0.010), whiteMat);
+        numBar1.position.set(0, 0.08, 0.138);
+        this.topGroup.add(numBar1);
+
+        const numBar2 = createSmoothMesh(new THREE.BoxGeometry(0.022, 0.10, 0.010), whiteMat);
+        numBar2.rotateZ(-0.25);
+        numBar2.position.set(0.01, 0.03, 0.138);
+        this.topGroup.add(numBar2);
+      } else if (style === 'top_sweater') {
+        // 9. Cozy Knit Sweater: Chunky roll-neck turtleneck collar
+        const rollNeckGeo = new THREE.TorusGeometry(0.082, 0.022, 10, 20);
+        rollNeckGeo.rotateX(Math.PI / 2);
+        rollNeckGeo.translate(0, m.neckY - m.chestY + 0.005, 0);
+        this.topGroup.add(createSmoothMesh(rollNeckGeo, accentMat));
       }
     }
 
+    /**
+     * Real 3D Fitted Pants, Shorts, Skirts
+     */
     buildBottoms(cfg) {
       if (this.bottomGroup) {
         disposeGroup(this.bottomGroup);
@@ -1363,6 +1759,7 @@
       const m = this.metrics;
       const bottomColor = parseColor(cfg.bottomColor || 'denim');
       const mat = createStandardMaterial(bottomColor, { roughness: 0.7 });
+      const accentMat = createStandardMaterial(PALETTES.clothing[cfg.bottomColor]?.shadow || 0x1b3882, { roughness: 0.7 });
 
       // Waistband & Pelvis (Fitted cleanly over hips and overlapping shirt hem)
       const pelvisPantsGeo = new THREE.SphereGeometry(m.hipW * 0.45, 18, 14);
@@ -1375,6 +1772,14 @@
       waistbandGeo.scale(1.10, 1.0, 0.86);
       waistbandGeo.translate(0, 0.04, 0);
       this.bottomGroup.add(createSmoothMesh(waistbandGeo, mat));
+
+      // Belt Loops on waistband
+      [-0.12, -0.04, 0.04, 0.12].forEach(x => {
+        const loopGeo = new THREE.BoxGeometry(0.010, 0.060, 0.010);
+        const loopMesh = createSmoothMesh(loopGeo, accentMat);
+        loopMesh.position.set(x, 0.04, 0.155);
+        this.bottomGroup.add(loopMesh);
+      });
 
       const isShorts = (style === 'bottom_shorts');
       const isSkirt = (style === 'bottom_skirt');
@@ -1446,18 +1851,37 @@
         this.bones.rightShin.add(this.rightPantsShin);
 
         if (style === 'bottom_cargo') {
-          const pocketGeo = new THREE.BoxGeometry(0.04, 0.07, 0.05);
-          const pL = createSmoothMesh(pocketGeo, mat);
-          pL.position.set(-0.07, -thighLen * 0.5, 0);
+          // 3D Flap Pockets on outer sides of both thighs
+          const pocketGeo = new THREE.BoxGeometry(0.04, 0.08, 0.06);
+          const pL = createSmoothMesh(pocketGeo, accentMat);
+          pL.position.set(-0.075, -thighLen * 0.5, 0);
           this.leftPantsThigh.add(pL);
 
-          const pR = createSmoothMesh(pocketGeo, mat);
-          pR.position.set(0.07, -thighLen * 0.5, 0);
+          const pR = createSmoothMesh(pocketGeo, accentMat);
+          pR.position.set(0.075, -thighLen * 0.5, 0);
           this.rightPantsThigh.add(pR);
+        } else if (style === 'bottom_trackpants') {
+          // Dual white stripes down side of thighs and shins
+          const stripeMat = createStandardMaterial(0xffffff);
+          [-0.075, 0.075].forEach((x, idx) => {
+            const parentThigh = idx === 0 ? this.leftPantsThigh : this.rightPantsThigh;
+            const parentShin = idx === 0 ? this.leftPantsShin : this.rightPantsShin;
+
+            const stThigh = createSmoothMesh(new THREE.BoxGeometry(0.012, thighLen * 0.9, 0.015), stripeMat);
+            stThigh.position.set(x > 0 ? 0.065 : -0.065, -thighLen / 2, 0);
+            parentThigh.add(stThigh);
+
+            const stShin = createSmoothMesh(new THREE.BoxGeometry(0.012, shinLen * 0.9, 0.015), stripeMat);
+            stShin.position.set(x > 0 ? 0.052 : -0.052, -shinLen / 2, 0);
+            parentShin.add(stShin);
+          });
         }
       }
     }
 
+    /**
+     * Real 3D Dresses
+     */
     buildDress(cfg) {
       if (this.dressGroup) {
         disposeGroup(this.dressGroup);
@@ -1487,6 +1911,11 @@
       this.dressGroup.add(createSmoothMesh(skirtGeo, mat));
     }
 
+    /**
+     * Real 3D Shoes
+     * - Fitted to feet bones
+     * - Distinct 3D models for sneakers, high-tops, sports, boots, formal, sandals
+     */
     buildShoes(cfg) {
       if (this.leftShoeMesh) { disposeGroup(this.leftShoeMesh); this.bones.leftFoot.remove(this.leftShoeMesh); this.leftShoeMesh = null; }
       if (this.rightShoeMesh) { disposeGroup(this.rightShoeMesh); this.bones.rightFoot.remove(this.rightShoeMesh); this.rightShoeMesh = null; }
@@ -1504,17 +1933,95 @@
         const shoeG = new THREE.Group();
         const parentFoot = sign === -1 ? this.bones.leftFoot : this.bones.rightFoot;
 
-        const isBoot = (style === 'shoes_boots' || style === 'shoes_hightops');
-        const shoeH = isBoot ? 0.12 : 0.06;
-        const upperGeo = new THREE.BoxGeometry(0.084, shoeH, 0.16);
-        upperGeo.translate(0, shoeH / 2 - 0.025, 0.035);
-        const upper = createSmoothMesh(upperGeo, mat);
-        shoeG.add(upper);
+        if (style === 'shoes_boots') {
+          // Rugged Leather Combat Boots with tall shaft and dark lug sole
+          const bootMat = createStandardMaterial(shoeColor, { roughness: 0.45 });
+          const lugSoleMat = createStandardMaterial(0x1e272e, { roughness: 0.9 });
 
-        const soleGeo = new THREE.BoxGeometry(0.090, 0.024, 0.17);
-        soleGeo.translate(0, -0.015, 0.035);
-        const sole = createSmoothMesh(soleGeo, soleMat);
-        shoeG.add(sole);
+          // Thick Lugged Sole
+          const soleGeo = new THREE.BoxGeometry(0.092, 0.028, 0.175);
+          soleGeo.translate(0, -0.014, 0.035);
+          shoeG.add(createSmoothMesh(soleGeo, lugSoleMat));
+
+          // Foot Upper
+          const upperGeo = new THREE.BoxGeometry(0.086, 0.065, 0.16);
+          upperGeo.translate(0, 0.015, 0.035);
+          shoeG.add(createSmoothMesh(upperGeo, bootMat));
+
+          // Tall Boot Shaft reaching shin
+          const shaftGeo = new THREE.CylinderGeometry(0.052, 0.048, 0.10, 14);
+          shaftGeo.translate(0, 0.065, 0.01);
+          shoeG.add(createSmoothMesh(shaftGeo, bootMat));
+        } else if (style === 'shoes_hightops') {
+          // High-Top Basketball Streetwear Sneakers
+          const soleGeo = new THREE.BoxGeometry(0.092, 0.026, 0.175);
+          soleGeo.translate(0, -0.013, 0.035);
+          shoeG.add(createSmoothMesh(soleGeo, soleMat));
+
+          const upperGeo = new THREE.BoxGeometry(0.085, 0.095, 0.16);
+          upperGeo.translate(0, 0.030, 0.035);
+          shoeG.add(createSmoothMesh(upperGeo, mat));
+
+          // Padded Ankle Collar
+          const collarGeo = new THREE.TorusGeometry(0.046, 0.012, 8, 14);
+          collarGeo.rotateX(Math.PI / 2);
+          collarGeo.translate(0, 0.075, 0.01);
+          shoeG.add(createSmoothMesh(collarGeo, soleMat));
+        } else if (style === 'shoes_formal') {
+          // Polished Oxford Dress Shoes
+          const oxfordMat = createStandardMaterial(shoeColor, { roughness: 0.25, metalness: 0.15 });
+          const heelMat = createStandardMaterial(0x111111, { roughness: 0.5 });
+
+          const upperGeo = new THREE.BoxGeometry(0.080, 0.050, 0.17);
+          upperGeo.translate(0, 0.005, 0.04);
+          shoeG.add(createSmoothMesh(upperGeo, oxfordMat));
+
+          // Stacked Leather Heel
+          const heelGeo = new THREE.BoxGeometry(0.082, 0.022, 0.05);
+          heelGeo.translate(0, -0.016, -0.02);
+          shoeG.add(createSmoothMesh(heelGeo, heelMat));
+
+          const soleGeo = new THREE.BoxGeometry(0.082, 0.014, 0.17);
+          soleGeo.translate(0, -0.012, 0.04);
+          shoeG.add(createSmoothMesh(soleGeo, heelMat));
+        } else if (style === 'shoes_sandals') {
+          // Summer Sandals (Sole + 3D Straps)
+          this.footLMesh.visible = true;
+          this.footRMesh.visible = true;
+
+          const soleGeo = new THREE.BoxGeometry(0.088, 0.016, 0.165);
+          soleGeo.translate(0, -0.022, 0.04);
+          shoeG.add(createSmoothMesh(soleGeo, mat));
+
+          [-0.01, 0.04].forEach(z => {
+            const strapGeo = new THREE.TorusGeometry(0.044, 0.008, 6, 12, Math.PI);
+            const strap = createSmoothMesh(strapGeo, mat);
+            strap.position.set(0, -0.012, z);
+            shoeG.add(strap);
+          });
+        } else {
+          // Low-Top Casual / Athletic Sneakers
+          const isSport = (style === 'shoes_sports');
+          const shoeH = 0.06;
+
+          const upperGeo = new THREE.BoxGeometry(0.084, shoeH, 0.16);
+          upperGeo.translate(0, shoeH / 2 - 0.025, 0.035);
+          shoeG.add(createSmoothMesh(upperGeo, mat));
+
+          // Sculpted Sole
+          const soleGeo = new THREE.BoxGeometry(0.090, 0.024, 0.17);
+          soleGeo.translate(0, -0.015, 0.035);
+          shoeG.add(createSmoothMesh(soleGeo, soleMat));
+
+          // 3D Laces
+          const laceMat = createStandardMaterial(0xffffff, { roughness: 0.8 });
+          [-0.01, 0.015, 0.04].forEach(z => {
+            const laceGeo = new THREE.BoxGeometry(0.052, 0.006, 0.006);
+            const lace = createSmoothMesh(laceGeo, laceMat);
+            lace.position.set(0, 0.018, z);
+            shoeG.add(lace);
+          });
+        }
 
         parentFoot.add(shoeG);
         if (sign === -1) this.leftShoeMesh = shoeG;
@@ -1522,6 +2029,9 @@
       });
     }
 
+    /**
+     * Real 3D Accessories (Backpack, Headphones, Watches, Necklaces)
+     */
     buildAccessories(cfg) {
       disposeGroup(this.sockets.back);
       this.sockets.back.clear();
@@ -1537,12 +2047,18 @@
         const bag = createSmoothMesh(bagGeo, mat);
         this.sockets.back.add(bag);
 
+        // Front zipper pocket
+        const pocketGeo = new THREE.BoxGeometry(0.24, 0.20, 0.06);
+        pocketGeo.translate(0, -0.06, -0.15);
+        this.sockets.back.add(createSmoothMesh(pocketGeo, mat));
+
         const strapMat = createStandardMaterial(0x2d3436);
         [-0.11, 0.11].forEach(x => {
           const strapGeo = new THREE.TorusGeometry(0.18, 0.016, 8, 16, Math.PI);
           strapGeo.rotateY(Math.PI / 2);
-          strapGeo.position.set(x, 0, 0.05);
-          this.sockets.back.add(createSmoothMesh(strapGeo, strapMat));
+          const strap = createSmoothMesh(strapGeo, strapMat);
+          strap.position.set(x, 0, 0.05);
+          this.sockets.back.add(strap);
         });
       } else if (style === 'acc_headphones') {
         const hpG = new THREE.Group();
@@ -1567,6 +2083,13 @@
         const watch = createSmoothMesh(watchGeo, mat);
         watch.position.set(0, -0.14, 0);
         this.bones.rightForearm.add(watch);
+      } else if (style === 'acc_earrings' || style === 'acc_hoops') {
+        [-0.175, 0.175].forEach(x => {
+          const ringGeo = new THREE.TorusGeometry(0.018, 0.004, 6, 12);
+          const ring = createSmoothMesh(ringGeo, mat);
+          ring.position.set(x, -0.04, 0);
+          this.bones.head.add(ring);
+        });
       }
     }
 
@@ -1590,7 +2113,7 @@
         const metalMat = createStandardMaterial(0xdcdde1, { metalness: 0.85, roughness: 0.2 });
         const eraserMat = createStandardMaterial(0xff7675, { roughness: 0.7 });
 
-        // Pencil Hex Body Shaft (Centered exactly along grip cylinder)
+        // Pencil Hex Body Shaft
         const shaftGeo = new THREE.CylinderGeometry(0.010, 0.010, 0.24, 6);
         shaftGeo.rotateX(Math.PI / 2);
         itemG.add(createSmoothMesh(shaftGeo, pencilMat));
@@ -1601,7 +2124,7 @@
         coneGeo.translate(0, 0, 0.138);
         itemG.add(createSmoothMesh(coneGeo, woodMat));
 
-        // Graphite Lead Tip (Front sharp point)
+        // Graphite Lead Tip
         const tipGeo = new THREE.ConeGeometry(0.004, 0.014, 10);
         tipGeo.rotateX(Math.PI / 2);
         tipGeo.translate(0, 0, 0.160);
@@ -1613,7 +2136,7 @@
         bandGeo.translate(0, 0, -0.131);
         itemG.add(createSmoothMesh(bandGeo, metalMat));
 
-        // Rubber Eraser (Rear end)
+        // Rubber Eraser
         const eraserGeo = new THREE.CylinderGeometry(0.0095, 0.0095, 0.024, 12);
         eraserGeo.rotateX(Math.PI / 2);
         eraserGeo.translate(0, 0, -0.152);
@@ -1684,8 +2207,9 @@
 
         [-0.07, 0.07].forEach(x => {
           const handleGeo = new THREE.TorusGeometry(0.035, 0.008, 8, 14);
-          handleGeo.position.set(x, 0.10, 0);
-          awardG.add(createSmoothMesh(handleGeo, goldMat));
+          const handleMesh = createSmoothMesh(handleGeo, goldMat);
+          handleMesh.position.set(x, 0.10, 0);
+          awardG.add(handleMesh);
         });
 
         this.sockets.rightHand.add(awardG);
@@ -1739,6 +2263,8 @@
 
   /**
    * 6. Interactive 3D Avatar Viewport & Scene Controller
+   * - Full 360° Touch and Mouse Drag Rotation with inertia damping (NO rotation buttons)
+   * - Mobile & Desktop responsive interaction
    */
   class AvatarViewport3D {
     constructor(container, config = {}, options = {}) {
@@ -1840,7 +2366,6 @@
         this.camera.position.set(0, 1.48, 1.05 / this.zoom);
         this.camera.lookAt(0, 1.44, 0);
       } else {
-        // Target vertical framing height ~2.05 units (covers from y = -0.05 to y = 1.95)
         const targetH = 2.05;
         const fovRad = (this.camera.fov * Math.PI) / 180;
         let dist = (targetH / (2 * Math.tan(fovRad / 2))) / this.zoom;
@@ -1868,6 +2393,7 @@
       else if (rot === 'back') this.targetRotationY = Math.PI;
       else if (rot === 'front') this.targetRotationY = 0;
       else if (typeof rot === 'number') this.targetRotationY = rot;
+      this.rotationY = this.targetRotationY;
     }
 
     rotateBy(delta) {
@@ -1907,7 +2433,7 @@
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
 
-      // Touch drag rotation for mobile screens
+      // Touch drag rotation for mobile screens (Direct 360 touch rotation)
       let touchStartX = 0;
       this.canvas.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
@@ -1920,7 +2446,7 @@
         if (!this.isDragging || e.touches.length !== 1) return;
         const deltaX = e.touches[0].clientX - touchStartX;
         touchStartX = e.touches[0].clientX;
-        this.targetRotationY += deltaX * this.dragSpeed * 1.25;
+        this.targetRotationY += deltaX * this.dragSpeed * 1.35;
       }, { passive: true });
 
       window.addEventListener('touchend', () => {
@@ -1955,7 +2481,7 @@
         const delta = Math.min((now - lastTime) / 1000, 0.1);
         lastTime = now;
 
-        // Smooth rotation damping
+        // Smooth rotation damping with inertia
         this.rotationY += (this.targetRotationY - this.rotationY) * this.dampingFactor;
         if (this.character) {
           this.character.characterRoot.rotation.y = this.rotationY;
@@ -1977,6 +2503,10 @@
       if (this.character) {
         this.character.update(this.config);
       }
+    }
+
+    update(newConfig, options = {}) {
+      return this.updateConfig(newConfig, options);
     }
 
     destroy() {
