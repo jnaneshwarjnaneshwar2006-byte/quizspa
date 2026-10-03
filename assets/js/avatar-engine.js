@@ -530,7 +530,8 @@
       const skinColor = parseColor(skinObj.main || cfg.skin);
       this.skinMat.color.copy(skinColor);
 
-      // Face Shape Proportions
+      // Body Shape & Face Shape Proportions
+      this.applyBodyShape(cfg.body);
       this.applyFaceShape(cfg.face);
 
       // 2. Face Features (3D Eyes, Eyebrows, Nose, Mouth, Freckles, Facial Hair)
@@ -567,6 +568,23 @@
       this.buildHeldAwards(cfg);
     }
 
+    applyBodyShape(shape = 'regular') {
+      if (!this.characterRoot) return;
+      let sx = 1.0, sy = 1.0, sz = 1.0;
+      if (shape === 'slim') {
+        sx = 0.92; sy = 1.02; sz = 0.92;
+      } else if (shape === 'athletic') {
+        sx = 1.08; sy = 1.02; sz = 1.04;
+      } else if (shape === 'soft') {
+        sx = 1.10; sy = 0.98; sz = 1.10;
+      } else if (shape === 'tall') {
+        sx = 0.96; sy = 1.08; sz = 0.96;
+      } else if (shape === 'short') {
+        sx = 1.04; sy = 0.90; sz = 1.04;
+      }
+      this.characterRoot.scale.set(sx, sy, sz);
+    }
+
     applyFaceShape(shape = 'face_round') {
       if (!this.headMesh) return;
       let sx = 1.0, sy = 1.15, sz = 1.05;
@@ -591,8 +609,13 @@
     }
 
     buildFaceFeatures(cfg) {
-      disposeGroup(this.faceFeaturesGroup);
-      this.faceFeaturesGroup.clear();
+      if (!this.faceFeaturesGroup) {
+        this.faceFeaturesGroup = new THREE.Group();
+        this.bones.head.add(this.faceFeaturesGroup);
+      } else {
+        disposeGroup(this.faceFeaturesGroup);
+        this.faceFeaturesGroup.clear();
+      }
 
       const eyeColor = parseColor(cfg.eyeColor || 'dark_brown');
       const hairColor = parseColor(cfg.hairColor || 'black');
@@ -721,7 +744,8 @@
       // --- Facial Hair ---
       const fHair = cfg.facialHair || 'none';
       if (fHair !== 'none') {
-        const fMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.8 });
+        const facialHairColor = parseColor(cfg.facialHairColor || cfg.hairColor || 'black');
+        const fMat = new THREE.MeshStandardMaterial({ color: facialHairColor, roughness: 0.8 });
         if (fHair === 'mustache' || fHair === 'mustache_handlebar') {
           const stacheGeo = new THREE.TorusGeometry(0.034, 0.009, 8, 14, Math.PI * 0.75);
           stacheGeo.rotateZ(Math.PI * 0.12);
@@ -775,6 +799,21 @@
         sideGeo.translate(0, 0.02, -0.01);
         const hairSides = createSmoothMesh(sideGeo, mat);
         this.hairMeshGroup.add(hairSides);
+      } else if (style === 'hair_boy_short') {
+        const topGeo = new THREE.SphereGeometry(0.188, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.56);
+        topGeo.scale(1.03, 1.18, 1.06);
+        topGeo.translate(0, 0.02, -0.01);
+        this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
+
+        const fringeGeo = new THREE.BoxGeometry(0.16, 0.045, 0.06);
+        fringeGeo.rotateX(0.15);
+        fringeGeo.translate(0, 0.14, 0.13);
+        this.hairMeshGroup.add(createSmoothMesh(fringeGeo, mat));
+
+        const sideGeo = new THREE.CylinderGeometry(0.182, 0.174, 0.14, 20);
+        sideGeo.scale(1.02, 1.0, 1.05);
+        sideGeo.translate(0, 0.01, -0.01);
+        this.hairMeshGroup.add(createSmoothMesh(sideGeo, mat));
       } else if (style === 'hair_boy_sidepart' || style === 'hair_boy_quiff') {
         const topGeo = new THREE.SphereGeometry(0.19, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
         topGeo.scale(1.04, 1.20, 1.08);
@@ -787,6 +826,28 @@
         quiffGeo.translate(0.02, 0.18, 0.11);
         const quiff = createSmoothMesh(quiffGeo, mat);
         this.hairMeshGroup.add(quiff);
+      } else if (style === 'hair_boy_spiky') {
+        const baseGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.52);
+        baseGeo.scale(1.02, 1.15, 1.05);
+        baseGeo.translate(0, 0.02, -0.01);
+        this.hairMeshGroup.add(createSmoothMesh(baseGeo, mat));
+
+        const spikes = [
+          [0, 0.22, 0.04, 0.35, 0, 0.05, 0.11],
+          [-0.06, 0.20, 0.06, 0.25, 0.3, 0.04, 0.09],
+          [0.06, 0.20, 0.06, 0.25, -0.3, 0.04, 0.09],
+          [0, 0.21, -0.04, -0.2, 0, 0.045, 0.10],
+          [-0.08, 0.17, -0.02, -0.15, 0.35, 0.04, 0.08],
+          [0.08, 0.17, -0.02, -0.15, -0.35, 0.04, 0.08]
+        ];
+        spikes.forEach(([x, y, z, rx, rz, r, h]) => {
+          const spikeGeo = new THREE.ConeGeometry(r, h, 8);
+          spikeGeo.rotateX(rx);
+          spikeGeo.rotateZ(rz);
+          const spike = createSmoothMesh(spikeGeo, mat);
+          spike.position.set(x, y, z);
+          this.hairMeshGroup.add(spike);
+        });
       } else if (style === 'hair_boy_curly' || style === 'hair_girl_curly') {
         const clusterCoords = [
           [0, 0.18, 0.02, 0.08], [-0.08, 0.16, 0.06, 0.07], [0.08, 0.16, 0.06, 0.07],
@@ -799,20 +860,75 @@
           sphere.position.set(x, y, z);
           this.hairMeshGroup.add(sphere);
         });
+      } else if (style === 'hair_boy_messy' || style === 'hair_boy_wavy') {
+        const topGeo = new THREE.SphereGeometry(0.19, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
+        topGeo.scale(1.05, 1.20, 1.08);
+        topGeo.translate(0, 0.03, 0);
+        this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
+
+        const locks = [
+          [-0.05, 0.17, 0.10, 0.10, 0.06, 0.07, 0.2, 0.15],
+          [0.05, 0.18, 0.09, 0.10, 0.06, 0.07, 0.25, -0.15],
+          [-0.10, 0.14, 0.07, 0.08, 0.06, 0.06, 0.1, 0.3],
+          [0.10, 0.14, 0.07, 0.08, 0.06, 0.06, 0.1, -0.3],
+          [0, 0.21, 0.01, 0.12, 0.06, 0.08, 0.3, 0]
+        ];
+        locks.forEach(([x, y, z, w, h, d, rx, rz]) => {
+          const lGeo = new THREE.BoxGeometry(w, h, d);
+          lGeo.rotateX(rx);
+          lGeo.rotateZ(rz);
+          const lock = createSmoothMesh(lGeo, mat);
+          lock.position.set(x, y, z);
+          this.hairMeshGroup.add(lock);
+        });
+      } else if (style === 'hair_boy_undercut') {
+        const shavedGeo = new THREE.CylinderGeometry(0.180, 0.170, 0.16, 20);
+        shavedGeo.scale(1.0, 1.0, 1.05);
+        shavedGeo.translate(0, 0.0, -0.01);
+        this.hairMeshGroup.add(createSmoothMesh(shavedGeo, mat));
+
+        const slickGeo = new THREE.BoxGeometry(0.18, 0.09, 0.24);
+        slickGeo.rotateX(-0.15);
+        slickGeo.translate(0, 0.18, -0.02);
+        this.hairMeshGroup.add(createSmoothMesh(slickGeo, mat));
       } else if (style === 'hair_afro') {
         const afroGeo = new THREE.SphereGeometry(0.28, 20, 18);
         afroGeo.scale(1.05, 1.1, 1.05);
         afroGeo.translate(0, 0.08, -0.02);
         const afro = createSmoothMesh(afroGeo, mat);
         this.hairMeshGroup.add(afro);
-      } else if (style === 'hair_girl_straight' || style === 'hair_girl_wavy' || style === 'hair_girl_shoulder') {
+      } else if (style === 'hair_anime_spikes') {
+        const baseGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.52);
+        baseGeo.scale(1.02, 1.16, 1.05);
+        this.hairMeshGroup.add(createSmoothMesh(baseGeo, mat));
+
+        const animeSpikes = [
+          [0, 0.24, 0.06, 0.4, 0, 0.06, 0.16],
+          [-0.10, 0.22, 0.07, 0.3, 0.5, 0.055, 0.15],
+          [0.10, 0.22, 0.07, 0.3, -0.5, 0.055, 0.15],
+          [-0.14, 0.16, 0.02, 0.1, 0.7, 0.05, 0.14],
+          [0.14, 0.16, 0.02, 0.1, -0.7, 0.05, 0.14],
+          [0, 0.23, -0.08, -0.5, 0, 0.06, 0.16],
+          [-0.09, 0.19, -0.09, -0.4, 0.4, 0.05, 0.14],
+          [0.09, 0.19, -0.09, -0.4, -0.4, 0.05, 0.14]
+        ];
+        animeSpikes.forEach(([x, y, z, rx, rz, r, h]) => {
+          const cone = new THREE.ConeGeometry(r, h, 8);
+          cone.rotateX(rx);
+          cone.rotateZ(rz);
+          const mesh = createSmoothMesh(cone, mat);
+          mesh.position.set(x, y, z);
+          this.hairMeshGroup.add(mesh);
+        });
+      } else if (style === 'hair_girl_straight' || style === 'hair_girl_wavy' || style === 'hair_girl_shoulder' || style === 'hair_girl_wavymedium') {
         const topGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
         topGeo.scale(1.03, 1.18, 1.06);
         topGeo.translate(0, 0.03, 0);
         this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
 
-        const strandGeo = new THREE.CylinderGeometry(0.05, 0.07, 0.44, 14);
-        strandGeo.translate(0, -0.18, 0);
+        const len = (style === 'hair_girl_wavymedium' || style === 'hair_girl_shoulder') ? 0.32 : 0.46;
+        const strandGeo = new THREE.CylinderGeometry(0.05, 0.07, len, 14);
+        strandGeo.translate(0, -len / 2 + 0.04, 0);
 
         const strandL = createSmoothMesh(strandGeo, mat);
         strandL.position.set(-0.15, 0.02, -0.02);
@@ -824,8 +940,8 @@
         strandR.rotation.z = 0.08;
         this.hairMeshGroup.add(strandR);
 
-        const backGeo = new THREE.BoxGeometry(0.28, 0.42, 0.09);
-        backGeo.translate(0, -0.16, -0.12);
+        const backGeo = new THREE.BoxGeometry(0.28, len - 0.02, 0.09);
+        backGeo.translate(0, -len / 2 + 0.06, -0.12);
         this.hairMeshGroup.add(createSmoothMesh(backGeo, mat));
       } else if (style === 'hair_girl_ponytail' || style === 'hair_girl_highpony') {
         const topGeo = new THREE.SphereGeometry(0.185, 20, 16);
@@ -870,6 +986,32 @@
         const fringeGeo = new THREE.BoxGeometry(0.20, 0.08, 0.06);
         fringeGeo.translate(0, 0.12, 0.14);
         this.hairMeshGroup.add(createSmoothMesh(fringeGeo, mat));
+      } else if (style === 'hair_girl_braids') {
+        const topGeo = new THREE.SphereGeometry(0.185, 20, 16);
+        topGeo.scale(1.02, 1.16, 1.05);
+        this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
+
+        [-0.14, 0.14].forEach(x => {
+          const braidGeo = new THREE.CylinderGeometry(0.035, 0.022, 0.38, 10);
+          braidGeo.translate(0, -0.19, 0.06);
+          const braid = createSmoothMesh(braidGeo, mat);
+          braid.position.set(x, 0.04, 0.04);
+          this.hairMeshGroup.add(braid);
+
+          const band = createSmoothMesh(new THREE.TorusGeometry(0.025, 0.008, 8, 12), createStandardMaterial(0xff7675));
+          band.position.set(x, -0.26, 0.10);
+          this.hairMeshGroup.add(band);
+        });
+      } else if (style === 'hair_girl_sidebraid') {
+        const topGeo = new THREE.SphereGeometry(0.185, 20, 16);
+        topGeo.scale(1.03, 1.18, 1.06);
+        this.hairMeshGroup.add(createSmoothMesh(topGeo, mat));
+
+        const braidGeo = new THREE.CylinderGeometry(0.042, 0.025, 0.42, 12);
+        braidGeo.rotateZ(-0.25);
+        braidGeo.translate(0.14, -0.20, 0.08);
+        const braid = createSmoothMesh(braidGeo, mat);
+        this.hairMeshGroup.add(braid);
       } else {
         const topGeo = new THREE.SphereGeometry(0.185, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
         topGeo.scale(1.02, 1.16, 1.05);
@@ -884,30 +1026,42 @@
       const style = cfg.glasses || 'none';
       if (style === 'none') return;
 
-      const frameColor = parseColor(cfg.glassesColor || 'black');
-      const frameMat = createStandardMaterial(frameColor, { metalness: 0.3, roughness: 0.4 });
+      const isGold = (style === 'glasses_gold_round');
+      const isSunglasses = (style === 'glasses_sunglasses' || style === 'glasses_aviator');
+      const frameColor = isGold ? 0xf1c40f : parseColor(cfg.glassesColor || 'black');
+      const frameMat = createStandardMaterial(frameColor, {
+        metalness: isGold ? 0.85 : 0.3,
+        roughness: isGold ? 0.18 : 0.4
+      });
+
       const glassMat = new THREE.MeshStandardMaterial({
-        color: (style === 'glasses_sunglasses' || style === 'glasses_aviator') ? 0x111111 : 0xffffff,
-        roughness: 0.1,
+        color: isSunglasses ? 0x111111 : 0xffffff,
+        roughness: 0.08,
         metalness: 0.1,
         transparent: true,
-        opacity: (style === 'glasses_sunglasses' || style === 'glasses_aviator') ? 0.88 : 0.25
+        opacity: isSunglasses ? 0.88 : 0.22
       });
 
       const g = new THREE.Group();
-      const glassR = (style === 'glasses_sunglasses' || style === 'glasses_aviator') ? 0.038 : 0.032;
+      const glassR = (isSunglasses || style === 'glasses_thick') ? 0.038 : 0.032;
       const spacing = 0.064;
 
       [-1, 1].forEach(sign => {
-        let rimGeo;
-        if (style === 'glasses_square' || style === 'glasses_thick' || style === 'glasses_wayfarer') {
-          rimGeo = new THREE.BoxGeometry(glassR * 2.2, glassR * 1.8, 0.012);
-        } else {
-          rimGeo = new THREE.TorusGeometry(glassR, 0.005, 8, 16);
+        if (style !== 'glasses_rimless') {
+          let rimGeo;
+          if (style === 'glasses_square' || style === 'glasses_wayfarer') {
+            rimGeo = new THREE.BoxGeometry(glassR * 2.1, glassR * 1.7, 0.012);
+          } else if (style === 'glasses_thick') {
+            rimGeo = new THREE.BoxGeometry(glassR * 2.3, glassR * 1.9, 0.020);
+          } else if (style === 'glasses_thin') {
+            rimGeo = new THREE.TorusGeometry(glassR, 0.0028, 8, 16);
+          } else {
+            rimGeo = new THREE.TorusGeometry(glassR, 0.005, 8, 16);
+          }
+          const rim = createSmoothMesh(rimGeo, frameMat);
+          rim.position.set(sign * spacing, 0, 0.02);
+          g.add(rim);
         }
-        const rim = createSmoothMesh(rimGeo, frameMat);
-        rim.position.set(sign * spacing, 0, 0.02);
-        g.add(rim);
 
         const lensGeo = new THREE.CircleGeometry(glassR * 0.92, 14);
         const lens = new THREE.Mesh(lensGeo, glassMat);
@@ -925,6 +1079,14 @@
       const bridge = createSmoothMesh(bridgeGeo, frameMat);
       bridge.position.set(0, 0.01, 0.02);
       g.add(bridge);
+
+      // Top bar for aviator shades
+      if (style === 'glasses_aviator') {
+        const topBarGeo = new THREE.BoxGeometry(spacing * 1.8, 0.006, 0.008);
+        const topBar = createSmoothMesh(topBarGeo, frameMat);
+        topBar.position.set(0, glassR + 0.006, 0.02);
+        g.add(topBar);
+      }
 
       this.sockets.face.add(g);
     }

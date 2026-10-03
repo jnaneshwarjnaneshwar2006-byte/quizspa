@@ -927,31 +927,42 @@
   .avatar-modal-window {
     width: 96vw;
     max-width: 96vw;
-    height: auto;
+    height: 90vh;
     max-height: 92vh;
     border-radius: 18px;
     margin: auto;
   }
 
   .avatar-modal-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .avatar-modal-preview-panel {
     border-right: none;
     border-bottom: 1px solid var(--border-light);
-    padding: 8px 10px;
+    padding: 6px 10px;
     min-height: 0;
+    flex-shrink: 0;
   }
 
   .avatar-preview,
   .avatar-stage,
   .avatar-modal-preview-stage {
-    height: 150px;
-    min-height: 140px;
+    height: 140px;
+    min-height: 130px;
     width: 100%;
+    overflow: hidden;
+  }
+
+  .avatar-modal-edit-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
   }
 

@@ -1,7 +1,7 @@
 /**
  * QuizSpark 3D Full-Body Avatar System - Interactive Customization Studio
- * 11-category navigation, 30+ customizable features, 3D rotation, zoom, undo/redo,
- * live custom color picker, instant preview, and full mobile responsiveness.
+ * Full 10+ category navigation, 30+ customizable features, undo/redo,
+ * live color picker, instant preview, localStorage persistence, and responsive design.
  */
 (function (global) {
   'use strict';
@@ -34,7 +34,6 @@
       id: 'hairColor',
       label: 'Hair Color',
       icon: '💈',
-      isColorOnly: true,
       colorKey: 'hairColor',
       subtabs: []
     },
@@ -135,6 +134,7 @@
         this.currentConfig = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
         this.updateGenderPills();
         this.renderSubtabs();
+        this.renderColorStrip();
         this.renderOptionsGrid();
         this.updatePreview();
         this.updateUndoRedoBtns();
@@ -148,6 +148,7 @@
         this.currentConfig = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
         this.updateGenderPills();
         this.renderSubtabs();
+        this.renderColorStrip();
         this.renderOptionsGrid();
         this.updatePreview();
         this.updateUndoRedoBtns();
@@ -169,11 +170,10 @@
         backdrop.id = 'avatarEditorModal';
         backdrop.className = 'avatar-modal-backdrop';
         backdrop.innerHTML = `
-          <div class="avatar-modal-window" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
+          <div class="avatar-modal-window" role="dialog" aria-modal="true" aria-label="Avatar Customization">
             <!-- Studio Header -->
             <div class="avatar-modal-header">
               <div class="avatar-header-left">
-                <h2 id="avatarModalTitle" class="avatar-studio-title">✨ Avatar Customization Studio</h2>
                 <div class="avatar-gender-pill-group" id="editorGenderToggle">
                   <button type="button" class="avatar-gender-pill" data-gender="boy">👦 Boy</button>
                   <button type="button" class="avatar-gender-pill" data-gender="girl">👧 Girl</button>
@@ -189,50 +189,16 @@
 
             <!-- Studio Body (Stage + Studio Navigation & Options) -->
             <div class="avatar-modal-body">
-              <!-- Left / Top: Interactive 3D Preview Stage -->
+              <!-- Left / Top: Interactive Preview Stage -->
               <div class="avatar-modal-preview-panel">
-                <div class="avatar-360-header">
-                  <span class="rotate-arrow">↶</span>
-                  <span class="rotate-label">360° 3D AVATAR VIEW</span>
-                  <span class="rotate-arrow">↷</span>
-                </div>
-
                 <div class="avatar-modal-preview-stage" id="modalAvatarPreviewStage">
                   <!-- Dynamic 3D Avatar Mounted Here -->
-                </div>
-
-                <!-- 3D Rotation Step Controls -->
-                <div class="avatar-360-controls" role="group" aria-label="360 Rotation Controls">
-                  <button type="button" class="btn-360-step" id="editorRotLeft" title="Rotate Left 45°">↶ Rotate Left</button>
-                  <button type="button" class="btn-360-step btn-360-reset" id="editorRotReset" title="Reset View">↺ Reset View</button>
-                  <button type="button" class="btn-360-step" id="editorRotRight" title="Rotate Right 45°">Rotate Right ↷</button>
-                </div>
-
-                <!-- 3D Rotation Angle Presets & Zoom Toolbar -->
-                <div class="avatar-stage-controls">
-                  <div class="avatar-rotation-bar" role="group" aria-label="3D View Angle">
-                    <button type="button" class="avatar-rot-btn active" data-rot="front" title="Front View">Front</button>
-                    <button type="button" class="avatar-rot-btn" data-rot="three_quarter_left" title="3/4 Left View">↖ 3/4</button>
-                    <button type="button" class="avatar-rot-btn" data-rot="three_quarter_right" title="3/4 Right View">3/4 ↗</button>
-                    <button type="button" class="avatar-rot-btn" data-rot="side" title="Profile View">Side</button>
-                    <button type="button" class="avatar-rot-btn" data-rot="back" title="Back View">Back</button>
-                  </div>
-                  <div class="avatar-zoom-bar" role="group" aria-label="Zoom Controls">
-                    <button type="button" id="zoomOutBtn" class="avatar-zoom-btn" title="Zoom Out">−</button>
-                    <span id="zoomLabel" class="avatar-zoom-label">100%</span>
-                    <button type="button" id="zoomInBtn" class="avatar-zoom-btn" title="Zoom In">+</button>
-                  </div>
-                </div>
-
-                <div class="avatar-drag-hint">
-                  <span class="hint-icon">👆</span>
-                  <span class="hint-text">Drag or swipe to rotate 360°</span>
                 </div>
               </div>
 
               <!-- Right / Bottom: Category Tabs, Subtabs, Color Picker, Options Grid -->
               <div class="avatar-modal-edit-panel">
-                <!-- Top-Level Category Navigation Bar (11 Categories) -->
+                <!-- Top-Level Category Navigation Bar -->
                 <div class="avatar-main-category-nav" id="avatarMainCategoryNav" role="tablist"></div>
 
                 <!-- Sub-Category Feature Chips -->
@@ -285,7 +251,6 @@
       this.colorStrip = document.getElementById('avatarColorStrip');
       this.optionsGrid = document.getElementById('avatarOptionsGrid');
       this.genderToggle = document.getElementById('editorGenderToggle');
-      this.zoomLabel = document.getElementById('zoomLabel');
 
       this.renderMainCategories();
       this.renderSubtabs();
@@ -296,85 +261,29 @@
     }
 
     bindEvents() {
-      document.getElementById('closeAvatarModalBtn').addEventListener('click', () => this.close());
-      document.getElementById('cancelAvatarBtn').addEventListener('click', () => this.close());
-      document.getElementById('randomizeAvatarBtn').addEventListener('click', () => this.randomize());
-      document.getElementById('resetAvatarBtn').addEventListener('click', () => this.reset());
-      document.getElementById('saveAvatarBtn').addEventListener('click', () => this.save());
-      document.getElementById('headerSaveBtn').addEventListener('click', () => this.save());
-      document.getElementById('undoAvatarBtn').addEventListener('click', () => this.undo());
-      document.getElementById('redoAvatarBtn').addEventListener('click', () => this.redo());
+      const closeBtn = document.getElementById('closeAvatarModalBtn');
+      if (closeBtn) closeBtn.addEventListener('click', () => this.close());
 
-      // 360 Step Rotation & Reset Buttons
-      const btnRotLeft = document.getElementById('editorRotLeft');
-      const btnRotRight = document.getElementById('editorRotRight');
-      const btnRotReset = document.getElementById('editorRotReset');
+      const cancelBtn = document.getElementById('cancelAvatarBtn');
+      if (cancelBtn) cancelBtn.addEventListener('click', () => this.close());
 
-      if (btnRotLeft) {
-        btnRotLeft.addEventListener('click', () => {
-          const vp = AvatarEngine.getViewport(this.previewStage);
-          if (vp) vp.rotateBy(-Math.PI / 4);
-        });
-      }
+      const randBtn = document.getElementById('randomizeAvatarBtn');
+      if (randBtn) randBtn.addEventListener('click', () => this.randomize());
 
-      if (btnRotRight) {
-        btnRotRight.addEventListener('click', () => {
-          const vp = AvatarEngine.getViewport(this.previewStage);
-          if (vp) vp.rotateBy(Math.PI / 4);
-        });
-      }
+      const resetBtn = document.getElementById('resetAvatarBtn');
+      if (resetBtn) resetBtn.addEventListener('click', () => this.reset());
 
-      if (btnRotReset) {
-        btnRotReset.addEventListener('click', () => {
-          const vp = AvatarEngine.getViewport(this.previewStage);
-          if (vp) {
-            vp.resetRotation();
-            this.rotation = 'front';
-            rotButtons.forEach(b => b.classList.remove('active'));
-            const frontBtn = this.backdrop.querySelector('.avatar-rot-btn[data-rot="front"]');
-            if (frontBtn) frontBtn.classList.add('active');
-          }
-        });
-      }
+      const saveBtn = document.getElementById('saveAvatarBtn');
+      if (saveBtn) saveBtn.addEventListener('click', () => this.save());
 
-      // 3D Rotation preset angle buttons
-      const rotButtons = this.backdrop.querySelectorAll('.avatar-rot-btn');
-      rotButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          rotButtons.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          this.rotation = btn.dataset.rot;
-          const vp = AvatarEngine.getViewport(this.previewStage);
-          if (vp) {
-            vp.setRotationAngle(this.rotation);
-          } else {
-            this.updatePreview();
-          }
-        });
-      });
+      const headerSaveBtn = document.getElementById('headerSaveBtn');
+      if (headerSaveBtn) headerSaveBtn.addEventListener('click', () => this.save());
 
-      // Zoom controls
-      document.getElementById('zoomInBtn').addEventListener('click', () => {
-        this.zoom = Math.min(1.4, Number((this.zoom + 0.1).toFixed(1)));
-        this.updateZoomDisplay();
-        const vp = AvatarEngine.getViewport(this.previewStage);
-        if (vp) {
-          vp.setZoom(this.zoom);
-        } else {
-          this.updatePreview();
-        }
-      });
+      const undoBtn = document.getElementById('undoAvatarBtn');
+      if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
 
-      document.getElementById('zoomOutBtn').addEventListener('click', () => {
-        this.zoom = Math.max(0.8, Number((this.zoom - 0.1).toFixed(1)));
-        this.updateZoomDisplay();
-        const vp = AvatarEngine.getViewport(this.previewStage);
-        if (vp) {
-          vp.setZoom(this.zoom);
-        } else {
-          this.updatePreview();
-        }
-      });
+      const redoBtn = document.getElementById('redoAvatarBtn');
+      if (redoBtn) redoBtn.addEventListener('click', () => this.redo());
 
       // Gender toggle buttons
       if (this.genderToggle) {
@@ -382,9 +291,19 @@
           btn.addEventListener('click', () => {
             const gender = btn.dataset.gender;
             if (this.currentConfig.style !== gender) {
-              this.currentConfig = AvatarEngine.getDefault(gender);
+              const prev = this.currentConfig;
+              const def = AvatarEngine.getDefault(gender);
+              this.currentConfig = Object.assign({}, def, {
+                style: gender,
+                skin: prev.skin || def.skin,
+                hairColor: prev.hairColor || def.hairColor,
+                glasses: prev.glasses || def.glasses,
+                glassesColor: prev.glassesColor || def.glassesColor,
+                eyeColor: prev.eyeColor || def.eyeColor
+              });
               this.pushHistory(this.currentConfig);
               this.updateGenderPills();
+              this.renderMainCategories();
               this.renderSubtabs();
               this.renderColorStrip();
               this.renderOptionsGrid();
@@ -407,12 +326,6 @@
           this.close();
         }
       });
-    }
-
-    updateZoomDisplay() {
-      if (this.zoomLabel) {
-        this.zoomLabel.textContent = `${Math.round(this.zoom * 100)}%`;
-      }
     }
 
     open(config = null) {
@@ -523,7 +436,6 @@
       const currentCatObj = this.categories.find(c => c.id === this.activeCategory);
       const colorKey = currentCatObj ? currentCatObj.colorKey : null;
 
-      // Also support eyeColor, skin if selected as subtabs
       let targetColorField = colorKey;
       if (this.activeCategory === 'face') {
         if (this.activeSubtab === 'skin') targetColorField = 'skin';
@@ -571,6 +483,7 @@
           this.currentConfig[field] = col;
           this.pushHistory(this.currentConfig);
           this.renderColorStrip();
+          this.renderOptionsGrid();
           this.updatePreview();
         });
       });
@@ -588,6 +501,7 @@
           this.currentConfig[targetColorField] = hex;
           this.pushHistory(this.currentConfig);
           this.renderColorStrip();
+          this.renderOptionsGrid();
           this.updatePreview();
         });
       }
@@ -598,15 +512,6 @@
       let subKey = this.activeSubtab;
       if (!currentCatObj.subtabs || currentCatObj.subtabs.length === 0) {
         subKey = this.activeCategory;
-      }
-
-      if (currentCatObj.isColorOnly) {
-        this.optionsGrid.innerHTML = `
-          <div class="avatar-color-only-message">
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 12px 0;">Select from the color palette above or choose a custom hex color.</p>
-          </div>
-        `;
-        return;
       }
 
       const opts = this.getOptionsForSubtab(subKey);
@@ -639,6 +544,7 @@
 
           this.pushHistory(this.currentConfig);
           this.renderOptionsGrid();
+          this.renderColorStrip();
           this.updatePreview();
         });
       });
@@ -649,6 +555,13 @@
       const style = this.currentConfig.style || 'boy';
 
       switch (featureId) {
+        case 'hairColor':
+          return Object.keys(palettes.hairColor).map(k => ({
+            id: k,
+            label: palettes.hairColor[k].label || k.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            previewHtml: `<div class="avatar-color-circle" style="background: ${palettes.hairColor[k].main};"></div>`
+          }));
+
         case 'body':
           return [
             { id: 'regular', label: 'Regular', previewHtml: '🧍' },
@@ -907,6 +820,8 @@
       const currentStyle = this.currentConfig.style || 'boy';
       this.currentConfig = AvatarEngine.randomize(currentStyle);
       this.pushHistory(this.currentConfig);
+      this.updateGenderPills();
+      this.renderMainCategories();
       this.renderSubtabs();
       this.renderColorStrip();
       this.renderOptionsGrid();
@@ -929,6 +844,11 @@
     }
 
     save() {
+      try {
+        localStorage.setItem('quizspark_avatar_cfg', JSON.stringify(this.currentConfig));
+      } catch (e) {
+        console.warn('Unable to persist avatar to localStorage:', e);
+      }
       if (this.onSave) {
         this.onSave(this.currentConfig);
       }
