@@ -1,7 +1,7 @@
 <?php
 /**
  * QuizSpark - Final Leaderboard & Live Question Standings
- * Game-show style 3D winner cards with physically held awards and Other Players list
+ * Game-show style 3D winner cards with physically held awards and ranked players list
  */
 
 require_once __DIR__ . '/../config/database.php';

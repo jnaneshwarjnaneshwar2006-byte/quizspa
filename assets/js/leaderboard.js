@@ -1,6 +1,6 @@
 /**
  * QuizSpark - Live & Final Leaderboard Engine
- * Handles Game-Show Top 3 Winner Cards (with physically held trophy/medals) and Other Players list
+ * Handles Game-Show Top 3 Winner Cards (with physically held trophy/medals) and ranked player list
  */
 
 const QuizLeaderboard = (() => {
@@ -81,7 +81,7 @@ const QuizLeaderboard = (() => {
 
   /**
    * =========================================================================
-   * FINAL LEADERBOARD RENDERER (Winner Cards + Other Players List)
+   * FINAL LEADERBOARD RENDERER (Winner Cards + Ranked Player List)
    * =========================================================================
    * 
    * @param {HTMLElement} container - DOM container element
@@ -229,7 +229,7 @@ const QuizLeaderboard = (() => {
       }
     });
 
-    // Mount Badges for Other Players (Positions 4+)
+    // Mount Badges for Ranked Players (Positions 4+)
     otherPlayers.forEach(p => {
       const bEl = container.querySelector(`[id^="other_av_${p.id}_"]`);
       if (bEl) {

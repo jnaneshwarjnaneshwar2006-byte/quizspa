@@ -754,7 +754,7 @@ body.leaderboard-page {
 }
 
 /* ==========================================================================
-   FINAL LEADERBOARD (Top 3 Winner Cards + Other Players List)
+   FINAL LEADERBOARD (Top 3 Winner Cards + Ranked Players List)
    ========================================================================== */
 
 .final-leaderboard-container {
@@ -1037,7 +1037,7 @@ body.leaderboard-page {
   box-shadow: 0 0 10px rgba(108, 92, 231, 0.8);
 }
 
-/* --- OTHER PLAYERS (Positions 4+) --- */
+/* --- PLAYER RANKINGS (Positions 4+) --- */
 .other-players-wrapper {
   margin-top: 30px;
   width: 100%;
@@ -1079,7 +1079,7 @@ body.leaderboard-page {
   box-sizing: border-box;
 }
 
-/* Custom Scrollbar for Other Players */
+/* Custom Scrollbar for Ranked Players */
 .other-players-scroll::-webkit-scrollbar {
   width: 6px;
 }
