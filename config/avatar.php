@@ -6,9 +6,17 @@
 /**
  * Returns complete whitelist of allowed avatar components and properties.
  */
+/**
+ * Returns complete whitelist of allowed avatar components and properties.
+ */
 function getAvatarWhitelists(): array
 {
     return [
+        'avatar_id' => [
+            'boy1', 'boy2', 'boy3', 'girl1', 'girl2', 'girl3',
+            'boy_1', 'boy_2', 'boy_3', 'girl_1', 'girl_2', 'girl_3'
+        ],
+
         'style' => ['boy', 'girl'],
 
         'body' => [
@@ -155,82 +163,148 @@ function getAvatarWhitelists(): array
 }
 
 /**
+ * Returns the exact 6 predefined 3D avatars (3 Boys, 3 Girls).
+ */
+function getAvatarPresets(string $style = 'boy'): array
+{
+    $style = in_array($style, ['boy', 'girl']) ? $style : 'boy';
+    $presets = [
+        'boy' => [
+            [
+                'id' => 'boy1',
+                'name' => 'Boy 1',
+                'subtitle' => 'Casual Boy',
+                'config' => [
+                    'avatar_id' => 'boy1',
+                    'style' => 'boy', 'body' => 'regular', 'skin' => 'skin_03', 'face' => 'face_round',
+                    'freckles' => 'none', 'hair' => 'hair_boy_short', 'hairColor' => 'dark_brown',
+                    'eyes' => 'eyes_friendly', 'eyeColor' => 'brown', 'eyebrows' => 'brows_natural',
+                    'nose' => 'nose_small', 'mouth' => 'mouth_smile', 'facialHair' => 'none', 'facialHairColor' => 'black',
+                    'top' => 'top_casual', 'topColor' => 'blue', 'bottom' => 'bottom_jeans', 'bottomColor' => 'denim',
+                    'dress' => 'none', 'dressColor' => 'blue', 'shoes' => 'shoes_sneakers', 'shoeColor' => 'white',
+                    'headwear' => 'none', 'headwearColor' => 'red', 'glasses' => 'none', 'glassesColor' => 'black',
+                    'accessory' => 'acc_headphones', 'accessoryColor' => 'blue', 'specialItem' => 'none',
+                    'rotation' => 'front', 'zoom' => 1
+                ]
+            ],
+            [
+                'id' => 'boy2',
+                'name' => 'Boy 2',
+                'subtitle' => 'Hoodie Geek',
+                'config' => [
+                    'avatar_id' => 'boy2',
+                    'style' => 'boy', 'body' => 'regular', 'skin' => 'skin_02', 'face' => 'face_oval',
+                    'freckles' => 'freckles_light', 'hair' => 'hair_boy_curly', 'hairColor' => 'dark_brown',
+                    'eyes' => 'eyes_friendly', 'eyeColor' => 'brown', 'eyebrows' => 'brows_natural',
+                    'nose' => 'nose_small', 'mouth' => 'mouth_smile', 'facialHair' => 'none', 'facialHairColor' => 'black',
+                    'top' => 'top_hoodie', 'topColor' => 'coral', 'bottom' => 'bottom_jeans', 'bottomColor' => 'black',
+                    'dress' => 'none', 'dressColor' => 'coral', 'shoes' => 'shoes_sneakers', 'shoeColor' => 'white',
+                    'headwear' => 'none', 'headwearColor' => 'red', 'glasses' => 'glasses_round', 'glassesColor' => 'black',
+                    'accessory' => 'acc_backpack', 'accessoryColor' => 'teal', 'specialItem' => 'item_pencil',
+                    'rotation' => 'front', 'zoom' => 1
+                ]
+            ],
+            [
+                'id' => 'boy3',
+                'name' => 'Boy 3',
+                'subtitle' => 'Smart Polo',
+                'config' => [
+                    'avatar_id' => 'boy3',
+                    'style' => 'boy', 'body' => 'slim', 'skin' => 'skin_04', 'face' => 'face_square',
+                    'freckles' => 'none', 'hair' => 'hair_boy_sidepart', 'hairColor' => 'black',
+                    'eyes' => 'eyes_almond', 'eyeColor' => 'dark_brown', 'eyebrows' => 'brows_straight',
+                    'nose' => 'nose_straight', 'mouth' => 'mouth_smile', 'facialHair' => 'none', 'facialHairColor' => 'black',
+                    'top' => 'top_polo', 'topColor' => 'emerald', 'bottom' => 'bottom_casual', 'bottomColor' => 'khaki',
+                    'dress' => 'none', 'dressColor' => 'emerald', 'shoes' => 'shoes_casual', 'shoeColor' => 'leather',
+                    'headwear' => 'none', 'headwearColor' => 'gold', 'glasses' => 'none', 'glassesColor' => 'gold',
+                    'accessory' => 'acc_watch', 'accessoryColor' => 'black', 'specialItem' => 'none',
+                    'rotation' => 'front', 'zoom' => 1
+                ]
+            ]
+        ],
+        'girl' => [
+            [
+                'id' => 'girl1',
+                'name' => 'Girl 1',
+                'subtitle' => 'Casual Girl',
+                'config' => [
+                    'avatar_id' => 'girl1',
+                    'style' => 'girl', 'body' => 'regular', 'skin' => 'skin_02', 'face' => 'face_oval',
+                    'freckles' => 'freckles_cheeks', 'hair' => 'hair_girl_wavy', 'hairColor' => 'dark_brown',
+                    'eyes' => 'eyes_bright', 'eyeColor' => 'brown', 'eyebrows' => 'brows_curved',
+                    'nose' => 'nose_small', 'mouth' => 'mouth_smile', 'facialHair' => 'none', 'facialHairColor' => 'black',
+                    'top' => 'top_casual', 'topColor' => 'purple', 'bottom' => 'bottom_jeans', 'bottomColor' => 'denim',
+                    'dress' => 'none', 'dressColor' => 'purple', 'shoes' => 'shoes_sneakers', 'shoeColor' => 'white',
+                    'headwear' => 'none', 'headwearColor' => 'gold', 'glasses' => 'none', 'glassesColor' => 'black',
+                    'accessory' => 'acc_earrings', 'accessoryColor' => 'gold', 'specialItem' => 'none',
+                    'rotation' => 'front', 'zoom' => 1
+                ]
+            ],
+            [
+                'id' => 'girl2',
+                'name' => 'Girl 2',
+                'subtitle' => 'Sport Pony',
+                'config' => [
+                    'avatar_id' => 'girl2',
+                    'style' => 'girl', 'body' => 'athletic', 'skin' => 'skin_05', 'face' => 'face_round',
+                    'freckles' => 'none', 'hair' => 'hair_girl_highpony', 'hairColor' => 'black',
+                    'eyes' => 'eyes_almond', 'eyeColor' => 'dark_brown', 'eyebrows' => 'brows_natural',
+                    'nose' => 'nose_small', 'mouth' => 'mouth_smile', 'facialHair' => 'none', 'facialHairColor' => 'black',
+                    'top' => 'top_printed', 'topColor' => 'teal', 'bottom' => 'bottom_joggers', 'bottomColor' => 'black',
+                    'dress' => 'none', 'dressColor' => 'teal', 'shoes' => 'shoes_sports', 'shoeColor' => 'pink',
+                    'headwear' => 'headwear_headband', 'headwearColor' => 'pink', 'glasses' => 'none', 'glassesColor' => 'black',
+                    'accessory' => 'acc_headphones', 'accessoryColor' => 'pink', 'specialItem' => 'none',
+                    'rotation' => 'front', 'zoom' => 1
+                ]
+            ],
+            [
+                'id' => 'girl3',
+                'name' => 'Girl 3',
+                'subtitle' => 'Party Dress',
+                'config' => [
+                    'avatar_id' => 'girl3',
+                    'style' => 'girl', 'body' => 'slim', 'skin' => 'skin_02', 'face' => 'face_soft',
+                    'freckles' => 'none', 'hair' => 'hair_girl_curly', 'hairColor' => 'auburn',
+                    'eyes' => 'eyes_large', 'eyeColor' => 'emerald', 'eyebrows' => 'brows_curved',
+                    'nose' => 'nose_small', 'mouth' => 'mouth_big_smile', 'facialHair' => 'none', 'facialHairColor' => 'black',
+                    'top' => 'none', 'topColor' => 'pink', 'bottom' => 'none', 'bottomColor' => 'pink',
+                    'dress' => 'dress_party', 'dressColor' => 'ruby', 'shoes' => 'shoes_casual', 'shoeColor' => 'ruby',
+                    'headwear' => 'headwear_crown', 'headwearColor' => 'gold', 'glasses' => 'none', 'glassesColor' => 'black',
+                    'accessory' => 'acc_necklace', 'accessoryColor' => 'gold', 'specialItem' => 'item_trophy',
+                    'rotation' => 'front', 'zoom' => 1
+                ]
+            ]
+        ]
+    ];
+    return $presets[$style] ?? $presets['boy'];
+}
+
+/**
+ * Returns a specific predefined avatar by ID (boy1, boy2, boy3, girl1, girl2, girl3)
+ */
+function getAvatarPresetById(string $id): ?array
+{
+    $id = str_replace('_', '', strtolower(trim($id)));
+    $boys = getAvatarPresets('boy');
+    $girls = getAvatarPresets('girl');
+    $all = array_merge($boys, $girls);
+
+    foreach ($all as $preset) {
+        if ($preset['id'] === $id) {
+            return $preset['config'];
+        }
+    }
+    return null;
+}
+
+/**
  * Default starting configurations
  */
 function getAvatarDefaultConfig(string $style = 'boy'): array
 {
     $style = in_array($style, ['boy', 'girl']) ? $style : 'boy';
-
-    if ($style === 'girl') {
-        return [
-            'style'            => 'girl',
-            'body'             => 'regular',
-            'skin'             => 'skin_03',
-            'face'             => 'face_oval',
-            'freckles'         => 'none',
-            'hair'             => 'hair_girl_wavy',
-            'hairColor'        => 'dark_brown',
-            'eyes'             => 'eyes_bright',
-            'eyeColor'         => 'brown',
-            'eyebrows'         => 'brows_curved',
-            'nose'             => 'nose_small',
-            'mouth'            => 'mouth_smile',
-            'facialHair'       => 'none',
-            'facialHairColor'  => 'dark_brown',
-            'top'              => 'top_casual',
-            'topColor'         => 'purple',
-            'bottom'           => 'bottom_jeans',
-            'bottomColor'      => 'denim',
-            'dress'            => 'none',
-            'dressColor'       => 'pink',
-            'shoes'            => 'shoes_sneakers',
-            'shoeColor'        => 'white',
-            'headwear'         => 'none',
-            'headwearColor'    => 'purple',
-            'glasses'          => 'none',
-            'glassesColor'     => 'black',
-            'accessory'        => 'acc_earrings',
-            'accessoryColor'   => 'gold',
-            'specialItem'      => 'none',
-            'rotation'         => 'front',
-            'zoom'             => 1
-        ];
-    }
-
-    // Default: Boy
-    return [
-        'style'            => 'boy',
-        'body'             => 'regular',
-        'skin'             => 'skin_04',
-        'face'             => 'face_round',
-        'freckles'         => 'none',
-        'hair'             => 'hair_boy_fade',
-        'hairColor'        => 'black',
-        'eyes'             => 'eyes_friendly',
-        'eyeColor'         => 'dark_brown',
-        'eyebrows'         => 'brows_thick',
-        'nose'             => 'nose_medium',
-        'mouth'            => 'mouth_smile',
-        'facialHair'       => 'none',
-        'facialHairColor'  => 'black',
-        'top'              => 'top_tshirt',
-        'topColor'         => 'blue',
-        'bottom'           => 'bottom_jeans',
-        'bottomColor'      => 'denim',
-        'dress'            => 'none',
-        'dressColor'       => 'purple',
-        'shoes'            => 'shoes_sneakers',
-        'shoeColor'        => 'white',
-        'headwear'         => 'none',
-        'headwearColor'    => 'red',
-        'glasses'          => 'none',
-        'glassesColor'     => 'black',
-        'accessory'        => 'none',
-        'accessoryColor'   => 'gold',
-        'specialItem'      => 'none',
-        'rotation'         => 'front',
-        'zoom'             => 1
-    ];
+    $presets = getAvatarPresets($style);
+    return $presets[0]['config'] ?? [];
 }
 
 /**
@@ -241,6 +315,14 @@ function validateAndSanitizeAvatar($rawInput): string
 {
     $whitelists = getAvatarWhitelists();
     
+    // If a simple preset ID string is passed directly (e.g. 'boy2' or 'girl3')
+    if (is_string($rawInput) && preg_match('/^(boy|girl)[_]?[1-3]$/i', trim($rawInput))) {
+        $preset = getAvatarPresetById($rawInput);
+        if ($preset) {
+            return json_encode($preset, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     // Decode JSON if string given
     if (is_string($rawInput)) {
         $decoded = json_decode($rawInput, true);
@@ -251,6 +333,15 @@ function validateAndSanitizeAvatar($rawInput): string
         $input = [];
     }
 
+    // Check if input references a preset ID
+    $presetId = (string)($input['avatar_id'] ?? $input['id'] ?? '');
+    if (!empty($presetId)) {
+        $preset = getAvatarPresetById($presetId);
+        if ($preset && empty($input['face'])) {
+            return json_encode($preset, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     $style = (string)($input['style'] ?? 'boy');
     if (!in_array($style, $whitelists['style'], true)) {
         $style = 'boy';
@@ -259,7 +350,15 @@ function validateAndSanitizeAvatar($rawInput): string
     $defaults = getAvatarDefaultConfig($style);
     $clean = [];
 
+    // Preserve avatar_id if valid
+    if (!empty($presetId)) {
+        $clean['avatar_id'] = str_replace('_', '', strtolower(trim($presetId)));
+    } else {
+        $clean['avatar_id'] = $defaults['avatar_id'] ?? ($style === 'girl' ? 'girl1' : 'boy1');
+    }
+
     foreach ($defaults as $key => $defaultVal) {
+        if ($key === 'avatar_id') continue;
         $val = isset($input[$key]) ? $input[$key] : $defaultVal;
 
         if ($key === 'zoom') {
@@ -317,6 +416,10 @@ function getParticipantAvatarData(?array $participant): array
 
     $raw = $participant['avatar_data'] ?? null;
     if ($raw) {
+        if (is_string($raw) && preg_match('/^(boy|girl)[_]?[1-3]$/i', trim($raw))) {
+            $preset = getAvatarPresetById($raw);
+            if ($preset) return $preset;
+        }
         $decoded = json_decode($raw, true);
         if (is_array($decoded) && isset($decoded['style'])) {
             return $decoded;
@@ -330,3 +433,4 @@ function getParticipantAvatarData(?array $participant): array
     }
     return getAvatarDefaultConfig('boy');
 }
+

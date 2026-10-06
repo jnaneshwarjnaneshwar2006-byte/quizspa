@@ -23,7 +23,7 @@ if (!is_array($input)) {
 
 $joinCode = preg_replace('/[^0-9]/', '', (string)($input['join_code'] ?? $input['pin'] ?? $input['code'] ?? $input['quiz_code'] ?? ''));
 $name = sanitizeString($input['name'] ?? $input['player_name'] ?? $input['display_name'] ?? '');
-$rawAvatar = $input['avatar_data'] ?? null;
+$rawAvatar = $input['avatar_data'] ?? $input['avatar_id'] ?? $input['avatar'] ?? null;
 
 // Validate 6-digit numeric Join Code
 if (empty($joinCode) || strlen($joinCode) !== 6) {

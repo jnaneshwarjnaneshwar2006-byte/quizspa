@@ -830,17 +830,15 @@
     }
 
     reset() {
-      if (confirm('Reset avatar back to initial default configuration?')) {
-        this.currentConfig = Object.assign({}, this.initialConfig);
-        this.pushHistory(this.currentConfig);
-        this.updateGenderPills();
-        this.renderMainCategories();
-        this.renderSubtabs();
-        this.renderColorStrip();
-        this.renderOptionsGrid();
-        this.updatePreview();
-        this.showToast('↺ Restored initial avatar configuration');
-      }
+      this.currentConfig = Object.assign({}, AvatarEngine.getDefault(this.currentConfig.style || 'boy'));
+      this.pushHistory(this.currentConfig);
+      this.updateGenderPills();
+      this.renderMainCategories();
+      this.renderSubtabs();
+      this.renderColorStrip();
+      this.renderOptionsGrid();
+      this.updatePreview();
+      this.showToast('↺ Restored default avatar appearance');
     }
 
     save() {
@@ -869,6 +867,17 @@
       setTimeout(() => {
         toast.classList.remove('show');
       }, 2200);
+    }
+
+    static open(options = {}) {
+      if (!AvatarEditor._instance) {
+        AvatarEditor._instance = new AvatarEditor(options);
+      } else {
+        if (options.onSave) AvatarEditor._instance.onSave = options.onSave;
+        if (options.onChange) AvatarEditor._instance.onChange = options.onChange;
+      }
+      AvatarEditor._instance.open(options.initialConfig);
+      return AvatarEditor._instance;
     }
   }
 

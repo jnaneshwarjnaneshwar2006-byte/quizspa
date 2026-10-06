@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <title>Visual Test</title>
   <script src="/assets/js/three.min.js"></script>
-  <script src="/assets/js/avatar-engine.js"></script>
+  <script src="/assets/js/avatar-engine.js?v=1791218100"></script>
+  <script src="/assets/js/avatar-editor.js?v=1791218100"></script>
   <style>
     body { margin: 0; background: #0b0c18; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
     #avatar-container { width: 480px; height: 640px; border-radius: 24px; background: #13152c; box-shadow: 0 10px 40px rgba(0,0,0,0.6); position: relative; }
@@ -16,12 +17,11 @@
     window.initAvatar = function() {
       if (typeof AvatarEngine === 'undefined') return false;
       const container = document.getElementById('avatar-container');
-      window.avatarInstance = AvatarEngine.mount(container, {
-        config: AvatarEngine.getDefault('boy'),
+      window.avatarInstance = AvatarEngine.mount(container, AvatarEngine.getDefault('boy'), {
         interactive: true,
-        enableControls: true,
+        animated: true,
         quality: 'high',
-        cameraPreset: 'full'
+        mode: 'full'
       });
       return true;
     };

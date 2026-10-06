@@ -79,109 +79,166 @@
 
 /* --- Join Quiz Page: Avatar Card & Style Selector --- */
 .avatar-preview-card {
-  background: rgba(24, 20, 42, 0.7);
-  border: 1px solid var(--border-light);
+  background: rgba(24, 20, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-xl);
-  padding: 24px;
+  padding: 22px 20px;
   text-align: center;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
   margin-bottom: 24px;
   position: relative;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-  transition: border-color 0.3s ease;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .avatar-preview-card:hover {
   border-color: rgba(108, 92, 231, 0.6);
+  box-shadow: 0 18px 48px rgba(108, 92, 231, 0.25);
 }
 
 .avatar-stage {
-  height: 270px;
+  height: 350px;
+  width: 100%;
+  max-width: 360px;
+  margin: 12px auto 16px auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 12px 0 16px;
   position: relative;
-  overflow: visible;
+  border-radius: 20px;
+  background: radial-gradient(circle at 50% 50%, rgba(108, 92, 231, 0.18) 0%, rgba(15, 12, 34, 0.45) 75%, transparent 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
 .style-selector-group {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .style-pill-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  color: #a5b1c2;
   border-radius: 30px;
-  padding: 8px 18px;
-  font-weight: 700;
+  padding: 9px 24px;
+  font-weight: 800;
   font-size: 0.95rem;
+  letter-spacing: 0.5px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .style-pill-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .style-pill-btn.active {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent-pink) 100%);
+  background: linear-gradient(135deg, #3867d6 0%, #6c5ce7 100%);
   color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.4);
+  border-color: #54a0ff;
+  box-shadow: 0 4px 18px rgba(84, 160, 255, 0.45);
+  transform: translateY(-1px);
 }
 
-/* Presets Carousel / Chips */
+/* 3 Predefined Avatars Grid */
 .presets-strip {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 6px 4px 12px;
-  justify-content: center;
-  scrollbar-width: thin;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin: 0 auto 14px auto;
+  padding: 2px;
+  box-sizing: border-box;
 }
 
 .preset-chip {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-muted);
-  border-radius: var(--radius-md);
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  background: rgba(30, 26, 56, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  color: #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  user-select: none;
 }
 
 .preset-chip:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(108, 92, 231, 0.22);
+  border-color: rgba(108, 92, 231, 0.55);
   color: #ffffff;
+  transform: translateY(-2px);
 }
 
 .preset-chip.active {
-  background: rgba(108, 92, 231, 0.25);
-  border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(30, 55, 153, 0.6) 0%, rgba(108, 92, 231, 0.65) 100%);
+  border: 2px solid #54a0ff;
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 0 16px rgba(84, 160, 255, 0.55), inset 0 0 10px rgba(84, 160, 255, 0.25);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.preset-chip .preset-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #ffffff;
+}
+
+.preset-chip .preset-sub {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.preset-chip.active .preset-sub {
+  color: #74b9ff;
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .presets-strip {
+    gap: 6px;
+  }
+  .preset-chip {
+    padding: 8px 4px;
+  }
+  .preset-chip .preset-name {
+    font-size: 0.82rem;
+  }
+  .preset-chip .preset-sub {
+    font-size: 0.68rem;
+  }
+  .avatar-stage {
+    height: 290px;
+  }
 }
 
 /* Edit Avatar CTA Button */
 .btn-edit-avatar {
   background: rgba(108, 92, 231, 0.2);
-  border: 1px solid var(--primary);
+  border: 1.5px solid var(--primary);
   color: #ffffff;
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.95rem;
   padding: 10px 24px;
   border-radius: var(--radius-md);
   cursor: pointer;

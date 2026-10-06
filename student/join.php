@@ -95,12 +95,7 @@ require_once __DIR__ . '/../config/security.php';
         if (saved) {
           currentAvatarConfig = JSON.parse(saved);
           if (currentAvatarConfig && currentAvatarConfig.style) {
-            if (currentAvatarConfig.style === 'neutral') {
-              currentAvatarConfig = null;
-              currentStyle = 'boy';
-            } else {
-              currentStyle = currentAvatarConfig.style;
-            }
+            currentStyle = currentAvatarConfig.style === 'girl' ? 'girl' : 'boy';
           }
         }
       } catch (e) {}
@@ -119,11 +114,17 @@ require_once __DIR__ . '/../config/security.php';
 
       function renderPresets() {
         const presets = AvatarEngine.getPresets(currentStyle);
-        presetsStrip.innerHTML = presets.map((p, idx) => `
-          <button type="button" class="preset-chip ${idx === 0 ? 'active' : ''}" data-idx="${idx}">
-            ${p.name}
-          </button>
-        `).join('');
+        const activeId = currentAvatarConfig ? (currentAvatarConfig.avatar_id || '') : '';
+
+        presetsStrip.innerHTML = presets.map((p, idx) => {
+          const isActive = activeId ? (activeId === p.id) : (idx === 0);
+          return `
+            <button type="button" class="preset-chip ${isActive ? 'active' : ''}" data-idx="${idx}" data-id="${p.id}" id="preset_btn_${p.id}">
+              <span class="preset-name">${p.name}</span>
+              <span class="preset-sub">${p.subtitle || ''}</span>
+            </button>
+          `;
+        }).join('');
 
         presetsStrip.querySelectorAll('.preset-chip').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -132,11 +133,15 @@ require_once __DIR__ . '/../config/security.php';
             const idx = parseInt(btn.dataset.idx, 10);
             currentAvatarConfig = Object.assign({}, presets[idx].config);
             renderPreview();
+            try {
+              localStorage.setItem('quizspark_avatar_cfg', JSON.stringify(currentAvatarConfig));
+              localStorage.setItem('quizspark_avatar_id', currentAvatarConfig.avatar_id);
+            } catch(e) {}
           });
         });
       }
 
-      // Initialize Editor Modal
+      // Initialize Editor Modal (Opens ONLY when clicking Edit Avatar)
       const editor = new AvatarEditor({
         initialConfig: currentAvatarConfig,
         onSave: (newConfig) => {
@@ -147,6 +152,7 @@ require_once __DIR__ . '/../config/security.php';
           renderPreview();
           try {
             localStorage.setItem('quizspark_avatar_cfg', JSON.stringify(currentAvatarConfig));
+            localStorage.setItem('quizspark_avatar_id', currentAvatarConfig.avatar_id || (currentStyle === 'girl' ? 'girl1' : 'boy1'));
           } catch(e) {}
         }
       });
@@ -174,6 +180,10 @@ require_once __DIR__ . '/../config/security.php';
           currentAvatarConfig = AvatarEngine.getDefault(currentStyle);
           renderPresets();
           renderPreview();
+          try {
+            localStorage.setItem('quizspark_avatar_cfg', JSON.stringify(currentAvatarConfig));
+            localStorage.setItem('quizspark_avatar_id', currentAvatarConfig.avatar_id);
+          } catch(e) {}
         });
       });
 
@@ -216,7 +226,9 @@ require_once __DIR__ . '/../config/security.php';
             body: JSON.stringify({
               join_code: joinCode,
               name: name,
-              avatar_data: currentAvatarConfig
+              avatar_data: currentAvatarConfig,
+              avatar_id: currentAvatarConfig.avatar_id || (currentStyle === 'girl' ? 'girl1' : 'boy1'),
+              gender: currentStyle
             })
           });
 
@@ -225,6 +237,7 @@ require_once __DIR__ . '/../config/security.php';
           if (data && data.success) {
             try {
               localStorage.setItem('quizspark_avatar_cfg', JSON.stringify(currentAvatarConfig));
+              localStorage.setItem('quizspark_avatar_id', currentAvatarConfig.avatar_id || (currentStyle === 'girl' ? 'girl1' : 'boy1'));
             } catch(e) {}
 
             showAlert('Joined successfully! Entering game lobby...', 'success');
