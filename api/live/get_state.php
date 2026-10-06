@@ -84,7 +84,7 @@ try {
     $leaderboardStartedAt = (float)($quiz['leaderboard_start_time'] ?? 0);
     $nextQuestionAt = (float)($quiz['next_question_at'] ?? 0);
     if ($nextQuestionAt <= 0 && $leaderboardStartedAt > 0) {
-        $nextQuestionAt = $leaderboardStartedAt + 5.0;
+        $nextQuestionAt = $leaderboardStartedAt + 10.0;
     }
 
     $leaderboardRemaining = 0;

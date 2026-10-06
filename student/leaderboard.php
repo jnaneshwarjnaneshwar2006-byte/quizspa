@@ -50,7 +50,7 @@ try {
     <!-- Live Countdown Pill (Active only during in-between live quiz questions) -->
     <div id="liveCountdownWrapper" style="<?= $isCompleted ? 'display: none;' : '' ?> text-align: center; padding-top: 16px;">
       <div class="leaderboard-countdown-pill" id="leaderboardCountdownPill">
-        ⏳ <span id="leaderboardCountdown">Next question in 5 seconds</span>
+        ⏳ <span id="leaderboardCountdown">Next question in 10 seconds</span>
       </div>
     </div>
 

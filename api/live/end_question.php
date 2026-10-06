@@ -47,7 +47,7 @@ try {
 
     $ended = transitionToLeaderboard($pdo, $quizId, 'Teacher clicked End Question Early');
 
-    sendJsonResponse(true, 'Question ended early. Showing leaderboard for 5 seconds.', [
+    sendJsonResponse(true, 'Question ended early. Showing leaderboard for 10 seconds.', [
         'quiz_id' => $quizId,
         'ended'   => $ended
     ]);

@@ -21,6 +21,66 @@
   height: 100%;
 }
 
+/* --- Avatar Badges & Compact Previews --- */
+.avatar-badge-wrapper {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  min-height: 64px;
+  max-height: 64px;
+  flex: 0 0 64px;
+  border-radius: var(--radius-md);
+  background: radial-gradient(circle at 50% 50%, rgba(108, 92, 231, 0.2) 0%, rgba(15, 12, 34, 0.5) 100%);
+  border: 1px solid rgba(162, 155, 254, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.avatar-badge-wrapper canvas,
+.avatar-badge-wrapper svg,
+.avatar-badge-wrapper img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+
+.avatar-badge-wrapper.badge-sm {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  min-height: 64px;
+  max-height: 64px;
+  flex: 0 0 64px;
+}
+
+.avatar-badge-wrapper.badge-md {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  max-width: 72px;
+  min-height: 72px;
+  max-height: 72px;
+  flex: 0 0 72px;
+}
+
+.avatar-badge-wrapper.badge-lg {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  min-height: 80px;
+  max-height: 80px;
+  flex: 0 0 80px;
+}
+
 /* Subtle Idle Micro-Animations */
 @keyframes avatarBreathe {
   0%, 100% {

@@ -106,7 +106,7 @@ if (!$quiz) {
     <div id="leaderboardView" style="display: none; margin-top: 10px;">
       <div style="text-align: center; margin-bottom: 24px;">
         <div class="leaderboard-countdown-pill" id="leaderboardCountdownPill">
-          ⏳ <span id="leaderboardCountdown">Next question in 5 seconds</span>
+          ⏳ <span id="leaderboardCountdown">Next question in 10 seconds</span>
         </div>
       </div>
       <!-- Clean Top 3 Winner Cards & Ranked Player List matching Student Final Leaderboard -->
@@ -272,7 +272,7 @@ if (!$quiz) {
           if (nextAt > 0) {
             currentLbTargetEndMs = (nextAt + clockSkew) * 1000;
           } else {
-            currentLbTargetEndMs = Date.now() + (Number(qz.leaderboard_remaining || 5) * 1000);
+            currentLbTargetEndMs = Date.now() + (Number(qz.leaderboard_remaining || 10) * 1000);
           }
 
           startTeacherLbTicker();

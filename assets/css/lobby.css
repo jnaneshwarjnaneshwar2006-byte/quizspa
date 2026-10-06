@@ -40,6 +40,38 @@
   max-width: 100%;
   word-break: break-all;
   box-sizing: border-box;
+  cursor: pointer;
+  transition: transform var(--transition-bounce), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.join-code-badge:hover {
+  transform: scale(1.03);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 20px rgba(0, 206, 201, 0.25);
+}
+
+/* Toast Banner */
+.lobby-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: linear-gradient(135deg, #10ac84, #1dd1a1);
+  color: #ffffff;
+  padding: 10px 22px;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  font-size: 0.95rem;
+  box-shadow: 0 10px 25px rgba(16, 172, 132, 0.4);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.lobby-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .lobby-meta-bar {
@@ -122,11 +154,14 @@
 .player-card {
   background: var(--bg-dark-card);
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  padding: 12px 10px;
+  border-radius: var(--radius-lg);
+  padding: 8px 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  min-height: 88px;
+  max-height: 96px;
+  height: 92px;
   font-weight: 700;
   font-size: 0.95rem;
   box-shadow: var(--shadow-sm);
@@ -140,7 +175,7 @@
 }
 
 .player-card:hover {
-  transform: translateY(-2px) scale(1.02);
+  transform: translateY(-2px) scale(1.01);
   border-color: var(--primary);
   background: rgba(108, 92, 231, 0.2);
 }
@@ -149,6 +184,39 @@
   border-color: var(--accent-cyan);
   background: rgba(0, 206, 201, 0.2);
   box-shadow: 0 0 15px rgba(0, 206, 201, 0.35);
+}
+
+.player-card .avatar-badge-wrapper,
+.player-card .player-card-avatar {
+  width: 78px !important;
+  height: 78px !important;
+  min-width: 78px !important;
+  max-width: 78px !important;
+  min-height: 78px !important;
+  max-height: 78px !important;
+  flex: 0 0 78px !important;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 50%, rgba(108, 92, 231, 0.22) 0%, rgba(15, 12, 34, 0.6) 100%);
+  border: 1px solid rgba(162, 155, 254, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.player-card .avatar-badge-wrapper canvas,
+.player-card .player-card-avatar canvas,
+.player-card .avatar-badge-wrapper svg,
+.player-card .player-card-avatar svg,
+.player-card .avatar-badge-wrapper img,
+.player-card .player-card-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 .player-emoji {
@@ -164,6 +232,9 @@
   flex: 1;
   min-width: 0;
   text-align: left;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 /* 3D Earth Live Lobby Layout */
@@ -485,7 +556,24 @@
   }
   .lobby-sidebar-card {
     height: auto;
-    max-height: 500px;
+    max-height: 520px;
+  }
+  .player-card {
+    min-height: 82px;
+    max-height: 90px;
+    height: 86px;
+    padding: 6px 12px;
+    gap: 12px;
+  }
+  .player-card .avatar-badge-wrapper,
+  .player-card .player-card-avatar {
+    width: 72px !important;
+    height: 72px !important;
+    min-width: 72px !important;
+    max-width: 72px !important;
+    min-height: 72px !important;
+    max-height: 72px !important;
+    flex: 0 0 72px !important;
   }
 }
 
@@ -580,6 +668,26 @@
     grid-template-columns: 1fr;
     gap: 8px;
   }
+  .player-card {
+    min-height: 72px;
+    max-height: 80px;
+    height: 76px;
+    padding: 6px 10px;
+    gap: 10px;
+  }
+  .player-card .avatar-badge-wrapper,
+  .player-card .player-card-avatar {
+    width: 62px !important;
+    height: 62px !important;
+    min-width: 62px !important;
+    max-width: 62px !important;
+    min-height: 62px !important;
+    max-height: 62px !important;
+    flex: 0 0 62px !important;
+  }
+  .player-name {
+    font-size: 0.95rem;
+  }
 }
 
 @media (max-width: 360px) {
@@ -589,8 +697,24 @@
     padding: 4px 8px;
   }
   .player-card {
-    padding: 8px 6px;
-    font-size: 0.85rem;
+    min-height: 66px;
+    max-height: 74px;
+    height: 70px;
+    padding: 4px 8px;
+    gap: 8px;
+  }
+  .player-card .avatar-badge-wrapper,
+  .player-card .player-card-avatar {
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    flex: 0 0 56px !important;
+  }
+  .player-name {
+    font-size: 0.88rem;
   }
 }
 

@@ -57,28 +57,36 @@ $joinUrl = getStudentJoinUrl($quiz['join_code']);
 <body>
   <div class="earth-lobby-wrapper">
     <!-- Top Navigation -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
       <a href="dashboard.php" class="brand-logo">QuizSpark <span class="brand-badge">LIVE LOBBY</span></a>
-      <div style="display: flex; gap: 10px;">
-        <button type="button" onclick="copyJoinUrl()" class="btn btn-secondary btn-sm">📋 Copy Link</button>
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <button type="button" onclick="copyJoinUrl()" class="btn btn-secondary btn-sm" title="Copy student direct join link">📋 Copy Link</button>
+        <button type="button" onclick="copyGamePin()" class="btn btn-secondary btn-sm" title="Copy Game PIN">🔢 Copy PIN</button>
+        <button type="button" id="fullscreenToggleBtn" class="btn btn-secondary btn-sm" title="Toggle Fullscreen presentation">⛶ Fullscreen</button>
         <a href="dashboard.php" class="btn btn-secondary btn-sm">Exit Lobby</a>
       </div>
     </div>
 
+    <!-- Toast Notification Banner -->
+    <div id="lobbyToast" class="lobby-toast"></div>
+
     <!-- Header Banner -->
     <div class="lobby-header animate-pop" style="padding: 20px 24px; margin-bottom: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-        <div style="text-align: left;">
+        <div style="text-align: left; max-width: 600px;">
           <p style="text-transform: uppercase; letter-spacing: 2px; color: var(--accent-cyan); font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">
             ⚡ Live Quiz Session
           </p>
-          <h1 style="font-size: 1.9rem; margin: 0; line-height: 1.2;"><?= htmlspecialchars($quiz['title']) ?></h1>
+          <h1 style="font-size: 1.9rem; margin: 0 0 6px 0; line-height: 1.2;"><?= htmlspecialchars($quiz['title']) ?></h1>
+          <p style="margin: 0; color: var(--text-muted); font-size: 0.95rem;">
+            Join at <strong style="color: var(--accent-cyan);"><?= htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'localhost') ?>/student/join.php</strong> or scan QR code
+          </p>
         </div>
 
         <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
-          <div>
-            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; display: block;">GAME PIN</span>
-            <div class="join-code-badge" style="margin: 0;">
+          <div style="text-align: center;">
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 2px;">GAME PIN (Click to copy)</span>
+            <div class="join-code-badge" style="margin: 0;" onclick="copyGamePin()" title="Click to copy Game PIN">
               <?= htmlspecialchars($quiz['join_code']) ?>
             </div>
           </div>
@@ -340,7 +348,7 @@ $joinUrl = getStudentJoinUrl($quiz['join_code']);
 
             list.innerHTML = participants.map(p => `
               <div class="player-card animate-pop" data-pid="${p.id}" id="player_card_${p.id}">
-                <div class="avatar-badge-wrapper badge-sm" id="sidebar_badge_${p.id}"></div>
+                <div class="avatar-badge-wrapper player-card-avatar" id="sidebar_badge_${p.id}"></div>
                 <span class="player-name">${escapeHtml(p.name)}</span>
                 <span style="font-size: 0.75rem; color: #20bf6b;">●</span>
               </div>
@@ -443,10 +451,48 @@ $joinUrl = getStudentJoinUrl($quiz['join_code']);
       });
     });
 
+    // 7. Fullscreen presentation toggle
+    const fsBtn = document.getElementById('fullscreenToggleBtn');
+    if (fsBtn) {
+      fsBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+          fsBtn.innerHTML = '⛶ Exit Fullscreen';
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+          fsBtn.innerHTML = '⛶ Fullscreen';
+        }
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('lobbyToast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
     function copyJoinUrl() {
       const url = <?= json_encode($joinUrl) ?>;
-      navigator.clipboard.writeText(url);
-      alert('Join URL copied to clipboard!');
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('✓ Join link copied to clipboard!');
+      }).catch(() => {
+        showToast('✓ Join link: ' + url);
+      });
+    }
+
+    function copyGamePin() {
+      const pin = <?= json_encode($quiz['join_code']) ?>;
+      navigator.clipboard.writeText(pin).then(() => {
+        showToast(`✓ PIN ${pin} copied!`);
+      }).catch(() => {
+        showToast(`✓ PIN: ${pin}`);
+      });
     }
 
     function escapeHtml(text) {

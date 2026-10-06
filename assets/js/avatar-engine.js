@@ -234,7 +234,8 @@
       this.torsoGroup.add(this.neckGroup);
 
       this.headGroup = new THREE.Group();
-      this.headGroup.position.set(0, 0.07, 0); // World Y = 1.17 (Head center Y ~1.30)
+      this.headGroup.position.set(0, 0.05, 0); // World Y = 1.15 (Head center Y ~1.25)
+      this.headGroup.scale.set(0.75, 0.75, 0.75);
       this.neckGroup.add(this.headGroup);
 
       // Sockets
@@ -313,7 +314,7 @@
       this.headGroup.add(earR);
 
       // 2. Compact Cute Neck
-      const neckGeo = new THREE.CylinderGeometry(0.078, 0.090, 0.09, 20);
+      const neckGeo = new THREE.CylinderGeometry(0.065, 0.075, 0.09, 20);
       neckGeo.translate(0, 0.035, 0);
       this.neckMesh = createMesh(neckGeo, this.skinMat);
       this.neckGroup.add(this.neckMesh);
@@ -1436,7 +1437,7 @@
         this.torsoGroup.position.y = 0.10 + breath * 0.3;
       }
       if (this.headGroup) {
-        this.headGroup.position.y = 0.07 + breath * 0.5;
+        this.headGroup.position.y = 0.05 + breath * 0.5;
         this.headGroup.rotation.z = Math.sin(t * 1.1) * 0.010;
       }
     }
@@ -1475,13 +1476,13 @@
     }
 
     initScene() {
-      this.width = this.container.clientWidth || (this.mode === 'badge' ? 140 : 320);
-      this.height = this.container.clientHeight || (this.mode === 'badge' ? 140 : 420);
+      this.width = this.container.clientWidth || (this.mode === 'badge' ? 76 : 320);
+      this.height = this.container.clientHeight || (this.mode === 'badge' ? 76 : 420);
 
       this.scene = new THREE.Scene();
 
       // Camera
-      const fov = this.mode === 'badge' ? 26 : 30;
+      const fov = this.mode === 'badge' ? 28 : 30;
       this.camera = new THREE.PerspectiveCamera(fov, this.width / this.height, 0.1, 50);
       this.updateCameraPosition();
 
@@ -1541,15 +1542,21 @@
     updateCameraPosition() {
       const aspect = (this.width && this.height) ? (this.width / this.height) : 1.0;
       if (this.mode === 'badge') {
-        this.camera.position.set(0, 1.30, 1.25);
-        this.camera.lookAt(0, 1.30, 0);
+        let dist = typeof this.options.cameraDistance === 'number' ? this.options.cameraDistance : 2.80;
+        if (aspect < 1.0) {
+          dist = dist * (1.0 / aspect);
+        }
+        const targetY = typeof this.options.cameraTargetY === 'number' ? this.options.cameraTargetY : 0.68;
+        this.camera.position.set(0, targetY, dist);
+        this.camera.lookAt(0, targetY, 0);
       } else {
-        let dist = 3.90;
+        let dist = typeof this.options.cameraDistance === 'number' ? this.options.cameraDistance : 3.90;
         if (aspect < 0.80) {
           dist = dist * (0.80 / aspect);
         }
+        const targetY = typeof this.options.cameraTargetY === 'number' ? this.options.cameraTargetY : 0.78;
         this.camera.position.set(0, 0.82, dist);
-        this.camera.lookAt(0, 0.78, 0);
+        this.camera.lookAt(0, targetY, 0);
       }
     }
 

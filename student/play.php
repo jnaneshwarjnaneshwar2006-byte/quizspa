@@ -140,7 +140,7 @@ $studentAvatar = getParticipantAvatarData($student);
         <h1 class="leaderboard-title">🏆 LEADERBOARD</h1>
         <div style="text-align: center; margin-top: 6px;">
           <div class="leaderboard-countdown-pill" id="leaderboardCountdownPill">
-            ⏳ <span id="leaderboardCountdown">Next question in 5 seconds</span>
+            ⏳ <span id="leaderboardCountdown">Next question in 10 seconds</span>
           </div>
         </div>
       </div>
@@ -265,7 +265,7 @@ $studentAvatar = getParticipantAvatarData($student);
           if (nextAt > 0) {
             targetAdvanceTimestamp = (nextAt + clockSkew) * 1000;
           } else {
-            const fallbackLeft = Number(qz.leaderboard_remaining || 5);
+            const fallbackLeft = Number(qz.leaderboard_remaining || 10);
             targetAdvanceTimestamp = Date.now() + (fallbackLeft * 1000);
           }
 

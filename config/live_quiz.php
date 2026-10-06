@@ -53,7 +53,7 @@ function getLiveQuizStateName(array $quiz): string
 function transitionToLeaderboard(PDO $pdo, int $quizId, string $reason = ''): bool
 {
     $now = getMicroTime();
-    $nextQuestionAt = $now + 5.0;
+    $nextQuestionAt = $now + 10.0;
 
     $stmt = $pdo->prepare(
         "UPDATE `quizzes`
@@ -85,7 +85,7 @@ function transitionToLeaderboard(PDO $pdo, int $quizId, string $reason = ''): bo
 /**
  * Authoritative Server-Side State Machine Processor
  * Triggered on every poll / request by teacher and students.
- * Detects question completion, timer expiry, and performs 5-second automatic progression.
+ * Detects question completion, timer expiry, and performs 10-second automatic progression.
  */
 function processLiveQuizState(PDO $pdo, int $quizId): ?array
 {
@@ -149,16 +149,16 @@ function processLiveQuizState(PDO $pdo, int $quizId): ?array
         }
     }
 
-    // 2. If quiz is in leaderboard, check if 5-second delay has elapsed
+    // 2. If quiz is in leaderboard, check if 10-second delay has elapsed
     if ($quiz['current_question_status'] === 'leaderboard') {
         $nextQuestionAt = (float)($quiz['next_question_at'] ?? 0);
         $leaderboardStartedAt = (float)($quiz['leaderboard_start_time'] ?? 0);
 
         if ($nextQuestionAt <= 0) {
             if ($leaderboardStartedAt > 0) {
-                $nextQuestionAt = $leaderboardStartedAt + 5.0;
+                $nextQuestionAt = $leaderboardStartedAt + 10.0;
             } else {
-                $nextQuestionAt = $now + 5.0;
+                $nextQuestionAt = $now + 10.0;
                 $pdo->prepare(
                     "UPDATE `quizzes` SET `leaderboard_start_time` = :started, `next_question_at` = :next_at WHERE `id` = :id"
                 )->execute(['started' => $now, 'next_at' => $nextQuestionAt, 'id' => $quizId]);
@@ -182,7 +182,11 @@ function processLiveQuizState(PDO $pdo, int $quizId): ?array
  */
 function advanceQuizFromLeaderboard(PDO $pdo, int $quizId, ?float $minimumWaitSeconds = null): array
 {
-    $pdo->beginTransaction();
+    $ownsTransaction = false;
+    if (!$pdo->inTransaction()) {
+        $pdo->beginTransaction();
+        $ownsTransaction = true;
+    }
 
     try {
         $stmt = $pdo->prepare('SELECT * FROM `quizzes` WHERE `id` = :id LIMIT 1 FOR UPDATE');
@@ -190,7 +194,9 @@ function advanceQuizFromLeaderboard(PDO $pdo, int $quizId, ?float $minimumWaitSe
         $quiz = $stmt->fetch();
 
         if (!$quiz || $quiz['current_question_status'] !== 'leaderboard') {
-            $pdo->commit();
+            if ($ownsTransaction && $pdo->inTransaction()) {
+                $pdo->commit();
+            }
             return ['changed' => false, 'completed' => $quiz && $quiz['status'] === 'completed'];
         }
 
@@ -199,18 +205,22 @@ function advanceQuizFromLeaderboard(PDO $pdo, int $quizId, ?float $minimumWaitSe
         $nextQuestionAt = (float)($quiz['next_question_at'] ?? 0);
 
         if ($nextQuestionAt <= 0 && $leaderboardStartedAt > 0) {
-            $nextQuestionAt = $leaderboardStartedAt + 5.0;
+            $nextQuestionAt = $leaderboardStartedAt + 10.0;
         }
 
         // Check if wait time has been reached
         if ($nextQuestionAt > 0 && $now < $nextQuestionAt) {
-            $pdo->commit();
+            if ($ownsTransaction && $pdo->inTransaction()) {
+                $pdo->commit();
+            }
             return ['changed' => false, 'completed' => false];
         }
 
         if ($minimumWaitSeconds !== null && $minimumWaitSeconds > 0 &&
             ($leaderboardStartedAt <= 0 || $now - $leaderboardStartedAt < $minimumWaitSeconds)) {
-            $pdo->commit();
+            if ($ownsTransaction && $pdo->inTransaction()) {
+                $pdo->commit();
+            }
             return ['changed' => false, 'completed' => false];
         }
 
@@ -222,7 +232,9 @@ function advanceQuizFromLeaderboard(PDO $pdo, int $quizId, ?float $minimumWaitSe
         // If no more questions exist, complete the quiz
         if ($currentQuestion >= $totalQuestions) {
             completeQuiz($pdo, $quizId, $totalQuestions);
-            $pdo->commit();
+            if ($ownsTransaction && $pdo->inTransaction()) {
+                $pdo->commit();
+            }
             logLiveQuizTransition($quizId, 'LEADERBOARD', 'QUIZ_FINISHED', [
                 'reason'          => 'All questions completed',
                 'total_questions' => $totalQuestions,
@@ -248,7 +260,9 @@ function advanceQuizFromLeaderboard(PDO $pdo, int $quizId, ?float $minimumWaitSe
         ]);
 
         $changed = $update->rowCount() === 1;
-        $pdo->commit();
+        if ($ownsTransaction && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
 
         if ($changed) {
             logLiveQuizTransition($quizId, 'LEADERBOARD', 'QUESTION_ACTIVE', [
@@ -260,7 +274,7 @@ function advanceQuizFromLeaderboard(PDO $pdo, int $quizId, ?float $minimumWaitSe
 
         return ['changed' => $changed, 'completed' => false];
     } catch (Throwable $exception) {
-        if ($pdo->inTransaction()) {
+        if ($ownsTransaction && $pdo->inTransaction()) {
             $pdo->rollBack();
         }
         throw $exception;
